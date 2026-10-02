@@ -1,22 +1,31 @@
 import { z } from 'zod';
 
-import { publicUserSchema } from '../users/user.schemas.js';
+import { Constants } from '../constants.js';
+import { desiredColorSchema, profileImageSchema, publicUserSchema } from '../users/user.schemas.js';
 
 const passwordSchema = z
   .string()
-  .min(8, 'Password must be at least 8 characters long')
-  .max(200, 'Password is too long');
+  .min(
+    Constants.PASSWORD_MIN_LENGTH,
+    `Password must be at least ${Constants.PASSWORD_MIN_LENGTH} characters long`,
+  )
+  .max(Constants.PASSWORD_MAX_LENGTH, 'Password is too long');
 
 export const registerRequestSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('Invalid email address').max(Constants.EMAIL_MAX_LENGTH),
   password: passwordSchema,
-  displayName: z.string().min(1, 'Display name is required').max(120),
+  displayName: z
+    .string()
+    .min(Constants.DISPLAY_NAME_MIN_LENGTH, 'Display name is required')
+    .max(Constants.DISPLAY_NAME_MAX_LENGTH),
+  profileImage: profileImageSchema,
+  desiredColor: desiredColorSchema,
 });
 
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 
 export const loginRequestSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('Invalid email address').max(Constants.EMAIL_MAX_LENGTH),
   password: z.string().min(1, 'Password is required'),
 });
 

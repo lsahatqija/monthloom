@@ -13,7 +13,7 @@ export class UserController {
 
   updateMe = async (req: Request, res: Response): Promise<void> => {
     const input = updateProfileRequestSchema.parse(req.body);
-    const user = await this.userService.updateDisplayName(req.authUser!.id, input.displayName);
+    const user = await this.userService.updateProfile(req.authUser!.id, input);
     res.status(200).json({ user });
   };
 }

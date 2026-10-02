@@ -2,10 +2,11 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { registerRequestSchema, type RegisterRequest } from '@template/contracts';
+import { Constants, registerRequestSchema, type RegisterRequest } from '@template/contracts';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
+import { ProfileAppearanceFields } from '../../components/profile-appearance-fields';
 import { Alert, Button, FieldError, FormField, Input, Label } from '../../components/ui/index';
 import { isApiClientError } from '../../lib/api/errors';
 
@@ -17,10 +18,20 @@ export function RegisterForm({ redirectTo }: { redirectTo: string }) {
 
   const {
     register,
+    watch,
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
-  } = useForm<RegisterRequest>({ resolver: zodResolver(registerRequestSchema) });
+  } = useForm<RegisterRequest>({
+    resolver: zodResolver(registerRequestSchema),
+    defaultValues: {
+      profileImage: Constants.DEFAULT_PROFILE_IMAGE,
+      desiredColor: Constants.DEFAULT_DESIRED_COLOR,
+    },
+  });
+
+  const profileImage = watch('profileImage');
+  const desiredColor = watch('desiredColor');
 
   const mutation = useMutation({
     mutationFn: registerRequest,
@@ -68,6 +79,15 @@ export function RegisterForm({ redirectTo }: { redirectTo: string }) {
         />
         <FieldError message={errors.password?.message} />
       </FormField>
+
+      <ProfileAppearanceFields
+        profileImage={profileImage}
+        desiredColor={desiredColor}
+        profileImageRegistration={register('profileImage')}
+        desiredColorRegistration={register('desiredColor')}
+        profileImageError={errors.profileImage?.message}
+        desiredColorError={errors.desiredColor?.message}
+      />
 
       <Button type="submit" disabled={isSubmitting || mutation.isPending}>
         {mutation.isPending ? 'Creating account...' : 'Create account'}

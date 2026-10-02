@@ -8,6 +8,7 @@ FROM base AS build
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* ./
 COPY tsconfig.base.json ./
 COPY packages ./packages
+COPY assets ./assets
 COPY apps/web ./apps/web
 ARG NEXT_PUBLIC_API_URL=http://localhost:4000
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}

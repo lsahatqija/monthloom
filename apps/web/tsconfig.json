@@ -3,6 +3,10 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@assets/*": ["../../assets/*"]
+    },
     "jsx": "preserve",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "noEmit": true,

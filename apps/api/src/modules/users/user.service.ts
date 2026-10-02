@@ -1,4 +1,4 @@
-import type { PublicUser } from '@template/contracts';
+import type { PublicUser, UpdateProfileRequest } from '@template/contracts';
 
 import { NotFoundError } from '../../shared/errors/index.js';
 
@@ -10,6 +10,8 @@ export function toPublicUser(user: User): PublicUser {
     id: user.id,
     email: user.email,
     displayName: user.displayName,
+    profileImage: user.profileImage,
+    desiredColor: user.desiredColor,
     role: user.role,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
@@ -27,8 +29,8 @@ export class UserService {
     return toPublicUser(user);
   }
 
-  async updateDisplayName(id: string, displayName: string): Promise<PublicUser> {
-    const updated = await this.userRepository.update(id, { displayName });
+  async updateProfile(id: string, input: UpdateProfileRequest): Promise<PublicUser> {
+    const updated = await this.userRepository.update(id, input);
     return toPublicUser(updated);
   }
 }

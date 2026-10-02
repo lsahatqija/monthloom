@@ -11,6 +11,8 @@ function toDomainUser(record: typeof users.$inferSelect): User {
     email: record.email,
     passwordHash: record.passwordHash,
     displayName: record.displayName,
+    profileImage: record.profileImage,
+    desiredColor: record.desiredColor,
     role: record.role,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
@@ -37,6 +39,8 @@ export class PostgresUserRepository implements UserRepository {
         email: input.email,
         passwordHash: input.passwordHash,
         displayName: input.displayName,
+        profileImage: input.profileImage,
+        desiredColor: input.desiredColor,
         role: input.role ?? 'user',
       })
       .returning();

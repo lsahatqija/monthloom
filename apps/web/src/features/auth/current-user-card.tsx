@@ -1,5 +1,6 @@
 'use client';
 
+import { ProfileImage } from '../../components/profile-image';
 import { Alert, Card, LoadingIndicator } from '../../components/ui/index';
 import { isApiClientError } from '../../lib/api/errors';
 
@@ -12,7 +13,11 @@ export function CurrentUserCard() {
   if (isLoading) return <LoadingIndicator label="Loading your account..." />;
 
   if (isError) {
-    return <Alert variant="error">{isApiClientError(error) ? error.message : 'Failed to load your account.'}</Alert>;
+    return (
+      <Alert variant="error">
+        {isApiClientError(error) ? error.message : 'Failed to load your account.'}
+      </Alert>
+    );
   }
 
   const user = data?.user;
@@ -22,6 +27,7 @@ export function CurrentUserCard() {
 
   return (
     <Card>
+      <ProfileImage image={user.profileImage} color={user.desiredColor} />
       <p>
         Welcome back, <strong>{user.displayName}</strong>.
       </p>

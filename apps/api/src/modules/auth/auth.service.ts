@@ -37,6 +37,8 @@ export class AuthService {
       email,
       passwordHash,
       displayName: input.displayName,
+      profileImage: input.profileImage,
+      desiredColor: input.desiredColor,
     });
 
     const sessionToken = await this.createSession(user.id);

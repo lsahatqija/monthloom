@@ -48,6 +48,23 @@
   outline-offset: 1px;
 }
 
+.profileAppearancePreview {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-4);
+}
+
+.profileImage {
+  display: inline-block;
+  flex: 0 0 auto;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+}
+
 .label {
   display: block;
   font-weight: 600;

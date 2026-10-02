@@ -1,4 +1,4 @@
-import type { UserRole } from '@template/contracts';
+import type { DesiredColor, ProfileImage, UserRole } from '@template/contracts';
 
 /** Backend-internal user entity. Includes the password hash; never exposed to transport layer. */
 export interface User {
@@ -6,6 +6,8 @@ export interface User {
   email: string;
   passwordHash: string;
   displayName: string;
+  profileImage: ProfileImage;
+  desiredColor: DesiredColor;
   role: UserRole;
   createdAt: Date;
   updatedAt: Date;
@@ -15,9 +17,13 @@ export interface CreateUserData {
   email: string;
   passwordHash: string;
   displayName: string;
+  profileImage: ProfileImage;
+  desiredColor: DesiredColor;
   role?: UserRole;
 }
 
 export interface UpdateUserData {
   displayName?: string;
+  profileImage?: ProfileImage;
+  desiredColor?: DesiredColor;
 }

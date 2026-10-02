@@ -8,6 +8,20 @@
       "when": 1785499374132,
       "tag": "0000_far_black_panther",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790939974280,
+      "tag": "0001_wandering_fixer",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790941371404,
+      "tag": "0002_stormy_wendell_rand",
+      "breakpoints": true
     }
   ]
 }
