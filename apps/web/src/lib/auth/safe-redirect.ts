@@ -3,7 +3,7 @@
  * Never allows redirecting to an arbitrary external URL.
  */
 export function sanitizeRedirectTarget(target: string | null | undefined): string {
-  const fallback = '/dashboard';
+  const fallback = '/settings';
   if (!target) return fallback;
   if (!target.startsWith('/') || target.startsWith('//')) return fallback;
   if (target.includes('://')) return fallback;

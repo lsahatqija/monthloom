@@ -12,13 +12,13 @@ export default async function RegisterPage() {
   const user = await getServerUser();
 
   if (user) {
-    redirect('/dashboard');
+    redirect('/settings');
   }
 
   return (
     <PageContainer>
       <h1>Create an account</h1>
-      <RegisterForm redirectTo="/dashboard" />
+      <RegisterForm redirectTo="/settings" />
       <p>
         Already have an account? <Link href="/login">Log in</Link>
       </p>
