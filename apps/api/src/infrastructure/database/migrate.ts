@@ -1,14 +1,14 @@
-import { migrate } from 'drizzle-orm/node-postgres/migrator';
-
 import { logger } from '../logging/logger.js';
 
-import { closeDatabaseConnection, db } from './client.js';
+import { closeDatabaseConnection } from './client.js';
+import { runDatabaseMigrations } from './migration-runner.js';
 
 async function run(): Promise<void> {
-  logger.info('Running database migrations...');
-  await migrate(db, { migrationsFolder: './src/infrastructure/database/migrations' });
-  logger.info('Database migrations completed.');
-  await closeDatabaseConnection();
+  try {
+    await runDatabaseMigrations();
+  } finally {
+    await closeDatabaseConnection();
+  }
 }
 
 run().catch((error) => {

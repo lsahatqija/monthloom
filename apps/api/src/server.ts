@@ -4,18 +4,18 @@ import { createApp } from './app.js';
 import { buildAppDependencies } from './composition.js';
 import { config } from './config/index.js';
 import { closeDatabaseConnection } from './infrastructure/database/client.js';
+import { runDatabaseMigrations } from './infrastructure/database/migration-runner.js';
 import { logger } from './infrastructure/logging/logger.js';
 
 /** Loads configuration, connects infrastructure, starts listening and handles shutdown. */
 async function start(): Promise<void> {
+  await runDatabaseMigrations();
+
   const deps = buildAppDependencies();
   const app = createApp(deps);
 
   const server: Server = app.listen(config.server.port, () => {
-    logger.info(
-      { port: config.server.port, environment: config.env },
-      'API server started',
-    );
+    logger.info({ port: config.server.port, environment: config.env }, 'API server started');
   });
 
   let isShuttingDown = false;
@@ -61,7 +61,14 @@ async function start(): Promise<void> {
   });
 }
 
-start().catch((error) => {
+start().catch(async (error) => {
   logger.error({ err: error }, 'Failed to start API server');
-  process.exitCode = 1;
+
+  try {
+    await closeDatabaseConnection();
+  } catch (closeError) {
+    logger.error({ err: closeError }, 'Error while closing database connection');
+  } finally {
+    process.exitCode = 1;
+  }
 });
