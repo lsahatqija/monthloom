@@ -1,0 +1,306 @@
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.householdDashboard,
+.dashboardState {
+  width: 100%;
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem) var(--space-4);
+}
+
+.dashboardHeading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.householdTitleRow {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.householdTitleRow h1 {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editNameButton {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ml-text-muted);
+  cursor: pointer;
+}
+
+.editNameButton:hover {
+  background: var(--ml-surface-hover);
+  color: var(--ml-text);
+}
+.editNameButton svg {
+  width: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+
+.householdNameForm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.householdNameInput {
+  min-width: min(22rem, 60vw);
+  min-height: 2.7rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--ml-primary);
+  border-radius: 10px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.nameAction {
+  min-height: 2.5rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--ml-border);
+  border-radius: 10px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nameAction:first-of-type {
+  border-color: var(--ml-primary);
+  background: var(--ml-primary);
+  color: var(--ml-on-primary);
+}
+.nameAction:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.nameError {
+  width: 100%;
+  color: var(--color-danger);
+  font-size: 0.82rem;
+}
+
+.monthPicker {
+  position: relative;
+  flex: 0 0 auto;
+}
+.monthPicker::after {
+  content: '';
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  pointer-events: none;
+  transform: translateY(-70%) rotate(45deg);
+}
+.monthPicker select {
+  min-height: 2.75rem;
+  padding: var(--space-2) 2.5rem var(--space-2) var(--space-3);
+  appearance: none;
+  border: 1px solid var(--ml-border);
+  border-radius: 999px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.financeRecap {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  overflow: hidden;
+  margin-bottom: var(--space-6);
+  border: 1px solid var(--ml-border);
+  border-radius: 18px;
+  background: var(--ml-surface);
+  box-shadow: 0 8px 28px var(--ml-shadow);
+}
+.financeRecap > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: clamp(1rem, 3vw, 1.5rem);
+}
+.financeRecap > div + div {
+  border-left: 1px solid var(--ml-divider);
+}
+.financeRecap span {
+  color: var(--ml-text-muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.financeRecap strong {
+  font-size: clamp(1.15rem, 3vw, 1.65rem);
+  font-variant-numeric: tabular-nums;
+}
+.incomeAmount {
+  color: var(--color-success);
+}
+.expenseAmount {
+  color: var(--color-danger);
+}
+.leftoverRecap {
+  background: color-mix(in srgb, var(--ml-accent-1) 45%, var(--ml-surface));
+}
+
+.transactionPanel {
+  overflow: hidden;
+  border: 1px solid var(--ml-border);
+  border-radius: 18px;
+  background: var(--ml-surface);
+  box-shadow: 0 8px 28px var(--ml-shadow);
+}
+.transactionPanelHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--ml-divider);
+}
+.transactionPanelHeading h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.transactionPanelHeading span {
+  color: var(--ml-text-muted);
+  font-size: 0.82rem;
+}
+.transactionScroll {
+  max-height: min(30rem, 52vh);
+  overflow: auto;
+}
+.transactionTable {
+  width: 100%;
+  min-width: 42rem;
+  border-collapse: collapse;
+}
+.transactionTable th {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--ml-surface);
+  color: var(--ml-text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+}
+.transactionTable td {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--ml-divider);
+  font-size: 0.9rem;
+}
+.transactionTable th:nth-child(2),
+.transactionTable td:nth-child(2) {
+  width: 3rem;
+  padding-inline: 0;
+}
+.transactionTable th:last-child,
+.transactionTable td:last-child {
+  text-align: right;
+}
+.transactionTable td:last-child {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.transactionTable tbody tr:hover {
+  background: color-mix(in srgb, var(--ml-accent-1) 18%, transparent);
+}
+.transactionIcon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 9px;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
+}
+.transactionIcon svg {
+  width: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+.transactionEmpty {
+  margin: 0;
+  padding: 4rem var(--space-6);
+  color: var(--ml-text-muted);
+  text-align: center;
+}
+.householdFooter {
+  min-height: 5rem;
+  margin-top: var(--space-6);
+  border-top: 1px solid var(--ml-divider);
+}
+
+@media (max-width: 620px) {
+  .householdDashboard {
+    padding-inline: var(--space-3);
+  }
+  .dashboardHeading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .householdTitleRow {
+    width: 100%;
+  }
+  .financeRecap {
+    grid-template-columns: 1fr 1fr;
+  }
+  .financeRecap > div {
+    padding: var(--space-4);
+  }
+  .financeRecap > div + div {
+    border-left: 1px solid var(--ml-divider);
+  }
+  .financeRecap .leftoverRecap {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--ml-divider);
+    border-left: 0;
+  }
+  .transactionPanelHeading {
+    padding-inline: var(--space-4);
+  }
+}

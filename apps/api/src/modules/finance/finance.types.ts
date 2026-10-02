@@ -7,6 +7,7 @@ export type ExpenseType = (typeof Constants.EXPENSE_TYPES)[number];
 
 export interface HouseholdRecord {
   id: string;
+  name: string;
   currency: string;
   createdAt: Date;
   updatedAt: Date;
@@ -15,6 +16,7 @@ export interface HouseholdRecord {
 export interface HouseholdMember {
   householdId: string;
   userId: string;
+  isPrimary: boolean;
   joinedAt: Date;
 }
 

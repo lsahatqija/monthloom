@@ -6,3 +6,4 @@ export * from './common/health.js';
 export * from './users/user.schemas.js';
 export * from './auth/auth.schemas.js';
 export * from './files/file.schemas.js';
+export * from './finance/household.schemas.js';

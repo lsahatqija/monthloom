@@ -7,6 +7,7 @@ import { QueryProvider } from '../providers/query-provider';
 import '../styles/globals.css';
 import '../components/ui/ui.css';
 import '../components/layout/layout.css';
+import '../features/finance/household-dashboard.css';
 
 export const metadata: Metadata = {
   title: {

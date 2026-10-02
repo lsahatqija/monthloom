@@ -18,7 +18,7 @@ export default async function RegisterPage() {
   return (
     <PageContainer>
       <h1>Create an account</h1>
-      <RegisterForm redirectTo="/settings" />
+      <RegisterForm redirectTo="/" />
       <p>
         Already have an account? <Link href="/login">Log in</Link>
       </p>

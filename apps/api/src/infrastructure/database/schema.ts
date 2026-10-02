@@ -87,6 +87,7 @@ export const households = pgTable(
   'households',
   {
     id: uuid('id').defaultRandom().primaryKey(),
+    name: varchar('name', { length: Constants.HOUSEHOLD_NAME_MAX_LENGTH }).notNull(),
     currency: char('currency', { length: 3 }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -108,11 +109,15 @@ export const householdMembers = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    isPrimary: boolean('is_primary').notNull().default(false),
     joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
     primaryKey: primaryKey({ columns: [table.householdId, table.userId] }),
     userIdIdx: index('household_members_user_id_idx').on(table.userId),
+    primaryHouseholdUniqueIdx: uniqueIndex('household_members_primary_user_unique_idx')
+      .on(table.userId)
+      .where(sql`${table.isPrimary}`),
   }),
 );
 

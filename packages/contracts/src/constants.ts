@@ -2,6 +2,8 @@
 export class Constants {
   static readonly DISPLAY_NAME_MIN_LENGTH = 1;
   static readonly DISPLAY_NAME_MAX_LENGTH = 120;
+  static readonly HOUSEHOLD_NAME_MIN_LENGTH = 1;
+  static readonly HOUSEHOLD_NAME_MAX_LENGTH = 160;
   static readonly EMAIL_MAX_LENGTH = 320;
   static readonly PASSWORD_MIN_LENGTH = 8;
   static readonly PASSWORD_MAX_LENGTH = 200;
