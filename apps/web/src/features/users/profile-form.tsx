@@ -10,6 +10,7 @@ import {
 import { useForm } from 'react-hook-form';
 
 import { ProfileAppearanceFields } from '../../components/profile-appearance-fields';
+import { ThemePicker } from '../../components/theme-picker';
 import { Alert, Button, FieldError, FormField, Input, Label } from '../../components/ui/index';
 import { isApiClientError } from '../../lib/api/errors';
 import { authKeys } from '../auth/auth.api';
@@ -79,6 +80,8 @@ export function ProfileForm({ user }: { user: PublicUser }) {
         profileImageError={errors.profileImage?.message}
         desiredColorError={errors.desiredColor?.message}
       />
+
+      <ThemePicker />
 
       <Button type="submit" disabled={isSubmitting || mutation.isPending}>
         {mutation.isPending ? 'Saving...' : 'Save changes'}

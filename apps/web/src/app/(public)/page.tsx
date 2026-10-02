@@ -5,8 +5,8 @@ export default function HomePage() {
     <PageContainer>
       <h1>Welcome</h1>
       <p>
-        This is the public home page of the fullstack TypeScript template. Register or log in to
-        access the protected dashboard.
+        Keep your shared monthly finances clear, calm, and in one place. Register or log in to get
+        started with Monthloom.
       </p>
     </PageContainer>
   );
