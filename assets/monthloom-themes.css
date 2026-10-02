@@ -1,0 +1,162 @@
+/* Monthloom: five themes, each with light and dark appearances.
+ * Default: Linen & Sage, light mode.
+ * Set attributes on <html>:
+ *   <html data-theme="sea-glass" data-mode="dark">
+ * Theme IDs: linen-sage | sea-glass | lavender-mist | apricot-cotton | blue-hour
+ * Mode IDs: light | dark
+ * This file defines color tokens only; it does not change component layout.
+ * Accent tokens are surface fills. Pair them with --ml-text.
+ * Pair --ml-primary with --ml-on-primary for buttons.
+ * Use the original wordmark in light mode and its negative variant in dark mode.
+ */
+
+/* Linen & Sage — light */
+:root,
+:root[data-theme="linen-sage"] {
+  color-scheme: light;
+  --ml-background: #F7F5EF;
+  --ml-surface: #FFFEFA;
+  --ml-accent-1: #C9DCCF;
+  --ml-accent-2: #F0D4BF;
+  --ml-accent-3: #DDD7E9;
+  --ml-primary: #35675B;
+  --ml-text: #293C36;
+}
+
+/* Linen & Sage — dark */
+:root[data-mode="dark"],
+:root[data-theme="linen-sage"][data-mode="dark"] {
+  color-scheme: dark;
+  --ml-background: #181E1B;
+  --ml-surface: #222B25;
+  --ml-accent-1: #354B3D;
+  --ml-accent-2: #574336;
+  --ml-accent-3: #464054;
+  --ml-primary: #A8CCB4;
+  --ml-text: #E8EEE7;
+}
+
+/* Sea Glass — light */
+:root[data-theme="sea-glass"] {
+  color-scheme: light;
+  --ml-background: #F1F7F6;
+  --ml-surface: #FCFEFD;
+  --ml-accent-1: #BFDED6;
+  --ml-accent-2: #CCDDEC;
+  --ml-accent-3: #F2D0C7;
+  --ml-primary: #286A68;
+  --ml-text: #263F43;
+}
+
+/* Sea Glass — dark */
+:root[data-theme="sea-glass"][data-mode="dark"] {
+  color-scheme: dark;
+  --ml-background: #141F22;
+  --ml-surface: #1D2D30;
+  --ml-accent-1: #2D4C46;
+  --ml-accent-2: #34485C;
+  --ml-accent-3: #563E3A;
+  --ml-primary: #9ACFC4;
+  --ml-text: #E2EFED;
+}
+
+/* Lavender Mist — light */
+:root[data-theme="lavender-mist"] {
+  color-scheme: light;
+  --ml-background: #F6F4FA;
+  --ml-surface: #FEFDFF;
+  --ml-accent-1: #D9D1EA;
+  --ml-accent-2: #C8DFD8;
+  --ml-accent-3: #EED4DC;
+  --ml-primary: #67558A;
+  --ml-text: #373247;
+}
+
+/* Lavender Mist — dark */
+:root[data-theme="lavender-mist"][data-mode="dark"] {
+  color-scheme: dark;
+  --ml-background: #1D1A25;
+  --ml-surface: #2A2534;
+  --ml-accent-1: #453A59;
+  --ml-accent-2: #314A43;
+  --ml-accent-3: #513B47;
+  --ml-primary: #C5B1E4;
+  --ml-text: #EEE8F5;
+}
+
+/* Apricot Cotton — light */
+:root[data-theme="apricot-cotton"] {
+  color-scheme: light;
+  --ml-background: #FBF5EF;
+  --ml-surface: #FFFCF8;
+  --ml-accent-1: #F1CEB5;
+  --ml-accent-2: #EADCA9;
+  --ml-accent-3: #C9DCD8;
+  --ml-primary: #8A5542;
+  --ml-text: #453931;
+}
+
+/* Apricot Cotton — dark */
+:root[data-theme="apricot-cotton"][data-mode="dark"] {
+  color-scheme: dark;
+  --ml-background: #241C18;
+  --ml-surface: #322721;
+  --ml-accent-1: #5A4030;
+  --ml-accent-2: #50472D;
+  --ml-accent-3: #324B46;
+  --ml-primary: #E5B393;
+  --ml-text: #F3E8DF;
+}
+
+/* Blue Hour — light */
+:root[data-theme="blue-hour"] {
+  color-scheme: light;
+  --ml-background: #F3F6FA;
+  --ml-surface: #FDFEFF;
+  --ml-accent-1: #C9D9EC;
+  --ml-accent-2: #D9D4E8;
+  --ml-accent-3: #EEDCC3;
+  --ml-primary: #45658B;
+  --ml-text: #2D394A;
+}
+
+/* Blue Hour — dark */
+:root[data-theme="blue-hour"][data-mode="dark"] {
+  color-scheme: dark;
+  --ml-background: #18202C;
+  --ml-surface: #222D3D;
+  --ml-accent-1: #344962;
+  --ml-accent-2: #443D57;
+  --ml-accent-3: #514635;
+  --ml-primary: #ABC5E8;
+  --ml-text: #E7EDF6;
+}
+
+/* Shared semantic tokens. Use these consistently across components.
+ * The derived colors follow the active palette automatically.
+ */
+:root {
+  --ml-on-primary: var(--ml-surface);
+  --ml-surface-text: var(--ml-text);
+  --ml-accent-text: var(--ml-text);
+  --ml-text-muted: color-mix(in srgb, var(--ml-text) 78%, var(--ml-surface));
+  --ml-border: color-mix(in srgb, var(--ml-text) 20%, var(--ml-surface));
+  --ml-divider: color-mix(in srgb, var(--ml-text) 9%, var(--ml-surface));
+  --ml-surface-hover: color-mix(in srgb, var(--ml-accent-1) 35%, var(--ml-surface));
+  --ml-primary-hover: color-mix(in srgb, var(--ml-primary) 90%, var(--ml-text));
+  --ml-primary-active: color-mix(in srgb, var(--ml-primary) 80%, var(--ml-text));
+  --ml-focus-ring: var(--ml-primary);
+  --ml-disabled-background: color-mix(in srgb, var(--ml-text) 12%, var(--ml-surface));
+  --ml-disabled-text: var(--ml-text-muted);
+  --ml-shadow: color-mix(in srgb, var(--ml-text) 12%, transparent);
+  --ml-backdrop: rgb(0 0 0 / 45%);
+}
+
+/* Usage examples (apply in your component stylesheet):
+ * body { background: var(--ml-background); color: var(--ml-text); }
+ * .panel { background: var(--ml-surface); border: 1px solid var(--ml-border); }
+ * .button-primary { background: var(--ml-primary); color: var(--ml-on-primary); }
+ * .button-primary:hover { background: var(--ml-primary-hover); }
+ * .button-primary:focus-visible { outline: 2px solid var(--ml-focus-ring); outline-offset: 3px; }
+ * .badge { background: var(--ml-accent-2); color: var(--ml-accent-text); }
+ */

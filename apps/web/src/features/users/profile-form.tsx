@@ -22,6 +22,7 @@ export function ProfileForm({ user }: { user: PublicUser }) {
   const {
     register,
     watch,
+    setValue,
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
@@ -69,8 +70,12 @@ export function ProfileForm({ user }: { user: PublicUser }) {
       <ProfileAppearanceFields
         profileImage={profileImage}
         desiredColor={desiredColor}
-        profileImageRegistration={register('profileImage')}
-        desiredColorRegistration={register('desiredColor')}
+        onProfileImageChange={(value) =>
+          setValue('profileImage', value, { shouldDirty: true, shouldValidate: true })
+        }
+        onDesiredColorChange={(value) =>
+          setValue('desiredColor', value, { shouldDirty: true, shouldValidate: true })
+        }
         profileImageError={errors.profileImage?.message}
         desiredColorError={errors.desiredColor?.message}
       />

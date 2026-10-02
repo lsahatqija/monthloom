@@ -48,15 +48,191 @@
   outline-offset: 1px;
 }
 
-.profileAppearancePreview {
+.appearancePicker {
+  position: relative;
+}
+
+.profileImagePicker {
+  width: min(100%, 22rem);
+  margin: 0 auto;
+}
+
+.profileImagePickerTrigger {
+  position: relative;
+  display: block;
+  width: 6rem;
+  height: 6rem;
+  margin: 0 auto;
+  padding: 0;
+  border-radius: var(--profile-image-shape-radius);
+  cursor: pointer;
+  list-style: none;
+}
+
+.profileImagePickerTrigger::-webkit-details-marker {
+  display: none;
+}
+
+.profileImagePickerTrigger::after {
+  content: '';
+  position: absolute;
+  right: -0.2rem;
+  bottom: -0.2rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+}
+
+.profileImagePickerTrigger::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  right: 0.35rem;
+  bottom: 0.45rem;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(45deg);
+}
+
+.profileImagePicker[open] .profileImagePickerTrigger::before {
+  bottom: 0.3rem;
+  transform: rotate(225deg);
+}
+
+.appearancePickerTrigger {
   display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 3.5rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.95rem;
+  list-style: none;
+}
+
+.appearancePickerTrigger::-webkit-details-marker {
+  display: none;
+}
+
+.appearancePickerTrigger::after {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-0.15rem);
+}
+
+.appearancePicker[open] .appearancePickerTrigger::after {
+  transform: rotate(225deg) translate(-0.15rem, -0.15rem);
+}
+
+.appearancePickerGrid {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  left: 0;
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.patternPickerGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.colorPickerGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.appearancePickerOption {
+  position: relative;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  margin-bottom: var(--space-4);
+  min-width: 0;
+  min-height: 4.5rem;
+  padding: var(--space-2);
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  background: var(--color-bg-muted);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.appearancePickerOption:hover,
+.appearancePickerOption:focus-visible {
+  border-color: var(--color-primary);
+}
+
+.appearancePickerOption[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+.appearancePickerOption::after {
+  content: attr(data-label);
+  position: absolute;
+  z-index: 1;
+  bottom: calc(100% + var(--space-2));
+  left: 50%;
+  width: max-content;
+  max-width: 10rem;
+  padding: var(--space-1) var(--space-2);
+  border-radius: calc(var(--radius) / 2);
+  background: var(--color-text);
+  color: var(--color-surface);
+  font-size: 0.75rem;
+  line-height: 1.25;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, var(--space-1));
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.appearancePickerOption:hover::after,
+.appearancePickerOption:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.colorSwatch {
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  border: 1px solid rgb(0 0 0 / 20%);
+  border-radius: 50%;
+}
+
+.colorSwatchLarge {
+  width: 3rem;
+  height: 3rem;
 }
 
 .profileImage {
   display: inline-block;
   flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: var(--profile-image-shape-radius);
   mask-position: center;
   mask-repeat: no-repeat;
   mask-size: contain;
