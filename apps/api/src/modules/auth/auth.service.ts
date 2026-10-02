@@ -4,6 +4,7 @@ import { config } from '../../config/index.js';
 import { hashPassword, verifyPassword } from '../../infrastructure/security/password.js';
 import { generateSessionToken, hashSessionToken } from '../../infrastructure/security/tokens.js';
 import { AuthenticationError, ConflictError } from '../../shared/errors/index.js';
+import type { FinanceService } from '../finance/finance.service.js';
 import type { UserRepository } from '../users/user.repository.js';
 import { toPublicUser } from '../users/user.service.js';
 
@@ -22,6 +23,7 @@ export class AuthService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly sessionRepository: SessionRepository,
+    private readonly financeService: FinanceService,
   ) {}
 
   async register(input: RegisterRequest): Promise<AuthResult> {
@@ -40,6 +42,8 @@ export class AuthService {
       profileImage: input.profileImage,
       desiredColor: input.desiredColor,
     });
+
+    await this.financeService.createDefaultHousehold(user.id, user.displayName);
 
     const sessionToken = await this.createSession(user.id);
     return { user: toPublicUser(user), sessionToken };

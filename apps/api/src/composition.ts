@@ -10,6 +10,9 @@ import { AuthService } from './modules/auth/auth.service.js';
 import { PostgresFileRepository } from './modules/files/adapters/postgres-file.repository.js';
 import { FileController } from './modules/files/file.controller.js';
 import { FileService } from './modules/files/file.service.js';
+import { PostgresFinanceRepository } from './modules/finance/adapters/postgres-finance.repository.js';
+import { FinanceController } from './modules/finance/finance.controller.js';
+import { FinanceService } from './modules/finance/finance.service.js';
 import { SystemController } from './modules/system/system.controller.js';
 import { SystemService } from './modules/system/system.service.js';
 import { PostgresUserRepository } from './modules/users/adapters/postgres-user.repository.js';
@@ -24,10 +27,12 @@ export function buildAppDependencies() {
   const userRepository = new PostgresUserRepository(db);
   const sessionRepository = new PostgresSessionRepository(db);
   const fileRepository = new PostgresFileRepository(db);
+  const financeRepository = new PostgresFinanceRepository(db);
   const fileStorage = new LocalFileStorage(path.resolve(config.upload.directory));
 
   const userService = new UserService(userRepository);
-  const authService = new AuthService(userRepository, sessionRepository);
+  const financeService = new FinanceService(financeRepository, userRepository);
+  const authService = new AuthService(userRepository, sessionRepository, financeService);
   const fileService = new FileService(fileRepository, fileStorage);
   const systemService = new SystemService();
 
@@ -36,10 +41,17 @@ export function buildAppDependencies() {
   const userController = new UserController(userService);
   const authController = new AuthController(authService);
   const fileController = new FileController(fileService);
+  const financeController = new FinanceController(financeService);
   const systemController = new SystemController(systemService);
 
   return {
-    controllers: { userController, authController, fileController, systemController },
+    controllers: {
+      userController,
+      authController,
+      fileController,
+      financeController,
+      systemController,
+    },
     middleware: { requireAuth, optionalAuth, requireRole },
   };
 }

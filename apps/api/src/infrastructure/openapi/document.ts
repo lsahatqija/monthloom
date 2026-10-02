@@ -8,12 +8,16 @@ import {
   authResponseSchema,
   fileListResponseSchema,
   fileMetadataSchema,
+  householdMonthQuerySchema,
+  householdMonthResponseSchema,
+  householdResponseSchema,
   livenessResponseSchema,
   loginRequestSchema,
   meResponseSchema,
   publicUserSchema,
   readinessResponseSchema,
   registerRequestSchema,
+  updateHouseholdRequestSchema,
 } from '@template/contracts';
 import { z } from 'zod';
 
@@ -39,7 +43,53 @@ registry.registerPath({
   path: '/health/live',
   summary: 'Liveness probe',
   tags: ['System'],
-  responses: { 200: { description: 'The process is running.', content: { 'application/json': { schema: livenessResponseSchema } } } },
+  responses: {
+    200: {
+      description: 'The process is running.',
+      content: { 'application/json': { schema: livenessResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/households/primary/month',
+  summary: 'Get the primary household dashboard for a month',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: { query: householdMonthQuerySchema },
+  responses: {
+    200: {
+      description: 'Primary household monthly summary and transactions.',
+      content: { 'application/json': { schema: householdMonthResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/households/{id}',
+  summary: 'Update a household',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: { content: { 'application/json': { schema: updateHouseholdRequestSchema } } },
+  },
+  responses: {
+    200: {
+      description: 'Household updated.',
+      content: { 'application/json': { schema: householdResponseSchema } },
+    },
+    403: {
+      description: 'Not a household member.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
+  },
 });
 
 registry.registerPath({
@@ -48,8 +98,14 @@ registry.registerPath({
   summary: 'Readiness probe',
   tags: ['System'],
   responses: {
-    200: { description: 'Required infrastructure is available.', content: { 'application/json': { schema: readinessResponseSchema } } },
-    503: { description: 'Required infrastructure is unavailable.', content: { 'application/json': { schema: readinessResponseSchema } } },
+    200: {
+      description: 'Required infrastructure is available.',
+      content: { 'application/json': { schema: readinessResponseSchema } },
+    },
+    503: {
+      description: 'Required infrastructure is unavailable.',
+      content: { 'application/json': { schema: readinessResponseSchema } },
+    },
   },
 });
 
@@ -60,8 +116,14 @@ registry.registerPath({
   tags: ['Auth'],
   request: { body: { content: { 'application/json': { schema: registerRequestSchema } } } },
   responses: {
-    201: { description: 'Account created.', content: { 'application/json': { schema: AuthResponse } } },
-    409: { description: 'Email already registered.', content: { 'application/json': { schema: ErrorResponse } } },
+    201: {
+      description: 'Account created.',
+      content: { 'application/json': { schema: AuthResponse } },
+    },
+    409: {
+      description: 'Email already registered.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
   },
 });
 
@@ -72,8 +134,14 @@ registry.registerPath({
   tags: ['Auth'],
   request: { body: { content: { 'application/json': { schema: loginRequestSchema } } } },
   responses: {
-    200: { description: 'Authenticated.', content: { 'application/json': { schema: AuthResponse } } },
-    401: { description: 'Invalid credentials.', content: { 'application/json': { schema: ErrorResponse } } },
+    200: {
+      description: 'Authenticated.',
+      content: { 'application/json': { schema: AuthResponse } },
+    },
+    401: {
+      description: 'Invalid credentials.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
   },
 });
 
@@ -92,7 +160,12 @@ registry.registerPath({
   summary: 'Get the current session user, if any',
   tags: ['Auth'],
   security: [{ [bearerCookieSecurity.name]: [] }],
-  responses: { 200: { description: 'Current user or null.', content: { 'application/json': { schema: MeResponse } } } },
+  responses: {
+    200: {
+      description: 'Current user or null.',
+      content: { 'application/json': { schema: MeResponse } },
+    },
+  },
 });
 
 registry.registerPath({
@@ -102,8 +175,14 @@ registry.registerPath({
   tags: ['Users'],
   security: [{ [bearerCookieSecurity.name]: [] }],
   responses: {
-    200: { description: 'Current user profile.', content: { 'application/json': { schema: z.object({ user: PublicUser }) } } },
-    401: { description: 'Authentication required.', content: { 'application/json': { schema: ErrorResponse } } },
+    200: {
+      description: 'Current user profile.',
+      content: { 'application/json': { schema: z.object({ user: PublicUser }) } },
+    },
+    401: {
+      description: 'Authentication required.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
   },
 });
 
@@ -113,10 +192,24 @@ registry.registerPath({
   summary: 'Upload a file',
   tags: ['Files'],
   security: [{ [bearerCookieSecurity.name]: [] }],
-  request: { body: { content: { 'multipart/form-data': { schema: z.object({ file: z.string().openapi({ type: 'string', format: 'binary' }) }) } } } },
+  request: {
+    body: {
+      content: {
+        'multipart/form-data': {
+          schema: z.object({ file: z.string().openapi({ type: 'string', format: 'binary' }) }),
+        },
+      },
+    },
+  },
   responses: {
-    201: { description: 'File uploaded.', content: { 'application/json': { schema: z.object({ file: FileMetadata }) } } },
-    400: { description: 'Invalid file.', content: { 'application/json': { schema: ErrorResponse } } },
+    201: {
+      description: 'File uploaded.',
+      content: { 'application/json': { schema: z.object({ file: FileMetadata }) } },
+    },
+    400: {
+      description: 'Invalid file.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
   },
 });
 
@@ -126,7 +219,12 @@ registry.registerPath({
   summary: 'List the authenticated user files',
   tags: ['Files'],
   security: [{ [bearerCookieSecurity.name]: [] }],
-  responses: { 200: { description: 'Owned files.', content: { 'application/json': { schema: FileListResponse } } } },
+  responses: {
+    200: {
+      description: 'Owned files.',
+      content: { 'application/json': { schema: FileListResponse } },
+    },
+  },
 });
 
 registry.registerPath({
@@ -138,7 +236,10 @@ registry.registerPath({
   request: { params: z.object({ id: z.string().uuid() }) },
   responses: {
     200: { description: 'File content.' },
-    404: { description: 'File not found.', content: { 'application/json': { schema: ErrorResponse } } },
+    404: {
+      description: 'File not found.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
   },
 });
 

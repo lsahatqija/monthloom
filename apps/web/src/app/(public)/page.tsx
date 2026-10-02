@@ -1,6 +1,12 @@
 import { PageContainer } from '../../components/ui/index';
+import { HouseholdDashboard } from '../../features/finance/household-dashboard';
+import { getServerUser } from '../../lib/auth/get-server-user';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const user = await getServerUser();
+
+  if (user) return <HouseholdDashboard />;
+
   return (
     <PageContainer>
       <h1>Welcome</h1>
