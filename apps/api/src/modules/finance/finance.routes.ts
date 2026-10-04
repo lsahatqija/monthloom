@@ -11,6 +11,7 @@ export function createFinanceRouter(
   const router = Router();
   router.use(requireAuth);
   router.get('/primary/month', asyncHandler(financeController.getPrimaryMonth));
+  router.post('/:id/transactions', asyncHandler(financeController.createTransaction));
   router.patch('/:id', asyncHandler(financeController.updateHousehold));
   return router;
 }

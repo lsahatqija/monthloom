@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 
 import {
+  createHouseholdTransactionRequestSchema,
   householdIdParamsSchema,
   householdMonthQuerySchema,
   updateHouseholdRequestSchema,
@@ -21,5 +22,12 @@ export class FinanceController {
     const input = updateHouseholdRequestSchema.parse(req.body);
     const household = await this.financeService.updateHousehold(id, req.authUser!.id, input);
     res.status(200).json({ household });
+  };
+
+  createTransaction = async (req: Request, res: Response): Promise<void> => {
+    const { id } = householdIdParamsSchema.parse(req.params);
+    const input = createHouseholdTransactionRequestSchema.parse(req.body);
+    const transaction = await this.financeService.createTransaction(id, req.authUser!.id, input);
+    res.status(201).json({ transaction });
   };
 }

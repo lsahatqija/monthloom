@@ -8,6 +8,8 @@ import { Alert, LoadingIndicator } from '../../components/ui/index';
 import { isApiClientError } from '../../lib/api/errors';
 
 import { financeKeys, getPrimaryHouseholdMonth, updateHousehold } from './finance.api';
+import { FinancialIcon, financialIconLabel } from './financial-icon';
+import { TransactionForm } from './transaction-form';
 
 function monthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -24,15 +26,13 @@ function monthOptions(): Array<{ value: string; label: string }> {
 
 function EntryIcon({ entry }: { entry: HouseholdTransaction }) {
   return (
-    <span className="transactionIcon" style={{ backgroundColor: entry.color }} title={entry.icon}>
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        {entry.kind === 'income' ? (
-          <path d="M12 19V5m0 0-5 5m5-5 5 5M5 20h14" />
-        ) : (
-          <path d="M12 5v14m0 0-5-5m5 5 5-5M5 4h14" />
-        )}
-      </svg>
-      <span className="srOnly">{entry.icon}</span>
+    <span
+      className="transactionIcon"
+      style={{ backgroundColor: entry.color }}
+      title={financialIconLabel(entry.icon)}
+    >
+      <FinancialIcon name={entry.icon} size={18} />
+      <span className="srOnly">{financialIconLabel(entry.icon)}</span>
     </span>
   );
 }
@@ -111,6 +111,7 @@ function HouseholdName({ id, name }: { id: string; name: string }) {
 export function HouseholdDashboard() {
   const months = useMemo(monthOptions, []);
   const [month, setMonth] = useState(months[0]!.value);
+  const [addingTransaction, setAddingTransaction] = useState(false);
   const query = useQuery({
     queryKey: financeKeys.primaryMonth(month),
     queryFn: () => getPrimaryHouseholdMonth(month),
@@ -172,7 +173,17 @@ export function HouseholdDashboard() {
       <div className="transactionPanel">
         <div className="transactionPanelHeading">
           <h2>Activity</h2>
-          <span>{transactions.length} entries</span>
+          <div className="transactionPanelActions">
+            <span>{transactions.length} entries</span>
+            <button
+              type="button"
+              className="addTransactionButton"
+              aria-label="Add transaction"
+              onClick={() => setAddingTransaction(true)}
+            >
+              <span aria-hidden="true">+</span>
+            </button>
+          </div>
         </div>
         <div className="transactionScroll">
           {transactions.length ? (
@@ -214,6 +225,15 @@ export function HouseholdDashboard() {
       </div>
 
       <footer className="householdFooter" aria-label="Household footer" />
+      {addingTransaction ? (
+        <TransactionForm
+          householdId={household.id}
+          month={month}
+          members={query.data.members}
+          sources={query.data.sources}
+          onClose={() => setAddingTransaction(false)}
+        />
+      ) : null}
     </section>
   );
 }

@@ -6,11 +6,13 @@ import {
 import {
   apiErrorResponseSchema,
   authResponseSchema,
+  createHouseholdTransactionRequestSchema,
   fileListResponseSchema,
   fileMetadataSchema,
   householdMonthQuerySchema,
   householdMonthResponseSchema,
   householdResponseSchema,
+  householdTransactionResponseSchema,
   livenessResponseSchema,
   loginRequestSchema,
   meResponseSchema,
@@ -65,6 +67,28 @@ registry.registerPath({
     },
     401: {
       description: 'Authentication required.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/households/{id}/transactions',
+  summary: 'Create a household transaction',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: { content: { 'application/json': { schema: createHouseholdTransactionRequestSchema } } },
+  },
+  responses: {
+    201: {
+      description: 'Transaction created.',
+      content: { 'application/json': { schema: householdTransactionResponseSchema } },
+    },
+    403: {
+      description: 'Not a household member.',
       content: { 'application/json': { schema: ErrorResponse } },
     },
   },

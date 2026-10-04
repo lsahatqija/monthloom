@@ -1,4 +1,8 @@
-import type { HouseholdMonthResponse, HouseholdTransaction } from '@template/contracts';
+import type {
+  CreateHouseholdTransactionRequest,
+  HouseholdMonthResponse,
+  HouseholdTransaction,
+} from '@template/contracts';
 import { and, asc, eq, gte, lt } from 'drizzle-orm';
 
 import type { Database } from '../../../infrastructure/database/client.js';
@@ -71,6 +75,8 @@ export class PostgresFinanceRepository implements FinanceRepository {
       icon: incomes.icon,
       color: incomes.color,
       amount: incomes.amount,
+      recurring: incomes.recurring,
+      expiresOn: incomes.expiresOn,
       userId: users.id,
       userDisplayName: users.displayName,
       userProfileImage: users.profileImage,
@@ -96,6 +102,8 @@ export class PostgresFinanceRepository implements FinanceRepository {
         icon: expenses.icon,
         color: expenses.color,
         amount: expenses.amount,
+        recurring: expenses.recurring,
+        expiresOn: expenses.expiresOn,
       })
       .from(expenses)
       .innerJoin(users, eq(expenses.userId, users.id))
@@ -118,6 +126,8 @@ export class PostgresFinanceRepository implements FinanceRepository {
       icon: row.icon,
       color: row.color,
       amount: row.amount,
+      recurring: row.recurring,
+      expiresOn: row.expiresOn,
       user: {
         id: row.userId,
         displayName: row.userDisplayName,
@@ -131,6 +141,92 @@ export class PostgresFinanceRepository implements FinanceRepository {
       ...incomeRows.map((row) => mapRow(row, 'income')),
       ...expenseRows.map((row) => mapRow(row, 'expense')),
     ].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+  }
+
+  async getMembers(householdId: string): Promise<HouseholdMonthResponse['members']> {
+    return this.db
+      .select({
+        id: users.id,
+        displayName: users.displayName,
+        profileImage: users.profileImage,
+        desiredColor: users.desiredColor,
+      })
+      .from(householdMembers)
+      .innerJoin(users, eq(householdMembers.userId, users.id))
+      .where(eq(householdMembers.householdId, householdId))
+      .orderBy(asc(users.displayName), asc(users.id));
+  }
+
+  async getSources(householdId: string): Promise<HouseholdMonthResponse['sources']> {
+    return this.db
+      .select({ id: sources.id, displayName: sources.displayName })
+      .from(sources)
+      .where(eq(sources.householdId, householdId))
+      .orderBy(asc(sources.displayName), asc(sources.id));
+  }
+
+  async createTransaction(
+    householdId: string,
+    input: CreateHouseholdTransactionRequest,
+  ): Promise<HouseholdTransaction> {
+    return this.db.transaction(async (transaction) => {
+      const nameKey = input.source.trim().toLocaleLowerCase('en-US');
+      const [source] = await transaction
+        .insert(sources)
+        .values({ householdId, displayName: input.source, nameKey })
+        .onConflictDoUpdate({
+          target: [sources.householdId, sources.nameKey],
+          set: { displayName: input.source, updatedAt: new Date() },
+        })
+        .returning({ id: sources.id, displayName: sources.displayName });
+
+      if (!source) throw new Error('Failed to resolve transaction source.');
+
+      const values = {
+        householdId,
+        sourceId: source.id,
+        userId: input.userId,
+        icon: input.icon,
+        color: input.color,
+        amount: input.amount,
+        date: input.date,
+        recurring: input.recurring,
+        expiresOn: input.recurring ? input.expiresOn : null,
+      };
+      const [record] =
+        input.kind === 'income'
+          ? await transaction.insert(incomes).values(values).returning()
+          : await transaction
+              .insert(expenses)
+              .values({ ...values, type: 'other' })
+              .returning();
+      if (!record) throw new Error('Failed to create transaction.');
+
+      const [user] = await transaction
+        .select({
+          id: users.id,
+          displayName: users.displayName,
+          profileImage: users.profileImage,
+          desiredColor: users.desiredColor,
+        })
+        .from(users)
+        .where(eq(users.id, input.userId))
+        .limit(1);
+      if (!user) throw new Error('Failed to load transaction user.');
+
+      return {
+        id: record.id,
+        kind: input.kind,
+        date: record.date,
+        icon: record.icon,
+        color: record.color,
+        amount: record.amount,
+        recurring: record.recurring,
+        expiresOn: record.expiresOn,
+        user,
+        source,
+      };
+    });
   }
 
   async isMember(householdId: string, userId: string): Promise<boolean> {

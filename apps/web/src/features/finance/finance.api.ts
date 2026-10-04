@@ -1,6 +1,8 @@
 import type {
+  CreateHouseholdTransactionRequest,
   HouseholdDto,
   HouseholdMonthResponse,
+  HouseholdTransaction,
   UpdateHouseholdRequest,
 } from '@template/contracts';
 
@@ -28,5 +30,17 @@ export async function updateHousehold(
     input,
   );
   if (!data) throw new Error('Unexpected empty household response.');
+  return data;
+}
+
+export async function createHouseholdTransaction(
+  householdId: string,
+  input: CreateHouseholdTransactionRequest,
+): Promise<{ transaction: HouseholdTransaction }> {
+  const data = await apiClient.post<{ transaction: HouseholdTransaction }>(
+    `households/${householdId}/transactions`,
+    input,
+  );
+  if (!data) throw new Error('Unexpected empty transaction response.');
   return data;
 }

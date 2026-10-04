@@ -50,6 +50,13 @@
       "when": 1790951776177,
       "tag": "0006_common_queen_noir",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791096461917,
+      "tag": "0007_panoramic_polaris",
+      "breakpoints": true
     }
   ]
 }

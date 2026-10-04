@@ -1,4 +1,8 @@
-import type { HouseholdMonthResponse, UpdateHouseholdRequest } from '@template/contracts';
+import type {
+  CreateHouseholdTransactionRequest,
+  HouseholdMonthResponse,
+  UpdateHouseholdRequest,
+} from '@template/contracts';
 
 import { AuthorizationError, NotFoundError } from '../../shared/errors/index.js';
 import type { UserRepository } from '../users/user.repository.js';
@@ -43,7 +47,15 @@ export class FinanceService {
       household = await this.financeRepository.createDefaultHousehold(userId, user.displayName);
     }
 
-    const transactions = await this.financeRepository.getMonth(household.id, month);
+    const [transactions, members, sources] = await Promise.all([
+      this.financeRepository.getMonth(household.id, month),
+      this.financeRepository.getMembers(household.id),
+      this.financeRepository.getSources(household.id),
+    ]);
+    const currentMember = members.find((member) => member.id === userId);
+    const orderedMembers = currentMember
+      ? [currentMember, ...members.filter((member) => member.id !== userId)]
+      : members;
     const income = transactions
       .filter((entry) => entry.kind === 'income')
       .reduce((sum, entry) => sum + toCents(entry.amount), 0);
@@ -59,8 +71,24 @@ export class FinanceService {
         expenses: fromCents(expenses),
         leftover: fromCents(income - expenses),
       },
+      members: orderedMembers,
+      sources,
       transactions,
     };
+  }
+
+  async createTransaction(
+    householdId: string,
+    requestingUserId: string,
+    input: CreateHouseholdTransactionRequest,
+  ) {
+    if (!(await this.financeRepository.isMember(householdId, requestingUserId))) {
+      throw new AuthorizationError('You are not a member of this household.');
+    }
+    if (!(await this.financeRepository.isMember(householdId, input.userId))) {
+      throw new AuthorizationError('The selected user is not a member of this household.');
+    }
+    return this.financeRepository.createTransaction(householdId, input);
   }
 
   async updateHousehold(householdId: string, userId: string, input: UpdateHouseholdRequest) {
