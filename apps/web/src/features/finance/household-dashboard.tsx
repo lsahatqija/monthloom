@@ -84,12 +84,24 @@ function monthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-function monthOptions(): Array<{ value: string; label: string }> {
+function monthOptions(): Array<{
+  value: string;
+  label: string;
+  isCurrent: boolean;
+  isFuture: boolean;
+}> {
   const formatter = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
   const today = new Date();
-  return Array.from({ length: 13 }, (_, index) => {
-    const date = new Date(today.getFullYear(), today.getMonth() - index, 1);
-    return { value: monthKey(date), label: formatter.format(date) };
+  const offsets = Array.from({ length: 25 }, (_, index) => index - 12);
+  return offsets.map((offset) => {
+    const date = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+    const isCurrent = offset === 0;
+    return {
+      value: monthKey(date),
+      label: `${formatter.format(date)}${isCurrent ? ' (current)' : ''}`,
+      isCurrent,
+      isFuture: offset > 0,
+    };
   });
 }
 
@@ -271,7 +283,7 @@ function RemoveTransactionDialog({
 
 export function HouseholdDashboard() {
   const months = useMemo(monthOptions, []);
-  const [month, setMonth] = useState(months[0]!.value);
+  const [month, setMonth] = useState(months.find((option) => option.isCurrent)!.value);
   const [addingTransaction, setAddingTransaction] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<HouseholdTransaction | null>(null);
   const [transactionToRemove, setTransactionToRemove] = useState<HouseholdTransaction | null>(null);
@@ -371,7 +383,11 @@ export function HouseholdDashboard() {
           <span className="srOnly">Month</span>
           <select value={month} onChange={(event) => setMonth(event.target.value)}>
             {months.map((option) => (
-              <option key={option.value} value={option.value}>
+              <option
+                key={option.value}
+                value={option.value}
+                className={option.isFuture ? 'futureMonthOption' : undefined}
+              >
                 {option.label}
               </option>
             ))}
@@ -555,7 +571,10 @@ export function HouseholdDashboard() {
               </thead>
               <tbody>
                 {sortedTransactions.map((entry) => (
-                  <tr key={`${entry.kind}-${entry.id}`}>
+                  <tr
+                    key={`${entry.kind}-${entry.id}`}
+                    className={entry.projected ? 'projectedTransaction' : undefined}
+                  >
                     <td>
                       <time dateTime={entry.date}>
                         {date.format(new Date(`${entry.date}T12:00:00`))}
@@ -574,24 +593,31 @@ export function HouseholdDashboard() {
                         <span>{entry.user.displayName}</span>
                       </span>
                     </td>
-                    <td>{entry.source.displayName}</td>
+                    <td>
+                      {entry.projected ? <span className="srOnly">Projected: </span> : null}
+                      {entry.source.displayName}
+                    </td>
                     <td>{transactionTypeLabel(entry)}</td>
                     <td className={entry.kind === 'income' ? 'incomeAmount' : 'expenseAmount'}>
                       {entry.kind === 'income' ? '+' : '−'}
                       {money.format(Number(entry.amount))}
                     </td>
                     <td>
-                      <details className="transactionMenu">
-                        <summary aria-label={`Actions for ${entry.source.displayName}`}>⋯</summary>
-                        <div className="transactionMenuPopover">
-                          <button type="button" onClick={() => setTransactionToEdit(entry)}>
-                            Edit
-                          </button>
-                          <button type="button" onClick={() => setTransactionToRemove(entry)}>
-                            Remove
-                          </button>
-                        </div>
-                      </details>
+                      {entry.projected ? null : (
+                        <details className="transactionMenu">
+                          <summary aria-label={`Actions for ${entry.source.displayName}`}>
+                            ⋯
+                          </summary>
+                          <div className="transactionMenuPopover">
+                            <button type="button" onClick={() => setTransactionToEdit(entry)}>
+                              Edit
+                            </button>
+                            <button type="button" onClick={() => setTransactionToRemove(entry)}>
+                              Remove
+                            </button>
+                          </div>
+                        </details>
+                      )}
                     </td>
                   </tr>
                 ))}

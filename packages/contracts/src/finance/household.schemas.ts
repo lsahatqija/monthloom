@@ -47,6 +47,7 @@ export const householdTransactionSchema = z.object({
   amount: z.string(),
   recurring: z.boolean(),
   expiresOn: calendarDateSchema.nullable(),
+  projected: z.boolean(),
   user: publicUserSchema.pick({
     id: true,
     displayName: true,

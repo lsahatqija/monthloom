@@ -140,6 +140,9 @@
   font-weight: 650;
   cursor: pointer;
 }
+.monthPicker option.futureMonthOption {
+  font-style: italic;
+}
 
 .financeRecap {
   display: grid;
@@ -983,6 +986,9 @@
 }
 .transactionTable tbody tr:hover {
   background: color-mix(in srgb, var(--ml-accent-1) 18%, transparent);
+}
+.transactionTable tbody tr.projectedTransaction {
+  font-style: italic;
 }
 .transactionUser {
   display: inline-flex;

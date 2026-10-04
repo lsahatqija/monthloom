@@ -44,6 +44,18 @@ function alignOccurrenceDate(existingDate: string, editedDate: string): string {
   return `${existingDate.slice(0, 8)}${String(Math.min(requestedDay, lastDay)).padStart(2, '0')}`;
 }
 
+function currentMonth(): string {
+  return new Date().toISOString().slice(0, 7);
+}
+
+function averageAmounts(amounts: string[]): string {
+  const totalCents = amounts.reduce((total, amount) => {
+    const [whole, fraction = ''] = amount.split('.');
+    return total + Number(whole) * 100 + Number(fraction.padEnd(2, '0').slice(0, 2));
+  }, 0);
+  return (Math.round(totalCents / amounts.length) / 100).toFixed(2);
+}
+
 export class PostgresFinanceRepository implements FinanceRepository {
   constructor(private readonly db: Database) {}
 
@@ -88,6 +100,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
       amount: incomes.amount,
       recurring: incomes.recurring,
       expiresOn: incomes.expiresOn,
+      recurrenceId: incomes.recurrenceId,
       userId: users.id,
       userDisplayName: users.displayName,
       userProfileImage: users.profileImage,
@@ -116,6 +129,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
         amount: expenses.amount,
         recurring: expenses.recurring,
         expiresOn: expenses.expiresOn,
+        recurrenceId: expenses.recurrenceId,
       })
       .from(expenses)
       .innerJoin(users, eq(expenses.userId, users.id))
@@ -141,6 +155,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
       amount: row.amount,
       recurring: row.recurring,
       expiresOn: row.expiresOn,
+      projected: false,
       user: {
         id: row.userId,
         displayName: row.userDisplayName,
@@ -150,10 +165,99 @@ export class PostgresFinanceRepository implements FinanceRepository {
       source: { id: row.sourceId, displayName: row.sourceDisplayName },
     });
 
-    return [
+    const actualTransactions = [
       ...incomeRows.map((row) => mapRow(row, 'income')),
       ...expenseRows.map((row) => ({ ...mapRow(row, 'expense'), type: row.type })),
-    ].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+    ];
+
+    if (month <= currentMonth()) {
+      return actualTransactions.sort(
+        (a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id),
+      );
+    }
+
+    const recurringIncomeRows = await this.db
+      .select(selection)
+      .from(incomes)
+      .innerJoin(users, eq(incomes.userId, users.id))
+      .innerJoin(sources, eq(incomes.sourceId, sources.id))
+      .where(
+        and(
+          eq(incomes.householdId, householdId),
+          eq(incomes.recurring, true),
+          lt(incomes.date, start),
+        ),
+      );
+    const recurringExpenseRows = await this.db
+      .select({
+        ...selection,
+        id: expenses.id,
+        type: expenses.type,
+        date: expenses.date,
+        icon: expenses.icon,
+        color: expenses.color,
+        amount: expenses.amount,
+        recurring: expenses.recurring,
+        expiresOn: expenses.expiresOn,
+        recurrenceId: expenses.recurrenceId,
+      })
+      .from(expenses)
+      .innerJoin(users, eq(expenses.userId, users.id))
+      .innerJoin(sources, eq(expenses.sourceId, sources.id))
+      .where(
+        and(
+          eq(expenses.householdId, householdId),
+          eq(expenses.recurring, true),
+          lt(expenses.date, start),
+        ),
+      );
+    const history = [
+      ...recurringIncomeRows.map((row) => ({ ...row, kind: 'income' as const, type: null })),
+      ...recurringExpenseRows.map((row) => ({ ...row, kind: 'expense' as const })),
+    ];
+    const historiesBySeries = new Map<string, typeof history>();
+    for (const row of history) {
+      if (!row.recurrenceId) continue;
+      const series = historiesBySeries.get(row.recurrenceId) ?? [];
+      series.push(row);
+      historiesBySeries.set(row.recurrenceId, series);
+    }
+    const actualSeries = new Set(
+      [...incomeRows, ...expenseRows]
+        .map((row) => row.recurrenceId)
+        .filter((recurrenceId): recurrenceId is string => Boolean(recurrenceId)),
+    );
+    const projectedTransactions: HouseholdTransaction[] = [];
+    for (const [recurrenceId, series] of historiesBySeries) {
+      if (actualSeries.has(recurrenceId)) continue;
+      series.sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+      const latest = series[0]!;
+      const projectedDate = alignOccurrenceDate(`${month}-01`, latest.date);
+      if (latest.expiresOn && projectedDate > latest.expiresOn) continue;
+      projectedTransactions.push({
+        id: latest.id,
+        kind: latest.kind,
+        type: latest.type,
+        date: projectedDate,
+        icon: latest.icon,
+        color: latest.color,
+        amount: averageAmounts(series.slice(0, 6).map((row) => row.amount)),
+        recurring: true,
+        expiresOn: latest.expiresOn,
+        projected: true,
+        user: {
+          id: latest.userId,
+          displayName: latest.userDisplayName,
+          profileImage: latest.userProfileImage,
+          desiredColor: latest.userDesiredColor,
+        },
+        source: { id: latest.sourceId, displayName: latest.sourceDisplayName },
+      });
+    }
+
+    return [...actualTransactions, ...projectedTransactions].sort(
+      (a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id),
+    );
   }
 
   async getMembers(householdId: string): Promise<HouseholdMonthResponse['members']> {
@@ -238,6 +342,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
         amount: record.amount,
         recurring: record.recurring,
         expiresOn: record.expiresOn,
+        projected: false,
         user,
         source,
       };
@@ -386,6 +491,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
         amount: input.transaction.amount,
         recurring: input.transaction.recurring,
         expiresOn: input.transaction.recurring ? input.transaction.expiresOn : null,
+        projected: false,
         user,
         source,
       };
