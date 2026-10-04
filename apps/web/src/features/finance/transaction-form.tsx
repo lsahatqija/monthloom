@@ -5,69 +5,118 @@ import {
   Constants,
   type CreateHouseholdTransactionRequest,
   type HouseholdMonthResponse,
+  type HouseholdTransaction,
+  type TransactionSeriesSelection,
 } from '@template/contracts';
-import { useEffect, useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 
 import { Alert, Button } from '../../components/ui/index';
 import { isApiClientError } from '../../lib/api/errors';
 import { useCurrentUser } from '../auth/use-current-user';
 
-import { createHouseholdTransaction, financeKeys } from './finance.api';
+import { createHouseholdTransaction, financeKeys, updateHouseholdTransaction } from './finance.api';
 import { FinancialIcon, financialIconLabel } from './financial-icon';
 
-const COLOR_OPTIONS = ['#35675B', '#33805C', '#45658B', '#67558A', '#C47A3A', '#C4473A'];
+const COLOR_OPTIONS = [
+  '#35675B',
+  '#33805C',
+  '#2F7D78',
+  '#2F6F9F',
+  '#45658B',
+  '#67558A',
+  '#8B5FA8',
+  '#B35C7A',
+  '#C4473A',
+  '#D4683A',
+  '#C48A2C',
+  '#6B7280',
+];
 
-function transactionDate(month: string): string {
+function todayDate(): string {
   const today = new Date();
-  const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-  if (month !== currentMonth) return `${month}-01`;
-  return `${currentMonth}-${String(today.getDate()).padStart(2, '0')}`;
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
+    today.getDate(),
+  ).padStart(2, '0')}`;
 }
 
 interface TransactionFormProps {
   householdId: string;
-  month: string;
   members: HouseholdMonthResponse['members'];
   sources: HouseholdMonthResponse['sources'];
+  transaction?: HouseholdTransaction;
   onClose: () => void;
 }
 
 export function TransactionForm({
   householdId,
-  month,
   members,
   sources,
+  transaction,
   onClose,
 }: TransactionFormProps) {
   const sourceListId = useId();
+  const iconPickerRef = useRef<HTMLDetailsElement>(null);
+  const colorPickerRef = useRef<HTMLDetailsElement>(null);
   const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
-  const [kind, setKind] = useState<CreateHouseholdTransactionRequest['kind']>('expense');
-  const [source, setSource] = useState('');
-  const [icon, setIcon] = useState<CreateHouseholdTransactionRequest['icon']>('receipt');
-  const [color, setColor] = useState(COLOR_OPTIONS[0]!);
-  const [amount, setAmount] = useState('');
-  const [userId, setUserId] = useState(currentUser.data?.user?.id ?? members[0]?.id ?? '');
-  const [recurring, setRecurring] = useState(false);
-  const [expiresOn, setExpiresOn] = useState('');
+  const [kind, setKind] = useState<CreateHouseholdTransactionRequest['kind']>(
+    transaction?.kind ?? 'expense',
+  );
+  const [source, setSource] = useState(transaction?.source.displayName ?? '');
+  const [icon, setIcon] = useState<CreateHouseholdTransactionRequest['icon']>(
+    transaction?.icon ?? 'receipt',
+  );
+  const [color, setColor] = useState(transaction?.color ?? COLOR_OPTIONS[0]!);
+  const [amount, setAmount] = useState(transaction?.amount ?? '');
+  const [date, setDate] = useState(transaction?.date ?? todayDate);
+  const [userId, setUserId] = useState(
+    transaction?.user.id ?? currentUser.data?.user?.id ?? members[0]?.id ?? '',
+  );
+  const [recurring, setRecurring] = useState(transaction?.recurring ?? false);
+  const [expiresOn, setExpiresOn] = useState(transaction?.expiresOn ?? '');
+  const [selection, setSelection] = useState<TransactionSeriesSelection>({
+    past: false,
+    current: true,
+    future: false,
+  });
 
   useEffect(() => {
     const currentUserId = currentUser.data?.user?.id;
-    if (currentUserId && members.some((member) => member.id === currentUserId))
+    if (!transaction && currentUserId && members.some((member) => member.id === currentUserId))
       setUserId(currentUserId);
-  }, [currentUser.data, members]);
+  }, [currentUser.data, members, transaction]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key !== 'Escape') return;
+      if (iconPickerRef.current?.open || colorPickerRef.current?.open) {
+        if (iconPickerRef.current) iconPickerRef.current.open = false;
+        if (colorPickerRef.current) colorPickerRef.current.open = false;
+        return;
+      }
+      onClose();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const iconPicker = iconPickerRef.current;
+      const colorPicker = colorPickerRef.current;
+      if (iconPicker?.open && !iconPicker.contains(target)) iconPicker.open = false;
+      if (colorPicker?.open && !colorPicker.contains(target)) colorPicker.open = false;
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, []);
+
   const mutation = useMutation({
     mutationFn: (input: CreateHouseholdTransactionRequest) =>
-      createHouseholdTransaction(householdId, input),
+      transaction
+        ? updateHouseholdTransaction(householdId, transaction.id, { transaction: input, selection })
+        : createHouseholdTransaction(householdId, input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: financeKeys.all });
       onClose();
@@ -78,7 +127,7 @@ export function TransactionForm({
     event.preventDefault();
     mutation.mutate({
       kind,
-      date: transactionDate(month),
+      date: date || todayDate(),
       source,
       icon,
       color,
@@ -104,9 +153,12 @@ export function TransactionForm({
       >
         <div className="transactionModalHeader">
           <div>
-            <p className="transactionModalEyebrow">New entry</p>
-            <h2 id="transaction-modal-title">Add transaction</h2>
+            <p className="transactionModalEyebrow">{transaction ? 'Update entry' : 'New entry'}</p>
+            <h2 id="transaction-modal-title">
+              {transaction ? 'Edit transaction' : 'Add transaction'}
+            </h2>
           </div>
+
           <button type="button" className="modalCloseButton" onClick={onClose} aria-label="Close">
             <span aria-hidden="true">×</span>
           </button>
@@ -144,48 +196,123 @@ export function TransactionForm({
           </fieldset>
 
           <div className="transactionFormGrid">
-            <fieldset className="iconPicker" disabled={mutation.isPending}>
-              <legend>Icon</legend>
-              <div className="iconPickerGrid">
-                {Constants.FINANCIAL_ICONS.map((option) => {
-                  const label = financialIconLabel(option);
-                  return (
-                    <label
-                      key={option}
-                      className={icon === option ? 'isSelected' : undefined}
-                      title={label}
-                    >
-                      <input
-                        type="radio"
-                        name="icon"
-                        value={option}
-                        checked={icon === option}
-                        onChange={() => setIcon(option)}
-                      />
-                      <FinancialIcon name={option} size={21} />
-                      <span className="srOnly">{label}</span>
-                    </label>
-                  );
-                })}
+            <div className="transactionCompactRow">
+              <div className="iconPicker">
+                <span className="iconPickerLabel">Icon</span>
+                <details
+                  ref={iconPickerRef}
+                  className="iconPickerDropdown"
+                  aria-disabled={mutation.isPending}
+                >
+                  <summary
+                    onClick={(event) => {
+                      if (mutation.isPending) event.preventDefault();
+                    }}
+                  >
+                    <span className="selectedIconPreview" style={{ backgroundColor: color }}>
+                      <FinancialIcon name={icon} size={20} />
+                    </span>
+                    <span>{financialIconLabel(icon)}</span>
+                  </summary>
+                  <div className="iconPickerPopover">
+                    <div className="iconPickerGrid" role="group" aria-label="Choose an icon">
+                      {Constants.FINANCIAL_ICONS.map((option) => {
+                        const label = financialIconLabel(option);
+                        return (
+                          <label
+                            key={option}
+                            className={icon === option ? 'isSelected' : undefined}
+                            title={label}
+                          >
+                            <input
+                              type="radio"
+                              name="icon"
+                              value={option}
+                              checked={icon === option}
+                              disabled={mutation.isPending}
+                              onChange={() => {
+                                setIcon(option);
+                                if (iconPickerRef.current) iconPickerRef.current.open = false;
+                              }}
+                            />
+                            <FinancialIcon name={option} size={21} />
+                            <span className="srOnly">{label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </details>
               </div>
-            </fieldset>
 
-            <label className="transactionField transactionMemberField">
-              <span>Household member</span>
-              <select
-                value={userId}
-                required
-                disabled={mutation.isPending}
-                onChange={(event) => setUserId(event.target.value)}
-              >
-                {members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.displayName}
-                    {member.id === currentUser.data?.user?.id ? ' (you)' : ''}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <div className="colorPicker">
+                <span className="compactControlLabel">Color</span>
+                <details
+                  ref={colorPickerRef}
+                  className="colorPickerDropdown"
+                  aria-disabled={mutation.isPending}
+                >
+                  <summary
+                    onClick={(event) => {
+                      if (mutation.isPending) event.preventDefault();
+                    }}
+                  >
+                    <span className="selectedColorPreview" style={{ backgroundColor: color }} />
+                    <span>{color.toUpperCase()}</span>
+                  </summary>
+                  <div className="colorPickerPopover">
+                    <div className="colorOptions">
+                      {COLOR_OPTIONS.map((option) => (
+                        <label key={option} style={{ backgroundColor: option }}>
+                          <input
+                            type="radio"
+                            name="color"
+                            value={option}
+                            checked={color === option}
+                            disabled={mutation.isPending}
+                            onChange={() => {
+                              setColor(option);
+                              if (colorPickerRef.current) colorPickerRef.current.open = false;
+                            }}
+                          />
+                          <span className="srOnly">{option}</span>
+                        </label>
+                      ))}
+                      <label className="customColor" title="Custom color">
+                        <input
+                          type="color"
+                          value={color}
+                          disabled={mutation.isPending}
+                          onChange={(event) => {
+                            setColor(event.target.value);
+                            if (colorPickerRef.current) colorPickerRef.current.open = false;
+                          }}
+                        />
+                        <span aria-hidden="true">+</span>
+                        <span className="srOnly">Custom color</span>
+                      </label>
+                    </div>
+                  </div>
+                </details>
+              </div>
+
+              <label className="transactionField transactionMemberField">
+                <span>User</span>
+                <select
+                  value={userId}
+                  required
+                  disabled={mutation.isPending}
+                  onChange={(event) => setUserId(event.target.value)}
+                >
+                  {members.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.displayName}
+                      {member.id === currentUser.data?.user?.id ? ' (you)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <label className="transactionField transactionSourceField">
               <span>Source</span>
               <input
@@ -218,34 +345,19 @@ export function TransactionForm({
                 onChange={(event) => setAmount(event.target.value.replace(',', '.'))}
               />
             </label>
-          </div>
 
-          <fieldset className="colorPicker" disabled={mutation.isPending}>
-            <legend>Color</legend>
-            <div className="colorOptions">
-              {COLOR_OPTIONS.map((option) => (
-                <label key={option} style={{ backgroundColor: option }}>
-                  <input
-                    type="radio"
-                    name="color"
-                    value={option}
-                    checked={color === option}
-                    onChange={() => setColor(option)}
-                  />
-                  <span className="srOnly">{option}</span>
-                </label>
-              ))}
-              <label className="customColor" title="Custom color">
-                <input
-                  type="color"
-                  value={color}
-                  onChange={(event) => setColor(event.target.value)}
-                />
-                <span aria-hidden="true">+</span>
-                <span className="srOnly">Custom color</span>
-              </label>
-            </div>
-          </fieldset>
+            <label className="transactionField transactionDateField">
+              <span>
+                Date <small>Optional</small>
+              </span>
+              <input
+                type="date"
+                value={date}
+                disabled={mutation.isPending}
+                onChange={(event) => setDate(event.target.value)}
+              />
+            </label>
+          </div>
 
           <div className="recurringSection">
             <label className="toggleRow">
@@ -269,13 +381,52 @@ export function TransactionForm({
                 <input
                   type="date"
                   value={expiresOn}
-                  min={transactionDate(month)}
+                  min={date || todayDate()}
                   disabled={mutation.isPending}
                   onChange={(event) => setExpiresOn(event.target.value)}
                 />
               </label>
             ) : null}
           </div>
+
+          {transaction?.recurring ? (
+            <fieldset
+              className="transactionScope transactionScopeToggles"
+              disabled={mutation.isPending}
+            >
+              <legend>Apply these changes to</legend>
+              <label className={selection.past ? 'isSelected' : undefined}>
+                <input
+                  type="checkbox"
+                  checked={selection.past}
+                  onChange={(event) =>
+                    setSelection((current) => ({ ...current, past: event.target.checked }))
+                  }
+                />
+                Past
+              </label>
+              <label className={selection.current ? 'isSelected' : undefined}>
+                <input
+                  type="checkbox"
+                  checked={selection.current}
+                  onChange={(event) =>
+                    setSelection((current) => ({ ...current, current: event.target.checked }))
+                  }
+                />
+                This transaction
+              </label>
+              <label className={selection.future ? 'isSelected' : undefined}>
+                <input
+                  type="checkbox"
+                  checked={selection.future}
+                  onChange={(event) =>
+                    setSelection((current) => ({ ...current, future: event.target.checked }))
+                  }
+                />
+                Future
+              </label>
+            </fieldset>
+          ) : null}
 
           {mutation.isError ? (
             <Alert variant="error">
@@ -294,8 +445,26 @@ export function TransactionForm({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={mutation.isPending || !userId}>
-              {mutation.isPending ? 'Adding…' : 'Add transaction'}
+            <Button
+              type="submit"
+              disabled={
+                mutation.isPending ||
+                !userId ||
+                Boolean(
+                  transaction?.recurring &&
+                  !selection.past &&
+                  !selection.current &&
+                  !selection.future,
+                )
+              }
+            >
+              {mutation.isPending
+                ? transaction
+                  ? 'Saving…'
+                  : 'Adding…'
+                : transaction
+                  ? 'Save changes'
+                  : 'Add transaction'}
             </Button>
           </div>
         </form>

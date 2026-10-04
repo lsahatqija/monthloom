@@ -2,6 +2,8 @@ import type {
   CreateHouseholdTransactionRequest,
   HouseholdMonthResponse,
   HouseholdTransaction,
+  TransactionEditScope,
+  UpdateHouseholdTransactionRequest,
 } from '@template/contracts';
 
 import type { HouseholdRecord } from './finance.types.js';
@@ -16,6 +18,16 @@ export interface FinanceRepository {
     householdId: string,
     input: CreateHouseholdTransactionRequest,
   ): Promise<HouseholdTransaction>;
+  updateTransaction(
+    householdId: string,
+    transactionId: string,
+    input: UpdateHouseholdTransactionRequest,
+  ): Promise<HouseholdTransaction | null>;
+  removeTransaction(
+    householdId: string,
+    transactionId: string,
+    scope: TransactionEditScope,
+  ): Promise<boolean>;
   isMember(householdId: string, userId: string): Promise<boolean>;
   updateHouseholdName(householdId: string, name: string): Promise<HouseholdRecord>;
 }

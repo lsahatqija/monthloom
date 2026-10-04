@@ -1,7 +1,11 @@
+import { randomUUID } from 'node:crypto';
+
 import type {
   CreateHouseholdTransactionRequest,
   HouseholdMonthResponse,
   HouseholdTransaction,
+  TransactionEditScope,
+  UpdateHouseholdTransactionRequest,
 } from '@template/contracts';
 import { and, asc, eq, gte, lt } from 'drizzle-orm';
 
@@ -31,6 +35,13 @@ function monthEnd(month: string): string {
   const [year, monthNumber] = month.split('-').map(Number);
   const next = new Date(Date.UTC(year!, monthNumber!, 1));
   return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-01`;
+}
+
+function alignOccurrenceDate(existingDate: string, editedDate: string): string {
+  const [year, month] = existingDate.split('-').map(Number);
+  const requestedDay = Number(editedDate.slice(8, 10));
+  const lastDay = new Date(Date.UTC(year!, month!, 0)).getUTCDate();
+  return `${existingDate.slice(0, 8)}${String(Math.min(requestedDay, lastDay)).padStart(2, '0')}`;
 }
 
 export class PostgresFinanceRepository implements FinanceRepository {
@@ -192,6 +203,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
         date: input.date,
         recurring: input.recurring,
         expiresOn: input.recurring ? input.expiresOn : null,
+        recurrenceId: input.recurring ? randomUUID() : null,
       };
       const [record] =
         input.kind === 'income'
@@ -226,6 +238,200 @@ export class PostgresFinanceRepository implements FinanceRepository {
         user,
         source,
       };
+    });
+  }
+
+  async updateTransaction(
+    householdId: string,
+    transactionId: string,
+    input: UpdateHouseholdTransactionRequest,
+  ): Promise<HouseholdTransaction | null> {
+    return this.db.transaction(async (transaction) => {
+      const selectedFields = {
+        id: incomes.id,
+        date: incomes.date,
+        recurrenceId: incomes.recurrenceId,
+      };
+      const [income] = await transaction
+        .select(selectedFields)
+        .from(incomes)
+        .where(and(eq(incomes.householdId, householdId), eq(incomes.id, transactionId)))
+        .limit(1);
+      const [expense] = income
+        ? []
+        : await transaction
+            .select({
+              id: expenses.id,
+              date: expenses.date,
+              recurrenceId: expenses.recurrenceId,
+            })
+            .from(expenses)
+            .where(and(eq(expenses.householdId, householdId), eq(expenses.id, transactionId)))
+            .limit(1);
+      const original = income ?? expense;
+      if (!original) return null;
+
+      const originalKind: HouseholdTransaction['kind'] = income ? 'income' : 'expense';
+      let occurrences = [original];
+      if (original.recurrenceId) {
+        occurrences = income
+          ? await transaction
+              .select(selectedFields)
+              .from(incomes)
+              .where(
+                and(
+                  eq(incomes.householdId, householdId),
+                  eq(incomes.recurrenceId, original.recurrenceId),
+                ),
+              )
+          : await transaction
+              .select({
+                id: expenses.id,
+                date: expenses.date,
+                recurrenceId: expenses.recurrenceId,
+              })
+              .from(expenses)
+              .where(
+                and(
+                  eq(expenses.householdId, householdId),
+                  eq(expenses.recurrenceId, original.recurrenceId),
+                ),
+              );
+      }
+      occurrences = occurrences.filter((occurrence) => {
+        if (occurrence.id === transactionId) return input.selection.current;
+        if (occurrence.date < original.date) return input.selection.past;
+        if (occurrence.date > original.date) return input.selection.future;
+        return false;
+      });
+
+      const nameKey = input.transaction.source.trim().toLocaleLowerCase('en-US');
+      const [source] = await transaction
+        .insert(sources)
+        .values({
+          householdId,
+          displayName: input.transaction.source,
+          nameKey,
+        })
+        .onConflictDoUpdate({
+          target: [sources.householdId, sources.nameKey],
+          set: { displayName: input.transaction.source, updatedAt: new Date() },
+        })
+        .returning({ id: sources.id, displayName: sources.displayName });
+      if (!source) throw new Error('Failed to resolve transaction source.');
+
+      const recurrenceId = input.transaction.recurring
+        ? (original.recurrenceId ?? randomUUID())
+        : null;
+      for (const occurrence of occurrences) {
+        const values = {
+          householdId,
+          sourceId: source.id,
+          userId: input.transaction.userId,
+          icon: input.transaction.icon,
+          color: input.transaction.color,
+          amount: input.transaction.amount,
+          date:
+            occurrence.id === transactionId
+              ? input.transaction.date
+              : alignOccurrenceDate(occurrence.date, input.transaction.date),
+          recurring: input.transaction.recurring,
+          expiresOn: input.transaction.recurring ? input.transaction.expiresOn : null,
+          recurrenceId,
+          updatedAt: new Date(),
+        };
+
+        if (input.transaction.kind === originalKind) {
+          if (originalKind === 'income') {
+            await transaction.update(incomes).set(values).where(eq(incomes.id, occurrence.id));
+          } else {
+            await transaction.update(expenses).set(values).where(eq(expenses.id, occurrence.id));
+          }
+        } else if (input.transaction.kind === 'income') {
+          await transaction.insert(incomes).values({ id: occurrence.id, ...values });
+          await transaction.delete(expenses).where(eq(expenses.id, occurrence.id));
+        } else {
+          await transaction
+            .insert(expenses)
+            .values({ id: occurrence.id, ...values, type: 'other' });
+          await transaction.delete(incomes).where(eq(incomes.id, occurrence.id));
+        }
+      }
+
+      const [user] = await transaction
+        .select({
+          id: users.id,
+          displayName: users.displayName,
+          profileImage: users.profileImage,
+          desiredColor: users.desiredColor,
+        })
+        .from(users)
+        .where(eq(users.id, input.transaction.userId))
+        .limit(1);
+      if (!user) throw new Error('Failed to load transaction user.');
+
+      return {
+        id: transactionId,
+        kind: input.transaction.kind,
+        date: input.transaction.date,
+        icon: input.transaction.icon,
+        color: input.transaction.color,
+        amount: input.transaction.amount,
+        recurring: input.transaction.recurring,
+        expiresOn: input.transaction.recurring ? input.transaction.expiresOn : null,
+        user,
+        source,
+      };
+    });
+  }
+
+  async removeTransaction(
+    householdId: string,
+    transactionId: string,
+    scope: TransactionEditScope,
+  ): Promise<boolean> {
+    return this.db.transaction(async (transaction) => {
+      const [income] = await transaction
+        .select({ id: incomes.id, date: incomes.date, recurrenceId: incomes.recurrenceId })
+        .from(incomes)
+        .where(and(eq(incomes.householdId, householdId), eq(incomes.id, transactionId)))
+        .limit(1);
+      const [expense] = income
+        ? []
+        : await transaction
+            .select({ id: expenses.id, date: expenses.date, recurrenceId: expenses.recurrenceId })
+            .from(expenses)
+            .where(and(eq(expenses.householdId, householdId), eq(expenses.id, transactionId)))
+            .limit(1);
+      const original = income ?? expense;
+      if (!original) return false;
+
+      if (income) {
+        await transaction
+          .delete(incomes)
+          .where(
+            scope === 'current' || !original.recurrenceId
+              ? and(eq(incomes.householdId, householdId), eq(incomes.id, transactionId))
+              : and(
+                  eq(incomes.householdId, householdId),
+                  eq(incomes.recurrenceId, original.recurrenceId),
+                  scope === 'current_and_future' ? gte(incomes.date, original.date) : undefined,
+                ),
+          );
+      } else {
+        await transaction
+          .delete(expenses)
+          .where(
+            scope === 'current' || !original.recurrenceId
+              ? and(eq(expenses.householdId, householdId), eq(expenses.id, transactionId))
+              : and(
+                  eq(expenses.householdId, householdId),
+                  eq(expenses.recurrenceId, original.recurrenceId),
+                  scope === 'current_and_future' ? gte(expenses.date, original.date) : undefined,
+                ),
+          );
+      }
+      return true;
     });
   }
 

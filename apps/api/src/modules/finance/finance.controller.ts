@@ -4,7 +4,10 @@ import {
   createHouseholdTransactionRequestSchema,
   householdIdParamsSchema,
   householdMonthQuerySchema,
+  householdTransactionParamsSchema,
+  removeHouseholdTransactionQuerySchema,
   updateHouseholdRequestSchema,
+  updateHouseholdTransactionRequestSchema,
 } from './finance.schemas.js';
 import type { FinanceService } from './finance.service.js';
 
@@ -29,5 +32,24 @@ export class FinanceController {
     const input = createHouseholdTransactionRequestSchema.parse(req.body);
     const transaction = await this.financeService.createTransaction(id, req.authUser!.id, input);
     res.status(201).json({ transaction });
+  };
+
+  updateTransaction = async (req: Request, res: Response): Promise<void> => {
+    const { id, transactionId } = householdTransactionParamsSchema.parse(req.params);
+    const input = updateHouseholdTransactionRequestSchema.parse(req.body);
+    const transaction = await this.financeService.updateTransaction(
+      id,
+      transactionId,
+      req.authUser!.id,
+      input,
+    );
+    res.status(200).json({ transaction });
+  };
+
+  removeTransaction = async (req: Request, res: Response): Promise<void> => {
+    const { id, transactionId } = householdTransactionParamsSchema.parse(req.params);
+    const { scope } = removeHouseholdTransactionQuerySchema.parse(req.query);
+    await this.financeService.removeTransaction(id, transactionId, req.authUser!.id, scope);
+    res.status(204).send();
   };
 }

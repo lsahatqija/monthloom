@@ -12,6 +12,14 @@ export function createFinanceRouter(
   router.use(requireAuth);
   router.get('/primary/month', asyncHandler(financeController.getPrimaryMonth));
   router.post('/:id/transactions', asyncHandler(financeController.createTransaction));
+  router.patch(
+    '/:id/transactions/:transactionId',
+    asyncHandler(financeController.updateTransaction),
+  );
+  router.delete(
+    '/:id/transactions/:transactionId',
+    asyncHandler(financeController.removeTransaction),
+  );
   router.patch('/:id', asyncHandler(financeController.updateHousehold));
   return router;
 }

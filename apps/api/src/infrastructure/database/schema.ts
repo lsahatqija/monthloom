@@ -161,6 +161,7 @@ export const incomes = pgTable(
     date: date('date', { mode: 'string' }).notNull(),
     recurring: boolean('recurring').notNull().default(false),
     expiresOn: date('expires_on', { mode: 'string' }),
+    recurrenceId: uuid('recurrence_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -168,6 +169,7 @@ export const incomes = pgTable(
     householdDateIdx: index('incomes_household_date_idx').on(table.householdId, table.date),
     userIdIdx: index('incomes_user_id_idx').on(table.userId),
     sourceIdIdx: index('incomes_source_id_idx').on(table.sourceId),
+    recurrenceIdIdx: index('incomes_recurrence_id_idx').on(table.recurrenceId),
     positiveAmountCheck: check('incomes_positive_amount_check', sql`${table.amount} > 0`),
     colorFormatCheck: check(
       'incomes_color_format_check',
@@ -202,6 +204,7 @@ export const expenses = pgTable(
     date: date('date', { mode: 'string' }).notNull(),
     recurring: boolean('recurring').notNull().default(false),
     expiresOn: date('expires_on', { mode: 'string' }),
+    recurrenceId: uuid('recurrence_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -210,6 +213,7 @@ export const expenses = pgTable(
     householdTypeIdx: index('expenses_household_type_idx').on(table.householdId, table.type),
     userIdIdx: index('expenses_user_id_idx').on(table.userId),
     sourceIdIdx: index('expenses_source_id_idx').on(table.sourceId),
+    recurrenceIdIdx: index('expenses_recurrence_id_idx').on(table.recurrenceId),
     positiveAmountCheck: check('expenses_positive_amount_check', sql`${table.amount} > 0`),
     colorFormatCheck: check(
       'expenses_color_format_check',

@@ -1,7 +1,9 @@
 import type {
   CreateHouseholdTransactionRequest,
   HouseholdMonthResponse,
+  TransactionEditScope,
   UpdateHouseholdRequest,
+  UpdateHouseholdTransactionRequest,
 } from '@template/contracts';
 
 import { AuthorizationError, NotFoundError } from '../../shared/errors/index.js';
@@ -89,6 +91,41 @@ export class FinanceService {
       throw new AuthorizationError('The selected user is not a member of this household.');
     }
     return this.financeRepository.createTransaction(householdId, input);
+  }
+
+  async updateTransaction(
+    householdId: string,
+    transactionId: string,
+    requestingUserId: string,
+    input: UpdateHouseholdTransactionRequest,
+  ) {
+    if (!(await this.financeRepository.isMember(householdId, requestingUserId))) {
+      throw new AuthorizationError('You are not a member of this household.');
+    }
+    if (!(await this.financeRepository.isMember(householdId, input.transaction.userId))) {
+      throw new AuthorizationError('The selected user is not a member of this household.');
+    }
+    const transaction = await this.financeRepository.updateTransaction(
+      householdId,
+      transactionId,
+      input,
+    );
+    if (!transaction) throw new NotFoundError('Transaction was not found.');
+    return transaction;
+  }
+
+  async removeTransaction(
+    householdId: string,
+    transactionId: string,
+    requestingUserId: string,
+    scope: TransactionEditScope,
+  ): Promise<void> {
+    if (!(await this.financeRepository.isMember(householdId, requestingUserId))) {
+      throw new AuthorizationError('You are not a member of this household.');
+    }
+    if (!(await this.financeRepository.removeTransaction(householdId, transactionId, scope))) {
+      throw new NotFoundError('Transaction was not found.');
+    }
   }
 
   async updateHousehold(householdId: string, userId: string, input: UpdateHouseholdRequest) {

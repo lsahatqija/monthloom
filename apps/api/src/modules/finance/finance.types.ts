@@ -43,6 +43,8 @@ interface Transaction {
   recurring: boolean;
   /** Optional final calendar date for a recurring transaction. */
   expiresOn: string | null;
+  /** Groups persisted occurrences that belong to the same recurring transaction. */
+  recurrenceId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

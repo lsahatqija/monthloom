@@ -57,6 +57,20 @@
       "when": 1791096461917,
       "tag": "0007_panoramic_polaris",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791134590296,
+      "tag": "0008_hard_xorn",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791134621399,
+      "tag": "0009_calm_squirrel_girl",
+      "breakpoints": true
     }
   ]
 }
