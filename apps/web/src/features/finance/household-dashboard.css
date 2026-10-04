@@ -232,6 +232,131 @@
   font-size: inherit;
 }
 
+.transactionFilters {
+  border-bottom: 1px solid var(--ml-divider);
+}
+.transactionFilters > summary {
+  display: flex;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-6);
+  color: var(--ml-text-muted);
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 650;
+  list-style: none;
+}
+.transactionFilters > summary::-webkit-details-marker {
+  display: none;
+}
+.transactionFilters > summary:hover,
+.transactionFilters[open] > summary {
+  background: color-mix(in srgb, var(--ml-accent-1) 18%, transparent);
+  color: var(--ml-text);
+}
+.transactionFilters > summary::after {
+  content: '';
+  width: 0.45rem;
+  height: 0.45rem;
+  flex: 0 0 auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-25%) rotate(45deg);
+}
+.transactionFilters[open] > summary::after {
+  transform: translateY(25%) rotate(225deg);
+}
+.transactionFilterTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.transactionFilterTitle svg {
+  width: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+}
+.transactionFilterCount {
+  display: grid;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding-inline: 0.3rem;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--ml-primary);
+  color: var(--ml-on-primary);
+  font-size: 0.72rem;
+}
+.transactionFilterHint {
+  margin-left: auto;
+  font-weight: 500;
+}
+.transactionFilterDrawer {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-6) var(--space-5);
+  background: color-mix(in srgb, var(--ml-background) 55%, var(--ml-surface));
+}
+.transactionFilterField {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-2);
+}
+.transactionFilterField > span {
+  color: var(--ml-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.transactionFilterField select,
+.transactionFilterField input {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.65rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--ml-border);
+  border-radius: 10px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  font: inherit;
+  font-size: 0.86rem;
+}
+.transactionFilterField select:focus,
+.transactionFilterField input:focus {
+  border-color: var(--ml-primary);
+  outline: 2px solid var(--ml-focus-ring);
+  outline-offset: 1px;
+}
+.transactionFilterFooter {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-top: var(--space-1);
+  color: var(--ml-text-muted);
+  font-size: 0.8rem;
+}
+.transactionFilterFooter button,
+.transactionEmpty button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ml-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+.transactionFilterFooter button:hover,
+.transactionEmpty button:hover {
+  color: var(--ml-primary-hover);
+  text-decoration: underline;
+}
+
 .transactionModalBackdrop {
   position: fixed;
   z-index: 100;
@@ -369,6 +494,10 @@
   grid-column: 2;
   grid-row: 2;
 }
+.transactionTypeField {
+  grid-column: 1 / -1;
+  grid-row: 3;
+}
 .transactionMemberField {
   grid-column: 1 / -1;
   grid-row: 3;
@@ -403,7 +532,7 @@
 .transactionCompactRow {
   display: grid;
   grid-column: 1 / -1;
-  grid-row: 3;
+  grid-row: 4;
   grid-template-columns: minmax(0, 1.15fr) minmax(7rem, 0.75fr) minmax(0, 1.15fr);
   gap: var(--space-3);
   align-items: end;
@@ -680,6 +809,10 @@
   background: var(--ml-primary);
   color: var(--ml-on-primary);
 }
+.transactionScopeToggles label[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
 .transactionScopeToggles input {
   position: absolute;
   width: 1px;
@@ -743,6 +876,7 @@
   .transactionSourceField,
   .transactionAmountField,
   .transactionDateField,
+  .transactionTypeField,
   .transactionMemberField,
   .iconPicker {
     grid-column: auto;
@@ -763,9 +897,13 @@
     grid-column: 1;
     grid-row: 3;
   }
-  .transactionCompactRow {
+  .transactionTypeField {
     grid-column: 1;
     grid-row: 4;
+  }
+  .transactionCompactRow {
+    grid-column: 1;
+    grid-row: 5;
     grid-template-columns: minmax(0, 1fr) minmax(0, 0.72fr) minmax(0, 1fr);
     gap: var(--space-2);
   }
@@ -794,6 +932,30 @@
   text-align: left;
   text-transform: uppercase;
 }
+.transactionSortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+.transactionSortButton:hover,
+.transactionSortButton:focus-visible {
+  color: var(--ml-text);
+}
+.transactionSortIndicator {
+  width: 0.75rem;
+  color: var(--ml-primary);
+  font-size: 0.85rem;
+  line-height: 1;
+}
 .transactionTable td {
   padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--ml-divider);
@@ -821,6 +983,16 @@
 }
 .transactionTable tbody tr:hover {
   background: color-mix(in srgb, var(--ml-accent-1) 18%, transparent);
+}
+.transactionUser {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+.transactionUser .profileImage {
+  border: 1px solid color-mix(in srgb, var(--ml-text) 10%, transparent);
+  border-radius: 7px;
 }
 .transactionIcon {
   display: grid;
@@ -943,5 +1115,21 @@
   }
   .transactionPanelHeading {
     padding-inline: var(--space-4);
+  }
+  .transactionFilters > summary {
+    padding-inline: var(--space-4);
+  }
+  .transactionFilterDrawer {
+    grid-template-columns: 1fr 1fr;
+    padding-inline: var(--space-4);
+  }
+  .transactionFilterHint {
+    display: none;
+  }
+}
+
+@media (min-width: 621px) and (max-width: 880px) {
+  .transactionFilterDrawer {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
