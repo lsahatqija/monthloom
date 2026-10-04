@@ -1,7 +1,11 @@
 import type {
+  CreateHouseholdTransactionRequest,
   HouseholdDto,
   HouseholdMonthResponse,
+  HouseholdTransaction,
+  TransactionEditScope,
   UpdateHouseholdRequest,
+  UpdateHouseholdTransactionRequest,
 } from '@template/contracts';
 
 import { apiClient } from '../../lib/api/client';
@@ -29,4 +33,39 @@ export async function updateHousehold(
   );
   if (!data) throw new Error('Unexpected empty household response.');
   return data;
+}
+
+export async function createHouseholdTransaction(
+  householdId: string,
+  input: CreateHouseholdTransactionRequest,
+): Promise<{ transaction: HouseholdTransaction }> {
+  const data = await apiClient.post<{ transaction: HouseholdTransaction }>(
+    `households/${householdId}/transactions`,
+    input,
+  );
+  if (!data) throw new Error('Unexpected empty transaction response.');
+  return data;
+}
+
+export async function updateHouseholdTransaction(
+  householdId: string,
+  transactionId: string,
+  input: UpdateHouseholdTransactionRequest,
+): Promise<{ transaction: HouseholdTransaction }> {
+  const data = await apiClient.patch<{ transaction: HouseholdTransaction }>(
+    `households/${householdId}/transactions/${transactionId}`,
+    input,
+  );
+  if (!data) throw new Error('Unexpected empty transaction response.');
+  return data;
+}
+
+export async function removeHouseholdTransaction(
+  householdId: string,
+  transactionId: string,
+  scope: TransactionEditScope,
+): Promise<void> {
+  await apiClient.delete(`households/${householdId}/transactions/${transactionId}`, {
+    query: { scope },
+  });
 }

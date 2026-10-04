@@ -1,0 +1,2 @@
+CREATE INDEX IF NOT EXISTS "expenses_recurrence_id_idx" ON "expenses" USING btree ("recurrence_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "incomes_recurrence_id_idx" ON "incomes" USING btree ("recurrence_id");

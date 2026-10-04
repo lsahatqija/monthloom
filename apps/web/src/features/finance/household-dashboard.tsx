@@ -1,13 +1,20 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { HouseholdTransaction } from '@template/contracts';
+import type { HouseholdTransaction, TransactionEditScope } from '@template/contracts';
 import { useMemo, useState } from 'react';
 
-import { Alert, LoadingIndicator } from '../../components/ui/index';
+import { Alert, Button, LoadingIndicator } from '../../components/ui/index';
 import { isApiClientError } from '../../lib/api/errors';
 
-import { financeKeys, getPrimaryHouseholdMonth, updateHousehold } from './finance.api';
+import {
+  financeKeys,
+  getPrimaryHouseholdMonth,
+  removeHouseholdTransaction,
+  updateHousehold,
+} from './finance.api';
+import { FinancialIcon, financialIconLabel } from './financial-icon';
+import { TransactionForm } from './transaction-form';
 
 function monthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -24,15 +31,13 @@ function monthOptions(): Array<{ value: string; label: string }> {
 
 function EntryIcon({ entry }: { entry: HouseholdTransaction }) {
   return (
-    <span className="transactionIcon" style={{ backgroundColor: entry.color }} title={entry.icon}>
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        {entry.kind === 'income' ? (
-          <path d="M12 19V5m0 0-5 5m5-5 5 5M5 20h14" />
-        ) : (
-          <path d="M12 5v14m0 0-5-5m5 5 5-5M5 4h14" />
-        )}
-      </svg>
-      <span className="srOnly">{entry.icon}</span>
+    <span
+      className="transactionIcon"
+      style={{ backgroundColor: entry.color }}
+      title={financialIconLabel(entry.icon)}
+    >
+      <FinancialIcon name={entry.icon} size={18} />
+      <span className="srOnly">{financialIconLabel(entry.icon)}</span>
     </span>
   );
 }
@@ -108,9 +113,104 @@ function HouseholdName({ id, name }: { id: string; name: string }) {
   );
 }
 
+function RemoveTransactionDialog({
+  householdId,
+  transaction,
+  onClose,
+}: {
+  householdId: string;
+  transaction: HouseholdTransaction;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [scope, setScope] = useState<TransactionEditScope>(
+    transaction.recurring ? 'current_and_future' : 'current',
+  );
+  const mutation = useMutation({
+    mutationFn: () => removeHouseholdTransaction(householdId, transaction.id, scope),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: financeKeys.all });
+      onClose();
+    },
+  });
+
+  return (
+    <div
+      className="transactionModalBackdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        className="transactionModal confirmationModal"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="remove-transaction-title"
+      >
+        <div className="transactionModalHeader">
+          <div>
+            <p className="transactionModalEyebrow">Remove entry</p>
+            <h2 id="remove-transaction-title">Remove transaction?</h2>
+          </div>
+          <button type="button" className="modalCloseButton" onClick={onClose} aria-label="Close">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+        <div className="removeTransactionContent">
+          <p>
+            This will remove <strong>{transaction.source.displayName}</strong> for{' '}
+            <strong>{transaction.amount}</strong>.
+          </p>
+          {transaction.recurring ? (
+            <fieldset className="transactionScope">
+              <legend>Which transactions should be removed?</legend>
+              <label>
+                <input
+                  type="radio"
+                  name="removeScope"
+                  checked={scope === 'current_and_future'}
+                  onChange={() => setScope('current_and_future')}
+                />
+                Current and future transactions
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="removeScope"
+                  checked={scope === 'past_current_and_future'}
+                  onChange={() => setScope('past_current_and_future')}
+                />
+                Past, current and future transactions
+              </label>
+            </fieldset>
+          ) : null}
+          {mutation.isError ? (
+            <Alert variant="error">
+              {isApiClientError(mutation.error)
+                ? mutation.error.message
+                : 'We could not remove this transaction.'}
+            </Alert>
+          ) : null}
+          <div className="transactionFormActions">
+            <Button variant="secondary" onClick={onClose} disabled={mutation.isPending}>
+              Cancel
+            </Button>
+            <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+              {mutation.isPending ? 'Removing…' : 'Remove'}
+            </Button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export function HouseholdDashboard() {
   const months = useMemo(monthOptions, []);
   const [month, setMonth] = useState(months[0]!.value);
+  const [addingTransaction, setAddingTransaction] = useState(false);
+  const [transactionToEdit, setTransactionToEdit] = useState<HouseholdTransaction | null>(null);
+  const [transactionToRemove, setTransactionToRemove] = useState<HouseholdTransaction | null>(null);
   const query = useQuery({
     queryKey: financeKeys.primaryMonth(month),
     queryFn: () => getPrimaryHouseholdMonth(month),
@@ -172,7 +272,17 @@ export function HouseholdDashboard() {
       <div className="transactionPanel">
         <div className="transactionPanelHeading">
           <h2>Activity</h2>
-          <span>{transactions.length} entries</span>
+          <div className="transactionPanelActions">
+            <span>{transactions.length} entries</span>
+            <button
+              type="button"
+              className="addTransactionButton"
+              aria-label="Add transaction"
+              onClick={() => setAddingTransaction(true)}
+            >
+              <span aria-hidden="true">+</span>
+            </button>
+          </div>
         </div>
         <div className="transactionScroll">
           {transactions.length ? (
@@ -184,6 +294,7 @@ export function HouseholdDashboard() {
                   <th>User</th>
                   <th>Source</th>
                   <th>Amount</th>
+                  <th aria-label="Actions" />
                 </tr>
               </thead>
               <tbody>
@@ -203,6 +314,19 @@ export function HouseholdDashboard() {
                       {entry.kind === 'income' ? '+' : '−'}
                       {money.format(Number(entry.amount))}
                     </td>
+                    <td>
+                      <details className="transactionMenu">
+                        <summary aria-label={`Actions for ${entry.source.displayName}`}>⋯</summary>
+                        <div className="transactionMenuPopover">
+                          <button type="button" onClick={() => setTransactionToEdit(entry)}>
+                            Edit
+                          </button>
+                          <button type="button" onClick={() => setTransactionToRemove(entry)}>
+                            Remove
+                          </button>
+                        </div>
+                      </details>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -214,6 +338,30 @@ export function HouseholdDashboard() {
       </div>
 
       <footer className="householdFooter" aria-label="Household footer" />
+      {addingTransaction ? (
+        <TransactionForm
+          householdId={household.id}
+          members={query.data.members}
+          sources={query.data.sources}
+          onClose={() => setAddingTransaction(false)}
+        />
+      ) : null}
+      {transactionToEdit ? (
+        <TransactionForm
+          householdId={household.id}
+          members={query.data.members}
+          sources={query.data.sources}
+          transaction={transactionToEdit}
+          onClose={() => setTransactionToEdit(null)}
+        />
+      ) : null}
+      {transactionToRemove ? (
+        <RemoveTransactionDialog
+          householdId={household.id}
+          transaction={transactionToRemove}
+          onClose={() => setTransactionToRemove(null)}
+        />
+      ) : null}
     </section>
   );
 }

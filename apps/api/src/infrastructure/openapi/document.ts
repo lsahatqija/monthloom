@@ -6,18 +6,22 @@ import {
 import {
   apiErrorResponseSchema,
   authResponseSchema,
+  createHouseholdTransactionRequestSchema,
   fileListResponseSchema,
   fileMetadataSchema,
   householdMonthQuerySchema,
   householdMonthResponseSchema,
   householdResponseSchema,
+  householdTransactionResponseSchema,
   livenessResponseSchema,
   loginRequestSchema,
   meResponseSchema,
   publicUserSchema,
   readinessResponseSchema,
+  removeHouseholdTransactionQuerySchema,
   registerRequestSchema,
   updateHouseholdRequestSchema,
+  updateHouseholdTransactionRequestSchema,
 } from '@template/contracts';
 import { z } from 'zod';
 
@@ -65,6 +69,77 @@ registry.registerPath({
     },
     401: {
       description: 'Authentication required.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/households/{id}/transactions',
+  summary: 'Create a household transaction',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: { content: { 'application/json': { schema: createHouseholdTransactionRequestSchema } } },
+  },
+  responses: {
+    201: {
+      description: 'Transaction created.',
+      content: { 'application/json': { schema: householdTransactionResponseSchema } },
+    },
+    403: {
+      description: 'Not a household member.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/households/{id}/transactions/{transactionId}',
+  summary: 'Update a household transaction',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid(), transactionId: z.string().uuid() }),
+    body: { content: { 'application/json': { schema: updateHouseholdTransactionRequestSchema } } },
+  },
+  responses: {
+    200: {
+      description: 'Transaction updated.',
+      content: { 'application/json': { schema: householdTransactionResponseSchema } },
+    },
+    403: {
+      description: 'Not a household member.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
+    404: {
+      description: 'Transaction not found.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/v1/households/{id}/transactions/{transactionId}',
+  summary: 'Remove a household transaction',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid(), transactionId: z.string().uuid() }),
+    query: removeHouseholdTransactionQuerySchema,
+  },
+  responses: {
+    204: { description: 'Transaction removed.' },
+    403: {
+      description: 'Not a household member.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
+    404: {
+      description: 'Transaction not found.',
       content: { 'application/json': { schema: ErrorResponse } },
     },
   },
