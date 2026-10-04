@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     template: '%s | Monthloom',
   },
   description: 'Plan and share your monthly household finances.',
-  icons: { icon: '/favicon.svg' },
+  icons: { icon: '/favicon.ico' },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
