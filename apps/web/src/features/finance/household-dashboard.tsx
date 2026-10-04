@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { HouseholdTransaction, TransactionEditScope } from '@template/contracts';
 import { useMemo, useState } from 'react';
 
+import { ProfileImage } from '../../components/profile-image';
 import { Alert, Button, LoadingIndicator } from '../../components/ui/index';
 import { isApiClientError } from '../../lib/api/errors';
 
@@ -15,6 +16,69 @@ import {
 } from './finance.api';
 import { FinancialIcon, financialIconLabel } from './financial-icon';
 import { TransactionForm } from './transaction-form';
+
+type TransactionSortKey = 'date' | 'amount' | 'user' | 'source' | 'type';
+type SortDirection = 'ascending' | 'descending';
+type RecurringFilter = 'all' | 'recurring' | 'one-off';
+
+type TransactionFilters = {
+  type: string;
+  userId: string;
+  dateFrom: string;
+  dateTo: string;
+  sourceId: string;
+  recurring: RecurringFilter;
+  amountOver: string;
+  amountUnder: string;
+};
+
+const emptyTransactionFilters: TransactionFilters = {
+  type: 'all',
+  userId: 'all',
+  dateFrom: '',
+  dateTo: '',
+  sourceId: 'all',
+  recurring: 'all',
+  amountOver: '',
+  amountUnder: '',
+};
+
+const transactionCollator = new Intl.Collator(undefined, {
+  numeric: true,
+  sensitivity: 'base',
+});
+
+function transactionTypeLabel(transaction: HouseholdTransaction): string {
+  if (transaction.kind === 'income') return 'Income';
+  return transaction.type
+    ? transaction.type
+        .split('-')
+        .map((word) => word[0]!.toUpperCase() + word.slice(1))
+        .join(' ')
+    : 'Other';
+}
+
+function compareTransactions(
+  first: HouseholdTransaction,
+  second: HouseholdTransaction,
+  sortKey: TransactionSortKey,
+): number {
+  switch (sortKey) {
+    case 'amount': {
+      const firstAmount = Number(first.amount) * (first.kind === 'income' ? 1 : -1);
+      const secondAmount = Number(second.amount) * (second.kind === 'income' ? 1 : -1);
+      return firstAmount - secondAmount;
+    }
+    case 'user':
+      return transactionCollator.compare(first.user.displayName, second.user.displayName);
+    case 'source':
+      return transactionCollator.compare(first.source.displayName, second.source.displayName);
+    case 'type':
+      return transactionCollator.compare(transactionTypeLabel(first), transactionTypeLabel(second));
+    case 'date':
+      return first.date.localeCompare(second.date);
+  }
+}
 
 function monthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -211,6 +275,9 @@ export function HouseholdDashboard() {
   const [addingTransaction, setAddingTransaction] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<HouseholdTransaction | null>(null);
   const [transactionToRemove, setTransactionToRemove] = useState<HouseholdTransaction | null>(null);
+  const [sortKey, setSortKey] = useState<TransactionSortKey>('date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('ascending');
+  const [filters, setFilters] = useState<TransactionFilters>(emptyTransactionFilters);
   const query = useQuery({
     queryKey: financeKeys.primaryMonth(month),
     queryFn: () => getPrimaryHouseholdMonth(month),
@@ -232,11 +299,69 @@ export function HouseholdDashboard() {
   }
 
   const { household, summary, transactions } = query.data;
+  const activeFilterCount = Object.entries(filters).filter(
+    ([key, value]) => value !== '' && value !== 'all' && !(key === 'recurring' && value === 'all'),
+  ).length;
+  const filteredTransactions = transactions.filter((transaction) => {
+    if (filters.type === 'income' && transaction.kind !== 'income') return false;
+    if (filters.type === 'expense' && transaction.kind !== 'expense') return false;
+    if (
+      filters.type.startsWith('expense:') &&
+      transaction.type !== filters.type.slice('expense:'.length)
+    ) {
+      return false;
+    }
+    if (filters.userId !== 'all' && transaction.user.id !== filters.userId) return false;
+    if (filters.sourceId !== 'all' && transaction.source.id !== filters.sourceId) return false;
+    if (filters.dateFrom && transaction.date < filters.dateFrom) return false;
+    if (filters.dateTo && transaction.date > filters.dateTo) return false;
+    if (filters.recurring === 'recurring' && !transaction.recurring) return false;
+    if (filters.recurring === 'one-off' && transaction.recurring) return false;
+
+    const amount = Number(transaction.amount);
+    if (filters.amountOver !== '' && amount <= Number(filters.amountOver)) return false;
+    if (filters.amountUnder !== '' && amount >= Number(filters.amountUnder)) return false;
+    return true;
+  });
+  const sortedTransactions = [...filteredTransactions].sort((first, second) => {
+    const comparison = compareTransactions(first, second, sortKey);
+    if (comparison !== 0) return sortDirection === 'ascending' ? comparison : -comparison;
+    return first.date.localeCompare(second.date) || first.id.localeCompare(second.id);
+  });
+  const sortBy = (nextSortKey: TransactionSortKey) => {
+    if (nextSortKey === sortKey) {
+      setSortDirection((current) => (current === 'ascending' ? 'descending' : 'ascending'));
+      return;
+    }
+    setSortKey(nextSortKey);
+    setSortDirection('ascending');
+  };
+  const sortableHeader = (key: TransactionSortKey, label: string) => (
+    <th aria-sort={sortKey === key ? sortDirection : 'none'}>
+      <button type="button" className="transactionSortButton" onClick={() => sortBy(key)}>
+        {label}
+        <span className="transactionSortIndicator" aria-hidden="true">
+          {sortKey === key ? (sortDirection === 'ascending' ? '↑' : '↓') : '↕'}
+        </span>
+      </button>
+    </th>
+  );
   const money = new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency: household.currency,
   });
   const date = new Intl.DateTimeFormat(undefined, { day: '2-digit', month: 'short' });
+  const expenseTypes = Array.from(
+    new Set(
+      transactions
+        .filter((transaction) => transaction.kind === 'expense' && transaction.type)
+        .map((transaction) => transaction.type!),
+    ),
+  ).sort(transactionCollator.compare);
+  const updateFilter = <Key extends keyof TransactionFilters>(
+    key: Key,
+    value: TransactionFilters[Key],
+  ) => setFilters((current) => ({ ...current, [key]: value }));
 
   return (
     <section className="householdDashboard" aria-label="Primary household">
@@ -284,21 +409,152 @@ export function HouseholdDashboard() {
             </button>
           </div>
         </div>
+        <details className="transactionFilters">
+          <summary>
+            <span className="transactionFilterTitle">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 6h16M7 12h10m-7 6h4" />
+              </svg>
+              Filters
+              {activeFilterCount ? (
+                <span className="transactionFilterCount">{activeFilterCount}</span>
+              ) : null}
+            </span>
+            <span className="transactionFilterHint">
+              {activeFilterCount ? `${filteredTransactions.length} matching` : 'Show options'}
+            </span>
+          </summary>
+          <div className="transactionFilterDrawer">
+            <label className="transactionFilterField">
+              <span>Type</span>
+              <select
+                value={filters.type}
+                onChange={(event) => updateFilter('type', event.target.value)}
+              >
+                <option value="all">All types</option>
+                <option value="income">Income</option>
+                <option value="expense">All expenses</option>
+                {expenseTypes.map((type) => (
+                  <option key={type} value={`expense:${type}`}>
+                    {type
+                      .split('-')
+                      .map((word) => word[0]!.toUpperCase() + word.slice(1))
+                      .join(' ')}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="transactionFilterField">
+              <span>User</span>
+              <select
+                value={filters.userId}
+                onChange={(event) => updateFilter('userId', event.target.value)}
+              >
+                <option value="all">All users</option>
+                {query.data.members.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.displayName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="transactionFilterField">
+              <span>Source</span>
+              <select
+                value={filters.sourceId}
+                onChange={(event) => updateFilter('sourceId', event.target.value)}
+              >
+                <option value="all">All sources</option>
+                {query.data.sources.map((source) => (
+                  <option key={source.id} value={source.id}>
+                    {source.displayName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="transactionFilterField">
+              <span>Recurring</span>
+              <select
+                value={filters.recurring}
+                onChange={(event) =>
+                  updateFilter('recurring', event.target.value as RecurringFilter)
+                }
+              >
+                <option value="all">All transactions</option>
+                <option value="recurring">Recurring only</option>
+                <option value="one-off">One-off only</option>
+              </select>
+            </label>
+            <label className="transactionFilterField">
+              <span>Date from</span>
+              <input
+                type="date"
+                value={filters.dateFrom}
+                max={filters.dateTo || undefined}
+                onChange={(event) => updateFilter('dateFrom', event.target.value)}
+              />
+            </label>
+            <label className="transactionFilterField">
+              <span>Date to</span>
+              <input
+                type="date"
+                value={filters.dateTo}
+                min={filters.dateFrom || undefined}
+                onChange={(event) => updateFilter('dateTo', event.target.value)}
+              />
+            </label>
+            <label className="transactionFilterField">
+              <span>Amount over</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={filters.amountOver}
+                onChange={(event) => updateFilter('amountOver', event.target.value)}
+              />
+            </label>
+            <label className="transactionFilterField">
+              <span>Amount under</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                placeholder="No maximum"
+                value={filters.amountUnder}
+                onChange={(event) => updateFilter('amountUnder', event.target.value)}
+              />
+            </label>
+            <div className="transactionFilterFooter">
+              <span aria-live="polite">
+                Showing {filteredTransactions.length} of {transactions.length} entries
+              </span>
+              {activeFilterCount ? (
+                <button type="button" onClick={() => setFilters(emptyTransactionFilters)}>
+                  Clear filters
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </details>
         <div className="transactionScroll">
-          {transactions.length ? (
+          {filteredTransactions.length ? (
             <table className="transactionTable">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th aria-label="Type" />
-                  <th>User</th>
-                  <th>Source</th>
-                  <th>Amount</th>
+                  {sortableHeader('date', 'Date')}
+                  <th aria-label="Icon" />
+                  {sortableHeader('user', 'User')}
+                  {sortableHeader('source', 'Source')}
+                  {sortableHeader('type', 'Type')}
+                  {sortableHeader('amount', 'Amount')}
                   <th aria-label="Actions" />
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((entry) => (
+                {sortedTransactions.map((entry) => (
                   <tr key={`${entry.kind}-${entry.id}`}>
                     <td>
                       <time dateTime={entry.date}>
@@ -308,8 +564,18 @@ export function HouseholdDashboard() {
                     <td>
                       <EntryIcon entry={entry} />
                     </td>
-                    <td>{entry.user.displayName}</td>
+                    <td>
+                      <span className="transactionUser">
+                        <ProfileImage
+                          image={entry.user.profileImage}
+                          color={entry.user.desiredColor}
+                          size={32}
+                        />
+                        <span>{entry.user.displayName}</span>
+                      </span>
+                    </td>
                     <td>{entry.source.displayName}</td>
+                    <td>{transactionTypeLabel(entry)}</td>
                     <td className={entry.kind === 'income' ? 'incomeAmount' : 'expenseAmount'}>
                       {entry.kind === 'income' ? '+' : '−'}
                       {money.format(Number(entry.amount))}
@@ -331,6 +597,13 @@ export function HouseholdDashboard() {
                 ))}
               </tbody>
             </table>
+          ) : transactions.length ? (
+            <p className="transactionEmpty">
+              No transactions match these filters.{' '}
+              <button type="button" onClick={() => setFilters(emptyTransactionFilters)}>
+                Clear filters
+              </button>
+            </p>
           ) : (
             <p className="transactionEmpty">No income or expenses recorded for this month.</p>
           )}

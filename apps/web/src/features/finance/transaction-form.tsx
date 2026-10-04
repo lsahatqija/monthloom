@@ -62,6 +62,9 @@ export function TransactionForm({
   const [kind, setKind] = useState<CreateHouseholdTransactionRequest['kind']>(
     transaction?.kind ?? 'expense',
   );
+  const [type, setType] = useState<NonNullable<CreateHouseholdTransactionRequest['type']>>(
+    transaction?.type ?? 'other',
+  );
   const [source, setSource] = useState(transaction?.source.displayName ?? '');
   const [icon, setIcon] = useState<CreateHouseholdTransactionRequest['icon']>(
     transaction?.icon ?? 'receipt',
@@ -127,6 +130,7 @@ export function TransactionForm({
     event.preventDefault();
     mutation.mutate({
       kind,
+      type: kind === 'expense' ? type : null,
       date: date || todayDate(),
       source,
       icon,
@@ -166,7 +170,7 @@ export function TransactionForm({
 
         <form className="transactionForm" onSubmit={submit}>
           <fieldset className="transactionKind" disabled={mutation.isPending}>
-            <legend>Transaction type</legend>
+            <legend>Transaction kind</legend>
             <label className={kind === 'expense' ? 'isSelected' : undefined}>
               <input
                 type="radio"
@@ -332,6 +336,32 @@ export function TransactionForm({
               </datalist>
             </label>
 
+            <label className="transactionField transactionTypeField">
+              <span>Type</span>
+              <select
+                value={kind === 'expense' ? type : 'income'}
+                required
+                disabled={mutation.isPending || kind === 'income'}
+                onChange={(event) =>
+                  setType(
+                    event.target.value as NonNullable<CreateHouseholdTransactionRequest['type']>,
+                  )
+                }
+              >
+                {kind === 'income' ? <option value="income">Income</option> : null}
+                {kind === 'expense'
+                  ? Constants.EXPENSE_TYPES.map((option) => (
+                      <option key={option} value={option}>
+                        {option
+                          .split('-')
+                          .map((word) => word[0]!.toUpperCase() + word.slice(1))
+                          .join(' ')}
+                      </option>
+                    ))
+                  : null}
+              </select>
+            </label>
+
             <label className="transactionField transactionAmountField">
               <span>Amount</span>
               <input
@@ -370,7 +400,13 @@ export function TransactionForm({
                 role="switch"
                 checked={recurring}
                 disabled={mutation.isPending}
-                onChange={(event) => setRecurring(event.target.checked)}
+                onChange={(event) => {
+                  const isRecurring = event.target.checked;
+                  setRecurring(isRecurring);
+                  if (!isRecurring) {
+                    setSelection((current) => ({ ...current, future: false }));
+                  }
+                }}
               />
             </label>
             {recurring ? (
@@ -415,10 +451,14 @@ export function TransactionForm({
                 />
                 This transaction
               </label>
-              <label className={selection.future ? 'isSelected' : undefined}>
+              <label
+                className={selection.future ? 'isSelected' : undefined}
+                aria-disabled={!recurring}
+              >
                 <input
                   type="checkbox"
                   checked={selection.future}
+                  disabled={!recurring || mutation.isPending}
                   onChange={(event) =>
                     setSelection((current) => ({ ...current, future: event.target.checked }))
                   }

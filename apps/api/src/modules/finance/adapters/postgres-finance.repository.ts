@@ -109,6 +109,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
       .select({
         ...selection,
         id: expenses.id,
+        type: expenses.type,
         date: expenses.date,
         icon: expenses.icon,
         color: expenses.color,
@@ -133,6 +134,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
     ): HouseholdTransaction => ({
       id: row.id,
       kind,
+      type: null,
       date: row.date,
       icon: row.icon,
       color: row.color,
@@ -150,7 +152,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
 
     return [
       ...incomeRows.map((row) => mapRow(row, 'income')),
-      ...expenseRows.map((row) => mapRow(row, 'expense')),
+      ...expenseRows.map((row) => ({ ...mapRow(row, 'expense'), type: row.type })),
     ].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
   }
 
@@ -210,7 +212,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
           ? await transaction.insert(incomes).values(values).returning()
           : await transaction
               .insert(expenses)
-              .values({ ...values, type: 'other' })
+              .values({ ...values, type: input.type! })
               .returning();
       if (!record) throw new Error('Failed to create transaction.');
 
@@ -229,6 +231,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
       return {
         id: record.id,
         kind: input.kind,
+        type: input.kind === 'expense' ? input.type : null,
         date: record.date,
         icon: record.icon,
         color: record.color,
@@ -345,7 +348,10 @@ export class PostgresFinanceRepository implements FinanceRepository {
           if (originalKind === 'income') {
             await transaction.update(incomes).set(values).where(eq(incomes.id, occurrence.id));
           } else {
-            await transaction.update(expenses).set(values).where(eq(expenses.id, occurrence.id));
+            await transaction
+              .update(expenses)
+              .set({ ...values, type: input.transaction.type! })
+              .where(eq(expenses.id, occurrence.id));
           }
         } else if (input.transaction.kind === 'income') {
           await transaction.insert(incomes).values({ id: occurrence.id, ...values });
@@ -353,7 +359,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
         } else {
           await transaction
             .insert(expenses)
-            .values({ id: occurrence.id, ...values, type: 'other' });
+            .values({ id: occurrence.id, ...values, type: input.transaction.type! });
           await transaction.delete(incomes).where(eq(incomes.id, occurrence.id));
         }
       }
@@ -373,6 +379,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
       return {
         id: transactionId,
         kind: input.transaction.kind,
+        type: input.transaction.kind === 'expense' ? input.transaction.type : null,
         date: input.transaction.date,
         icon: input.transaction.icon,
         color: input.transaction.color,

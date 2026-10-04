@@ -5,6 +5,7 @@ import { Constants } from '../constants.js';
 import { publicUserSchema } from '../users/user.schemas.js';
 
 export const financialIconSchema = z.enum(Constants.FINANCIAL_ICONS);
+export const expenseTypeSchema = z.enum(Constants.EXPENSE_TYPES);
 const calendarDateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must use YYYY-MM-DD format');
@@ -39,6 +40,7 @@ export const householdMonthQuerySchema = z.object({
 export const householdTransactionSchema = z.object({
   id: idSchema,
   kind: z.enum(['income', 'expense']),
+  type: expenseTypeSchema.nullable(),
   date: calendarDateSchema,
   icon: financialIconSchema,
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
@@ -69,6 +71,7 @@ export const householdSourceSchema = z.object({
 const householdTransactionInputSchema = z
   .object({
     kind: z.enum(['income', 'expense']),
+    type: expenseTypeSchema.nullable(),
     date: calendarDateSchema,
     source: z.string().trim().min(1, 'Source is required').max(Constants.DISPLAY_NAME_MAX_LENGTH),
     icon: financialIconSchema,
@@ -79,6 +82,20 @@ const householdTransactionInputSchema = z
     expiresOn: calendarDateSchema.nullable(),
   })
   .superRefine((input, context) => {
+    if (input.kind === 'expense' && !input.type) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['type'],
+        message: 'Expense type is required',
+      });
+    }
+    if (input.kind === 'income' && input.type) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['type'],
+        message: 'Income transactions cannot have an expense type',
+      });
+    }
     if (input.expiresOn && input.expiresOn < input.date) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
