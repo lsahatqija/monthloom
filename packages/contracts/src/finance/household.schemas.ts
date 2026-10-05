@@ -21,17 +21,27 @@ export const householdSchema = z.object({
     .min(Constants.HOUSEHOLD_NAME_MIN_LENGTH)
     .max(Constants.HOUSEHOLD_NAME_MAX_LENGTH),
   currency: z.string().regex(/^[A-Z]{3}$/),
+  icon: financialIconSchema,
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  ownerId: idSchema,
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema,
 });
 
-export const updateHouseholdRequestSchema = z.object({
+const householdDetailsSchema = z.object({
   name: z
     .string()
     .trim()
     .min(Constants.HOUSEHOLD_NAME_MIN_LENGTH, 'Household name is required')
     .max(Constants.HOUSEHOLD_NAME_MAX_LENGTH),
+  icon: financialIconSchema,
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Choose a valid color'),
 });
+
+export const createHouseholdRequestSchema = householdDetailsSchema;
+export const updateHouseholdRequestSchema = householdDetailsSchema
+  .partial()
+  .refine((input) => Object.keys(input).length > 0, 'Provide at least one household change');
 
 export const householdMonthQuerySchema = z.object({
   month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Month must use YYYY-MM format'),
@@ -62,6 +72,23 @@ export const householdMemberSchema = publicUserSchema.pick({
   displayName: true,
   profileImage: true,
   desiredColor: true,
+});
+
+export const managedHouseholdMemberSchema = householdMemberSchema.extend({
+  joinedAt: isoDateTimeSchema,
+});
+
+export const managedHouseholdSchema = householdSchema.extend({
+  members: z.array(managedHouseholdMemberSchema),
+  isPrimary: z.boolean(),
+});
+
+export const householdListResponseSchema = z.object({
+  households: z.array(managedHouseholdSchema),
+});
+
+export const transferHouseholdOwnershipRequestSchema = z.object({
+  newOwnerId: idSchema,
 });
 
 export const householdSourceSchema = z.object({
@@ -152,7 +179,12 @@ export const householdTransactionResponseSchema = z.object({
 });
 
 export type HouseholdDto = z.infer<typeof householdSchema>;
+export type ManagedHousehold = z.infer<typeof managedHouseholdSchema>;
+export type CreateHouseholdRequest = z.infer<typeof createHouseholdRequestSchema>;
 export type UpdateHouseholdRequest = z.infer<typeof updateHouseholdRequestSchema>;
+export type TransferHouseholdOwnershipRequest = z.infer<
+  typeof transferHouseholdOwnershipRequestSchema
+>;
 export type HouseholdTransaction = z.infer<typeof householdTransactionSchema>;
 export type CreateHouseholdTransactionRequest = z.infer<
   typeof createHouseholdTransactionRequestSchema

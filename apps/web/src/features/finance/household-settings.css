@@ -1,0 +1,154 @@
+.householdSettings {
+  margin-top: var(--space-8);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--ml-divider);
+}
+.settingsSectionHeading h2,
+.settingsSectionHeading p,
+.createHouseholdForm h3,
+.householdCard h3,
+.householdCard h4 {
+  margin: 0;
+}
+.settingsSectionHeading p,
+.householdCardHeader p,
+.householdEmpty {
+  color: var(--ml-text-muted);
+}
+.createHouseholdForm,
+.householdCard {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--ml-border);
+  border-radius: 18px;
+  background: var(--ml-surface);
+  box-shadow: 0 8px 28px var(--ml-shadow);
+}
+.householdFields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(9rem, 0.65fr) 5rem;
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+}
+.householdFields label,
+.householdDangerZone label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.householdFields select,
+.householdDangerZone select {
+  min-height: 2.85rem;
+  width: 100%;
+  border: 1px solid var(--ml-border);
+  border-radius: var(--radius);
+  background: var(--ml-surface);
+  color: var(--ml-text);
+}
+.householdIconSelect {
+  position: relative;
+}
+.householdIconSelect svg {
+  position: absolute;
+  top: 50%;
+  left: var(--space-3);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.householdIconSelect select {
+  padding-left: 2.5rem;
+}
+.householdColorInput {
+  width: 100%;
+  height: 2.85rem;
+  padding: 0.2rem;
+  border: 1px solid var(--ml-border);
+  border-radius: var(--radius);
+  background: var(--ml-surface);
+  cursor: pointer;
+}
+.householdList {
+  display: grid;
+  gap: var(--space-4);
+}
+.householdCardHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.householdCardHeader p {
+  margin: var(--space-1) 0 0;
+  font-size: 0.85rem;
+}
+.householdBadge {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 14px;
+  color: #fff;
+}
+.householdActions,
+.householdDangerZone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+.householdMembers {
+  margin-top: var(--space-6);
+}
+.householdMembers ul {
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.householdMembers li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--ml-divider);
+}
+.householdMembers li > span:nth-child(2) {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+.householdMembers small {
+  color: var(--ml-text-muted);
+}
+.textDangerButton {
+  padding: var(--space-2);
+  border: 0;
+  background: transparent;
+  color: var(--color-danger);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.textDangerButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.householdDangerZone {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--ml-divider);
+}
+.householdDangerZone label {
+  flex: 1 1 15rem;
+}
+@media (max-width: 560px) {
+  .householdFields {
+    grid-template-columns: 1fr 5rem;
+  }
+  .householdFields label:first-child {
+    grid-column: 1 / -1;
+  }
+}

@@ -2,7 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { HouseholdTransaction, TransactionEditScope } from '@template/contracts';
-import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 
 import { ProfileImage } from '../../components/profile-image';
 import { Alert, Button, LoadingIndicator } from '../../components/ui/index';
@@ -10,8 +11,10 @@ import { isApiClientError } from '../../lib/api/errors';
 
 import {
   financeKeys,
-  getPrimaryHouseholdMonth,
+  getHouseholdMonth,
+  getHouseholds,
   removeHouseholdTransaction,
+  setPrimaryHousehold,
   updateHousehold,
 } from './finance.api';
 import { FinancialIcon, financialIconLabel } from './financial-icon';
@@ -283,26 +286,79 @@ function RemoveTransactionDialog({
 
 export function HouseholdDashboard() {
   const months = useMemo(monthOptions, []);
+  const queryClient = useQueryClient();
   const [month, setMonth] = useState(months.find((option) => option.isCurrent)!.value);
+  const [householdId, setHouseholdId] = useState('');
   const [addingTransaction, setAddingTransaction] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<HouseholdTransaction | null>(null);
   const [transactionToRemove, setTransactionToRemove] = useState<HouseholdTransaction | null>(null);
   const [sortKey, setSortKey] = useState<TransactionSortKey>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('ascending');
   const [filters, setFilters] = useState<TransactionFilters>(emptyTransactionFilters);
+  const householdsQuery = useQuery({
+    queryKey: financeKeys.households(),
+    queryFn: getHouseholds,
+  });
+  useEffect(() => {
+    if (!householdsQuery.data) return;
+    setHouseholdId((current) => {
+      if (householdsQuery.data.some((household) => household.id === current)) return current;
+      return (
+        householdsQuery.data.find((household) => household.isPrimary)?.id ??
+        householdsQuery.data[0]?.id ??
+        ''
+      );
+    });
+  }, [householdsQuery.data]);
   const query = useQuery({
-    queryKey: financeKeys.primaryMonth(month),
-    queryFn: () => getPrimaryHouseholdMonth(month),
+    queryKey: financeKeys.householdMonth(householdId, month),
+    queryFn: () => getHouseholdMonth(householdId, month),
+    enabled: Boolean(householdId),
+  });
+  const defaultMutation = useMutation({
+    mutationFn: () => setPrimaryHousehold(householdId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: financeKeys.households() });
+    },
   });
 
-  if (query.isPending) {
+  if (householdsQuery.isPending || (householdsQuery.data?.length && query.isPending)) {
     return (
       <div className="dashboardState">
         <LoadingIndicator label="Loading household…" />
       </div>
     );
   }
+  if (householdsQuery.isError) {
+    return (
+      <div className="dashboardState">
+        <Alert variant="error">We could not load your households.</Alert>
+      </div>
+    );
+  }
+  if (householdsQuery.data?.length === 0) {
+    return (
+      <div className="dashboardState">
+        <h1>No households yet</h1>
+        <p>Create a household in settings, or wait until another member invites you.</p>
+        <Link href="/settings" className="button">
+          Open settings
+        </Link>
+      </div>
+    );
+  }
   if (query.isError || !query.data) {
+    if (isApiClientError(query.error) && query.error.status === 404) {
+      return (
+        <div className="dashboardState">
+          <h1>Household unavailable</h1>
+          <p>Create a household in settings, or wait until another member invites you.</p>
+          <Link href="/settings" className="button">
+            Open settings
+          </Link>
+        </div>
+      );
+    }
     return (
       <div className="dashboardState">
         <Alert variant="error">We could not load your household.</Alert>
@@ -311,6 +367,7 @@ export function HouseholdDashboard() {
   }
 
   const { household, summary, transactions } = query.data;
+  const selectedHousehold = householdsQuery.data?.find((entry) => entry.id === household.id);
   const activeFilterCount = Object.entries(filters).filter(
     ([key, value]) => value !== '' && value !== 'all' && !(key === 'recurring' && value === 'all'),
   ).length;
@@ -376,24 +433,60 @@ export function HouseholdDashboard() {
   ) => setFilters((current) => ({ ...current, [key]: value }));
 
   return (
-    <section className="householdDashboard" aria-label="Primary household">
+    <section className="householdDashboard" aria-label="Household dashboard">
       <div className="dashboardHeading">
         <HouseholdName id={household.id} name={household.name} />
-        <label className="monthPicker">
-          <span className="srOnly">Month</span>
-          <select value={month} onChange={(event) => setMonth(event.target.value)}>
-            {months.map((option) => (
-              <option
-                key={option.value}
-                value={option.value}
-                className={option.isFuture ? 'futureMonthOption' : undefined}
-              >
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="dashboardSelectors">
+          <label className="householdPicker">
+            <span className="srOnly">Household</span>
+            <select
+              value={householdId}
+              onChange={(event) => {
+                setHouseholdId(event.target.value);
+                setFilters(emptyTransactionFilters);
+              }}
+            >
+              {householdsQuery.data?.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {entry.name}
+                  {entry.isPrimary ? ' (default)' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          {selectedHousehold && !selectedHousehold.isPrimary ? (
+            <button
+              type="button"
+              className="defaultHouseholdButton"
+              disabled={defaultMutation.isPending}
+              onClick={() => defaultMutation.mutate()}
+            >
+              {defaultMutation.isPending ? 'Saving…' : 'Make default'}
+            </button>
+          ) : null}
+          <label className="monthPicker">
+            <span className="srOnly">Month</span>
+            <select value={month} onChange={(event) => setMonth(event.target.value)}>
+              {months.map((option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                  className={option.isFuture ? 'futureMonthOption' : undefined}
+                >
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
+      {defaultMutation.isError ? (
+        <Alert variant="error">
+          {isApiClientError(defaultMutation.error)
+            ? defaultMutation.error.message
+            : 'We could not update your default household.'}
+        </Alert>
+      ) : null}
 
       <div className="financeRecap" aria-label="Monthly recap">
         <div>

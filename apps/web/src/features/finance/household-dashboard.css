@@ -112,11 +112,21 @@
   font-size: 0.82rem;
 }
 
-.monthPicker {
+.dashboardSelectors {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.monthPicker,
+.householdPicker {
   position: relative;
   flex: 0 0 auto;
 }
-.monthPicker::after {
+.monthPicker::after,
+.householdPicker::after {
   content: '';
   position: absolute;
   right: 1rem;
@@ -128,7 +138,8 @@
   pointer-events: none;
   transform: translateY(-70%) rotate(45deg);
 }
-.monthPicker select {
+.monthPicker select,
+.householdPicker select {
   min-height: 2.75rem;
   padding: var(--space-2) 2.5rem var(--space-2) var(--space-3);
   appearance: none;
@@ -139,6 +150,30 @@
   font: inherit;
   font-weight: 650;
   cursor: pointer;
+}
+.householdPicker select {
+  max-width: min(18rem, 42vw);
+  text-overflow: ellipsis;
+}
+.defaultHouseholdButton {
+  min-height: 2.4rem;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--ml-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ml-text-muted);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+.defaultHouseholdButton:hover:not(:disabled) {
+  border-color: var(--ml-primary);
+  color: var(--ml-primary);
+}
+.defaultHouseholdButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 .monthPicker option.futureMonthOption {
   font-style: italic;
@@ -1104,6 +1139,17 @@
   }
   .householdTitleRow {
     width: 100%;
+  }
+  .dashboardSelectors {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .householdPicker {
+    flex: 1 1 12rem;
+  }
+  .householdPicker select {
+    width: 100%;
+    max-width: none;
   }
   .financeRecap {
     grid-template-columns: 1fr 1fr;

@@ -9,6 +9,9 @@ export interface HouseholdRecord {
   id: string;
   name: string;
   currency: string;
+  icon: FinancialIcon;
+  color: string;
+  ownerId: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -18,6 +21,13 @@ export interface HouseholdMember {
   userId: string;
   isPrimary: boolean;
   joinedAt: Date;
+}
+
+export interface ManagedHouseholdRecord extends HouseholdRecord {
+  isPrimary: boolean;
+  members: Array<
+    Pick<User, 'id' | 'displayName' | 'profileImage' | 'desiredColor'> & { joinedAt: Date }
+  >;
 }
 
 export interface Source {

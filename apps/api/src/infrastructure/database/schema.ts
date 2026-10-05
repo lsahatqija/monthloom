@@ -89,6 +89,11 @@ export const households = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     name: varchar('name', { length: Constants.HOUSEHOLD_NAME_MAX_LENGTH }).notNull(),
     currency: char('currency', { length: 3 }).notNull(),
+    icon: financialIconEnum('icon').notNull().default('house'),
+    color: varchar('color', { length: 7 }).notNull().default('#35675b'),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -97,6 +102,11 @@ export const households = pgTable(
       'households_currency_format_check',
       sql`${table.currency} ~ '^[A-Z]{3}$'`,
     ),
+    colorFormatCheck: check(
+      'households_color_format_check',
+      sql`${table.color} ~ '^#[0-9A-Fa-f]{6}$'`,
+    ),
+    ownerIdIdx: index('households_owner_id_idx').on(table.ownerId),
   }),
 );
 
@@ -154,7 +164,9 @@ export const incomes = pgTable(
       .notNull()
       .references(() => households.id, { onDelete: 'cascade' }),
     sourceId: uuid('source_id').notNull(),
-    userId: uuid('user_id').notNull(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
     icon: financialIconEnum('icon').notNull(),
     color: varchar('color', { length: 7 }).notNull(),
     amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
@@ -175,11 +187,6 @@ export const incomes = pgTable(
       'incomes_color_format_check',
       sql`${table.color} ~ '^#[0-9A-Fa-f]{6}$'`,
     ),
-    householdMemberFk: foreignKey({
-      columns: [table.householdId, table.userId],
-      foreignColumns: [householdMembers.householdId, householdMembers.userId],
-      name: 'incomes_household_member_fk',
-    }).onDelete('no action'),
     householdSourceFk: foreignKey({
       columns: [table.householdId, table.sourceId],
       foreignColumns: [sources.householdId, sources.id],
@@ -196,7 +203,9 @@ export const expenses = pgTable(
       .notNull()
       .references(() => households.id, { onDelete: 'cascade' }),
     sourceId: uuid('source_id').notNull(),
-    userId: uuid('user_id').notNull(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
     type: expenseTypeEnum('type').notNull(),
     icon: financialIconEnum('icon').notNull(),
     color: varchar('color', { length: 7 }).notNull(),
@@ -219,11 +228,6 @@ export const expenses = pgTable(
       'expenses_color_format_check',
       sql`${table.color} ~ '^#[0-9A-Fa-f]{6}$'`,
     ),
-    householdMemberFk: foreignKey({
-      columns: [table.householdId, table.userId],
-      foreignColumns: [householdMembers.householdId, householdMembers.userId],
-      name: 'expenses_household_member_fk',
-    }).onDelete('no action'),
     householdSourceFk: foreignKey({
       columns: [table.householdId, table.sourceId],
       foreignColumns: [sources.householdId, sources.id],

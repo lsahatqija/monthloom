@@ -10,7 +10,10 @@ export function createFinanceRouter(
 ): Router {
   const router = Router();
   router.use(requireAuth);
+  router.get('/', asyncHandler(financeController.listHouseholds));
+  router.post('/', asyncHandler(financeController.createHousehold));
   router.get('/primary/month', asyncHandler(financeController.getPrimaryMonth));
+  router.get('/:id/month', asyncHandler(financeController.getHouseholdMonth));
   router.post('/:id/transactions', asyncHandler(financeController.createTransaction));
   router.patch(
     '/:id/transactions/:transactionId',
@@ -21,5 +24,9 @@ export function createFinanceRouter(
     asyncHandler(financeController.removeTransaction),
   );
   router.patch('/:id', asyncHandler(financeController.updateHousehold));
+  router.put('/:id/primary', asyncHandler(financeController.setPrimaryHousehold));
+  router.delete('/:id/members/:memberId', asyncHandler(financeController.removeMember));
+  router.post('/:id/leave', asyncHandler(financeController.leaveHousehold));
+  router.delete('/:id', asyncHandler(financeController.deleteHousehold));
   return router;
 }

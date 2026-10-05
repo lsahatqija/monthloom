@@ -71,6 +71,13 @@
       "when": 1791134621399,
       "tag": "0009_calm_squirrel_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791208440238,
+      "tag": "0010_green_dragon_lord",
+      "breakpoints": true
     }
   ]
 }
