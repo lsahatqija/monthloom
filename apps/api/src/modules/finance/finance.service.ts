@@ -1,19 +1,20 @@
-import type {
-  CreateHouseholdTransactionRequest,
-  HouseholdMonthResponse,
-  TransactionEditScope,
-  UpdateHouseholdRequest,
-  UpdateHouseholdTransactionRequest,
+import {
+  Constants,
+  type CreateHouseholdTransactionRequest,
+  type CreateHouseholdRequest,
+  type HouseholdMonthResponse,
+  type TransactionEditScope,
+  type UpdateHouseholdRequest,
+  type UpdateHouseholdTransactionRequest,
 } from '@template/contracts';
 
-import { AuthorizationError, NotFoundError } from '../../shared/errors/index.js';
-import type { UserRepository } from '../users/user.repository.js';
+import { generateSessionToken, hashSessionToken } from '../../infrastructure/security/tokens.js';
+import { AuthorizationError, ConflictError, NotFoundError } from '../../shared/errors/index.js';
 
 import type { FinanceRepository } from './finance.repository.js';
+import type { HouseholdRecord } from './finance.types.js';
 
-function serializeHousehold(
-  household: Awaited<ReturnType<FinanceRepository['findPrimaryHousehold']>>,
-) {
+function serializeHousehold(household: HouseholdRecord | null) {
   if (!household) throw new NotFoundError('No household was found.');
   return {
     ...household,
@@ -32,27 +33,45 @@ function fromCents(amount: number): string {
 }
 
 export class FinanceService {
-  constructor(
-    private readonly financeRepository: FinanceRepository,
-    private readonly userRepository: UserRepository,
-  ) {}
+  constructor(private readonly financeRepository: FinanceRepository) {}
 
-  async createDefaultHousehold(userId: string, displayName: string): Promise<void> {
-    await this.financeRepository.createDefaultHousehold(userId, displayName);
+  async createHousehold(userId: string, input: CreateHouseholdRequest) {
+    return serializeHousehold(await this.financeRepository.createHousehold(userId, input));
+  }
+
+  async listHouseholds(userId: string) {
+    const households = await this.financeRepository.listHouseholds(userId);
+    return households.map((household) => ({
+      ...serializeHousehold(household),
+      isPrimary: household.isPrimary,
+      members: household.members.map((member) => ({
+        ...member,
+        joinedAt: member.joinedAt.toISOString(),
+      })),
+    }));
   }
 
   async getPrimaryMonth(userId: string, month: string): Promise<HouseholdMonthResponse> {
-    let household = await this.financeRepository.findPrimaryHousehold(userId);
-    if (!household) {
-      const user = await this.userRepository.findById(userId);
-      if (!user) throw new NotFoundError('User was not found.');
-      household = await this.financeRepository.createDefaultHousehold(userId, user.displayName);
+    const household = await this.financeRepository.findPrimaryHousehold(userId);
+    if (!household) throw new NotFoundError('You do not have an active household yet.');
+    return this.getHouseholdMonth(household.id, userId, month);
+  }
+
+  async getHouseholdMonth(
+    householdId: string,
+    userId: string,
+    month: string,
+  ): Promise<HouseholdMonthResponse> {
+    if (!(await this.financeRepository.isMember(householdId, userId))) {
+      throw new AuthorizationError('You are not a member of this household.');
     }
+    const household = await this.financeRepository.findHousehold(householdId);
+    if (!household) throw new NotFoundError('Household was not found.');
 
     const [transactions, members, sources] = await Promise.all([
-      this.financeRepository.getMonth(household.id, month),
-      this.financeRepository.getMembers(household.id),
-      this.financeRepository.getSources(household.id),
+      this.financeRepository.getMonth(householdId, month),
+      this.financeRepository.getMembers(householdId),
+      this.financeRepository.getSources(householdId),
     ]);
     const currentMember = members.find((member) => member.id === userId);
     const orderedMembers = currentMember
@@ -132,8 +151,136 @@ export class FinanceService {
     if (!(await this.financeRepository.isMember(householdId, userId))) {
       throw new AuthorizationError('You are not a member of this household.');
     }
-    return serializeHousehold(
-      await this.financeRepository.updateHouseholdName(householdId, input.name),
+    return serializeHousehold(await this.financeRepository.updateHousehold(householdId, input));
+  }
+
+  async setPrimaryHousehold(householdId: string, userId: string): Promise<void> {
+    if (!(await this.financeRepository.isMember(householdId, userId))) {
+      throw new AuthorizationError('You are not a member of this household.');
+    }
+    await this.financeRepository.setPrimaryHousehold(householdId, userId);
+  }
+
+  async removeMember(
+    householdId: string,
+    memberId: string,
+    requestingUserId: string,
+  ): Promise<void> {
+    const household = await this.financeRepository.findHousehold(householdId);
+    if (!household) throw new NotFoundError('Household was not found.');
+    if (household.ownerId !== requestingUserId) {
+      throw new AuthorizationError('Only the household owner can remove members.');
+    }
+    if (memberId === household.ownerId) {
+      throw new ConflictError('The owner must leave the household and transfer ownership.');
+    }
+    if (!(await this.financeRepository.removeMember(householdId, memberId))) {
+      throw new NotFoundError('Household member was not found.');
+    }
+  }
+
+  async leaveHousehold(householdId: string, userId: string, newOwnerId?: string): Promise<void> {
+    if (!(await this.financeRepository.isMember(householdId, userId))) {
+      throw new AuthorizationError('You are not a member of this household.');
+    }
+    const household = await this.financeRepository.findHousehold(householdId);
+    if (!household) throw new NotFoundError('Household was not found.');
+
+    if (household.ownerId === userId) {
+      const members = await this.financeRepository.getMembers(householdId);
+      if (members.length === 1) {
+        throw new ConflictError('You cannot leave a household with no other members.');
+      }
+      if (!newOwnerId) {
+        throw new ConflictError('Select a new owner before leaving the household.');
+      }
+      if (
+        newOwnerId === userId ||
+        !(await this.financeRepository.isMember(householdId, newOwnerId))
+      ) {
+        throw new ConflictError('The new owner must be another household member.');
+      }
+    } else if (newOwnerId) {
+      throw new ConflictError('Only the current owner can transfer ownership.');
+    }
+
+    if (!(await this.financeRepository.leaveHousehold(householdId, userId, newOwnerId))) {
+      throw new NotFoundError('Household member was not found.');
+    }
+  }
+
+  async deleteHousehold(householdId: string, userId: string): Promise<void> {
+    const household = await this.financeRepository.findHousehold(householdId);
+    if (!household) throw new NotFoundError('Household was not found.');
+    if (household.ownerId !== userId) {
+      throw new AuthorizationError('Only the household owner can delete it.');
+    }
+    if (!(await this.financeRepository.deleteHousehold(householdId))) {
+      throw new NotFoundError('Household was not found.');
+    }
+  }
+
+  async createInvitation(householdId: string, userId: string) {
+    if (!(await this.financeRepository.isMember(householdId, userId))) {
+      throw new AuthorizationError('You are not a member of this household.');
+    }
+    const household = await this.financeRepository.findHousehold(householdId);
+    if (!household) throw new NotFoundError('Household was not found.');
+
+    const token = generateSessionToken();
+    const expiresAt = new Date(Date.now() + Constants.HOUSEHOLD_INVITATION_TTL_MS);
+    await this.financeRepository.createInvitation(
+      householdId,
+      userId,
+      hashSessionToken(token),
+      expiresAt,
     );
+    return {
+      token,
+      household: {
+        id: household.id,
+        name: household.name,
+        icon: household.icon,
+        color: household.color,
+      },
+      expiresAt: expiresAt.toISOString(),
+    };
+  }
+
+  async getInvitation(token: string) {
+    const invitation = await this.financeRepository.findInvitation(hashSessionToken(token));
+    if (!invitation || invitation.acceptedAt) {
+      throw new NotFoundError('This household invitation is invalid or has already been used.');
+    }
+    if (invitation.expiresAt.getTime() <= Date.now()) {
+      throw new NotFoundError('This household invitation has expired.');
+    }
+    return {
+      household: {
+        id: invitation.householdId,
+        name: invitation.householdName,
+        icon: invitation.householdIcon,
+        color: invitation.householdColor,
+      },
+      expiresAt: invitation.expiresAt.toISOString(),
+    };
+  }
+
+  async acceptInvitation(token: string, userId: string) {
+    const result = await this.financeRepository.acceptInvitation(
+      hashSessionToken(token),
+      userId,
+      new Date(),
+    );
+    if (result.status === 'not_found' || result.status === 'used') {
+      throw new NotFoundError('This household invitation is invalid or has already been used.');
+    }
+    if (result.status === 'expired') {
+      throw new NotFoundError('This household invitation has expired.');
+    }
+    if (result.status === 'already_member') {
+      throw new ConflictError('You are already a member of this household.');
+    }
+    return { householdId: result.householdId };
   }
 }

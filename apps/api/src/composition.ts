@@ -31,8 +31,8 @@ export function buildAppDependencies() {
   const fileStorage = new LocalFileStorage(path.resolve(config.upload.directory));
 
   const userService = new UserService(userRepository);
-  const financeService = new FinanceService(financeRepository, userRepository);
-  const authService = new AuthService(userRepository, sessionRepository, financeService);
+  const financeService = new FinanceService(financeRepository);
+  const authService = new AuthService(userRepository, sessionRepository);
   const fileService = new FileService(fileRepository, fileStorage);
   const systemService = new SystemService();
 

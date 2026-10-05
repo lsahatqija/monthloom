@@ -6,11 +6,13 @@ import {
 import {
   apiErrorResponseSchema,
   authResponseSchema,
+  createHouseholdRequestSchema,
   createHouseholdTransactionRequestSchema,
   fileListResponseSchema,
   fileMetadataSchema,
   householdMonthQuerySchema,
   householdMonthResponseSchema,
+  householdListResponseSchema,
   householdResponseSchema,
   householdTransactionResponseSchema,
   livenessResponseSchema,
@@ -20,6 +22,7 @@ import {
   readinessResponseSchema,
   removeHouseholdTransactionQuerySchema,
   registerRequestSchema,
+  transferHouseholdOwnershipRequestSchema,
   updateHouseholdRequestSchema,
   updateHouseholdTransactionRequestSchema,
 } from '@template/contracts';
@@ -44,6 +47,37 @@ const FileListResponse = registry.register('FileListResponse', fileListResponseS
 
 registry.registerPath({
   method: 'get',
+  path: '/api/v1/households',
+  summary: "List the current user's households",
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  responses: {
+    200: {
+      description: 'Households and their members.',
+      content: { 'application/json': { schema: householdListResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/households',
+  summary: 'Create a household',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: {
+    body: { content: { 'application/json': { schema: createHouseholdRequestSchema } } },
+  },
+  responses: {
+    201: {
+      description: 'Household created.',
+      content: { 'application/json': { schema: householdResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
   path: '/health/live',
   summary: 'Liveness probe',
   tags: ['System'],
@@ -56,9 +90,58 @@ registry.registerPath({
 });
 
 registry.registerPath({
+  method: 'put',
+  path: '/api/v1/households/{id}/primary',
+  summary: 'Make a household active for the current user',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: { params: z.object({ id: z.string().uuid() }) },
+  responses: { 204: { description: 'Active household changed.' } },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/households/{id}/leave',
+  summary: 'Leave a household, optionally transferring ownership',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: {
+      content: {
+        'application/json': { schema: transferHouseholdOwnershipRequestSchema.partial() },
+      },
+    },
+  },
+  responses: { 204: { description: 'Household left.' } },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/v1/households/{id}/members/{memberId}',
+  summary: 'Remove a household member as the owner',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid(), memberId: z.string().uuid() }),
+  },
+  responses: { 204: { description: 'Member removed.' } },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/v1/households/{id}',
+  summary: 'Delete a household as the owner',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: { params: z.object({ id: z.string().uuid() }) },
+  responses: { 204: { description: 'Household deleted.' } },
+});
+
+registry.registerPath({
   method: 'get',
   path: '/api/v1/households/primary/month',
-  summary: 'Get the primary household dashboard for a month',
+  summary: 'Get the default household dashboard for a month',
   tags: ['Households'],
   security: [{ [bearerCookieSecurity.name]: [] }],
   request: { query: householdMonthQuerySchema },
@@ -69,6 +152,28 @@ registry.registerPath({
     },
     401: {
       description: 'Authentication required.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/households/{id}/month',
+  summary: 'Get a household dashboard for a month',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    query: householdMonthQuerySchema,
+  },
+  responses: {
+    200: {
+      description: 'Household monthly summary and transactions.',
+      content: { 'application/json': { schema: householdMonthResponseSchema } },
+    },
+    403: {
+      description: 'Not a household member.',
       content: { 'application/json': { schema: ErrorResponse } },
     },
   },

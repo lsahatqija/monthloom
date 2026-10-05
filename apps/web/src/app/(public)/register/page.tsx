@@ -5,22 +5,25 @@ import { redirect } from 'next/navigation';
 import { PageContainer } from '../../../components/ui/index';
 import { RegisterForm } from '../../../features/auth/register-form';
 import { getServerUser } from '../../../lib/auth/get-server-user';
+import { sanitizeRedirectTarget } from '../../../lib/auth/safe-redirect';
 
 export const metadata: Metadata = { title: 'Register' };
 
-export default async function RegisterPage() {
+export default async function RegisterPage({ searchParams }: { searchParams: { next?: string } }) {
   const user = await getServerUser();
+  const redirectTo = sanitizeRedirectTarget(searchParams.next);
 
   if (user) {
-    redirect('/settings');
+    redirect(redirectTo);
   }
 
   return (
     <PageContainer>
       <h1>Create an account</h1>
-      <RegisterForm redirectTo="/" />
+      <RegisterForm redirectTo={redirectTo} />
       <p>
-        Already have an account? <Link href="/login">Log in</Link>
+        Already have an account?{' '}
+        <Link href={`/login?next=${encodeURIComponent(redirectTo)}`}>Log in</Link>
       </p>
     </PageContainer>
   );
