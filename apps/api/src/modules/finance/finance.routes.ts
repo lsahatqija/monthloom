@@ -9,11 +9,14 @@ export function createFinanceRouter(
   requireAuth: RequestHandler,
 ): Router {
   const router = Router();
+  router.get('/invitations/:token', asyncHandler(financeController.getInvitation));
   router.use(requireAuth);
+  router.post('/invitations/:token/accept', asyncHandler(financeController.acceptInvitation));
   router.get('/', asyncHandler(financeController.listHouseholds));
   router.post('/', asyncHandler(financeController.createHousehold));
   router.get('/primary/month', asyncHandler(financeController.getPrimaryMonth));
   router.get('/:id/month', asyncHandler(financeController.getHouseholdMonth));
+  router.post('/:id/invitations', asyncHandler(financeController.createInvitation));
   router.post('/:id/transactions', asyncHandler(financeController.createTransaction));
   router.patch(
     '/:id/transactions/:transactionId',

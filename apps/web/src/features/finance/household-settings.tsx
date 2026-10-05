@@ -16,6 +16,7 @@ import { isApiClientError } from '../../lib/api/errors';
 
 import {
   createHousehold,
+  createHouseholdInvitation,
   deleteHousehold,
   financeKeys,
   getHouseholds,
@@ -104,6 +105,8 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
     household.members.find((member) => member.id !== user.id)?.id ?? '',
   );
   const [error, setError] = useState<string | null>(null);
+  const [invitationLink, setInvitationLink] = useState<string | null>(null);
+  const [copyLabel, setCopyLabel] = useState('Copy link');
   const isOwner = household.ownerId === user.id;
   const refresh = () => queryClient.invalidateQueries({ queryKey: financeKeys.all });
   const mutation = useMutation({
@@ -123,6 +126,15 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
       color: draft.color,
     };
     mutation.mutate(() => updateHousehold(household.id, input));
+  };
+
+  const createInvitation = () => {
+    mutation.mutate(async () => {
+      const invitation = await createHouseholdInvitation(household.id);
+      const link = `${window.location.origin}/invite/${invitation.token}`;
+      setInvitationLink(link);
+      setCopyLabel('Copy link');
+    });
   };
 
   const leave = () => {
@@ -184,7 +196,31 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
       )}
 
       <div className="householdMembers">
-        <h4>Members</h4>
+        <div className="householdMembersHeading">
+          <h4>Members</h4>
+          <Button variant="secondary" onClick={createInvitation} disabled={mutation.isPending}>
+            Create invitation link
+          </Button>
+        </div>
+        {invitationLink ? (
+          <div className="householdInvitationLink">
+            <Input value={invitationLink} readOnly aria-label="Household invitation link" />
+            <Button
+              variant="secondary"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(invitationLink);
+                  setCopyLabel('Copied!');
+                } catch {
+                  setCopyLabel('Select and copy');
+                }
+              }}
+            >
+              {copyLabel}
+            </Button>
+            <small>This single-use link expires in one hour.</small>
+          </div>
+        ) : null}
         <ul>
           {household.members.map((member) => (
             <li key={member.id}>

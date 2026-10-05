@@ -23,6 +23,23 @@ export interface HouseholdMember {
   joinedAt: Date;
 }
 
+export interface HouseholdInvitationRecord {
+  id: string;
+  householdId: string;
+  householdName: string;
+  householdIcon: FinancialIcon;
+  householdColor: string;
+  expiresAt: Date;
+  acceptedAt: Date | null;
+}
+
+export type AcceptInvitationResult =
+  | { status: 'accepted'; householdId: string }
+  | { status: 'already_member'; householdId: string }
+  | { status: 'expired' }
+  | { status: 'used' }
+  | { status: 'not_found' };
+
 export interface ManagedHouseholdRecord extends HouseholdRecord {
   isPrimary: boolean;
   members: Array<

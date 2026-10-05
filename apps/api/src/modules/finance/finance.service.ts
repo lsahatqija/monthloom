@@ -1,12 +1,14 @@
-import type {
-  CreateHouseholdTransactionRequest,
-  CreateHouseholdRequest,
-  HouseholdMonthResponse,
-  TransactionEditScope,
-  UpdateHouseholdRequest,
-  UpdateHouseholdTransactionRequest,
+import {
+  Constants,
+  type CreateHouseholdTransactionRequest,
+  type CreateHouseholdRequest,
+  type HouseholdMonthResponse,
+  type TransactionEditScope,
+  type UpdateHouseholdRequest,
+  type UpdateHouseholdTransactionRequest,
 } from '@template/contracts';
 
+import { generateSessionToken, hashSessionToken } from '../../infrastructure/security/tokens.js';
 import { AuthorizationError, ConflictError, NotFoundError } from '../../shared/errors/index.js';
 
 import type { FinanceRepository } from './finance.repository.js';
@@ -216,5 +218,69 @@ export class FinanceService {
     if (!(await this.financeRepository.deleteHousehold(householdId))) {
       throw new NotFoundError('Household was not found.');
     }
+  }
+
+  async createInvitation(householdId: string, userId: string) {
+    if (!(await this.financeRepository.isMember(householdId, userId))) {
+      throw new AuthorizationError('You are not a member of this household.');
+    }
+    const household = await this.financeRepository.findHousehold(householdId);
+    if (!household) throw new NotFoundError('Household was not found.');
+
+    const token = generateSessionToken();
+    const expiresAt = new Date(Date.now() + Constants.HOUSEHOLD_INVITATION_TTL_MS);
+    await this.financeRepository.createInvitation(
+      householdId,
+      userId,
+      hashSessionToken(token),
+      expiresAt,
+    );
+    return {
+      token,
+      household: {
+        id: household.id,
+        name: household.name,
+        icon: household.icon,
+        color: household.color,
+      },
+      expiresAt: expiresAt.toISOString(),
+    };
+  }
+
+  async getInvitation(token: string) {
+    const invitation = await this.financeRepository.findInvitation(hashSessionToken(token));
+    if (!invitation || invitation.acceptedAt) {
+      throw new NotFoundError('This household invitation is invalid or has already been used.');
+    }
+    if (invitation.expiresAt.getTime() <= Date.now()) {
+      throw new NotFoundError('This household invitation has expired.');
+    }
+    return {
+      household: {
+        id: invitation.householdId,
+        name: invitation.householdName,
+        icon: invitation.householdIcon,
+        color: invitation.householdColor,
+      },
+      expiresAt: invitation.expiresAt.toISOString(),
+    };
+  }
+
+  async acceptInvitation(token: string, userId: string) {
+    const result = await this.financeRepository.acceptInvitation(
+      hashSessionToken(token),
+      userId,
+      new Date(),
+    );
+    if (result.status === 'not_found' || result.status === 'used') {
+      throw new NotFoundError('This household invitation is invalid or has already been used.');
+    }
+    if (result.status === 'expired') {
+      throw new NotFoundError('This household invitation has expired.');
+    }
+    if (result.status === 'already_member') {
+      throw new ConflictError('You are already a member of this household.');
+    }
+    return { householdId: result.householdId };
   }
 }

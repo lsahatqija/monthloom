@@ -103,6 +103,27 @@
 .householdMembers {
   margin-top: var(--space-6);
 }
+.householdMembersHeading,
+.householdInvitationLink {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.householdMembersHeading {
+  justify-content: space-between;
+}
+.householdInvitationLink {
+  margin-top: var(--space-3);
+}
+.householdInvitationLink input {
+  min-width: 12rem;
+  flex: 1 1 20rem;
+}
+.householdInvitationLink small {
+  width: 100%;
+  color: var(--ml-text-muted);
+}
 .householdMembers ul {
   margin: var(--space-2) 0 0;
   padding: 0;
@@ -151,4 +172,26 @@
   .householdFields label:first-child {
     grid-column: 1 / -1;
   }
+}
+
+.invitationPrompt {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border: 1px solid var(--ml-border);
+  border-radius: 18px;
+  background: var(--ml-surface);
+  box-shadow: 0 8px 28px var(--ml-shadow);
+}
+.invitationPrompt h1,
+.invitationPrompt p {
+  margin: 0;
+}
+.invitationActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.invitationActions a.button {
+  text-decoration: none;
 }

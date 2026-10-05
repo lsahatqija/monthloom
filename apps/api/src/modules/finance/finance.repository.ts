@@ -8,7 +8,12 @@ import type {
   UpdateHouseholdTransactionRequest,
 } from '@template/contracts';
 
-import type { HouseholdRecord, ManagedHouseholdRecord } from './finance.types.js';
+import type {
+  AcceptInvitationResult,
+  HouseholdInvitationRecord,
+  HouseholdRecord,
+  ManagedHouseholdRecord,
+} from './finance.types.js';
 
 export interface FinanceRepository {
   createHousehold(userId: string, input: CreateHouseholdRequest): Promise<HouseholdRecord>;
@@ -38,4 +43,12 @@ export interface FinanceRepository {
   removeMember(householdId: string, userId: string): Promise<boolean>;
   leaveHousehold(householdId: string, userId: string, newOwnerId?: string): Promise<boolean>;
   deleteHousehold(householdId: string): Promise<boolean>;
+  createInvitation(
+    householdId: string,
+    createdById: string,
+    tokenHash: string,
+    expiresAt: Date,
+  ): Promise<void>;
+  findInvitation(tokenHash: string): Promise<HouseholdInvitationRecord | null>;
+  acceptInvitation(tokenHash: string, userId: string, now: Date): Promise<AcceptInvitationResult>;
 }

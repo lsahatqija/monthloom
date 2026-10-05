@@ -1,7 +1,9 @@
 import type {
   CreateHouseholdTransactionRequest,
   CreateHouseholdRequest,
+  CreateHouseholdInvitationResponse,
   HouseholdDto,
+  HouseholdInvitation,
   HouseholdMonthResponse,
   HouseholdTransaction,
   ManagedHousehold,
@@ -31,6 +33,30 @@ export async function createHousehold(
 ): Promise<{ household: HouseholdDto }> {
   const data = await apiClient.post<{ household: HouseholdDto }>('households', input);
   if (!data) throw new Error('Unexpected empty household response.');
+  return data;
+}
+
+export async function createHouseholdInvitation(
+  householdId: string,
+): Promise<CreateHouseholdInvitationResponse> {
+  const data = await apiClient.post<CreateHouseholdInvitationResponse>(
+    `households/${householdId}/invitations`,
+  );
+  if (!data) throw new Error('Unexpected empty invitation response.');
+  return data;
+}
+
+export async function getHouseholdInvitation(token: string): Promise<HouseholdInvitation> {
+  const data = await apiClient.get<HouseholdInvitation>(`households/invitations/${token}`);
+  if (!data) throw new Error('Unexpected empty invitation response.');
+  return data;
+}
+
+export async function acceptHouseholdInvitation(token: string): Promise<{ householdId: string }> {
+  const data = await apiClient.post<{ householdId: string }>(
+    `households/invitations/${token}/accept`,
+  );
+  if (!data) throw new Error('Unexpected empty invitation response.');
   return data;
 }
 

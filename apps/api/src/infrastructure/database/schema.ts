@@ -131,6 +131,31 @@ export const householdMembers = pgTable(
   }),
 );
 
+export const householdInvitations = pgTable(
+  'household_invitations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    householdId: uuid('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    createdById: uuid('created_by_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    tokenHash: varchar('token_hash', { length: 64 }).notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+    acceptedById: uuid('accepted_by_id').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    tokenHashUniqueIdx: uniqueIndex('household_invitations_token_hash_unique_idx').on(
+      table.tokenHash,
+    ),
+    householdIdIdx: index('household_invitations_household_id_idx').on(table.householdId),
+    expiresAtIdx: index('household_invitations_expires_at_idx').on(table.expiresAt),
+  }),
+);
+
 export const sources = pgTable(
   'sources',
   {
@@ -254,9 +279,27 @@ export const filesRelations = relations(files, ({ one }) => ({
 
 export const householdsRelations = relations(households, ({ many }) => ({
   members: many(householdMembers),
+  invitations: many(householdInvitations),
   sources: many(sources),
   incomes: many(incomes),
   expenses: many(expenses),
+}));
+
+export const householdInvitationsRelations = relations(householdInvitations, ({ one }) => ({
+  household: one(households, {
+    fields: [householdInvitations.householdId],
+    references: [households.id],
+  }),
+  createdBy: one(users, {
+    fields: [householdInvitations.createdById],
+    references: [users.id],
+    relationName: 'createdHouseholdInvitations',
+  }),
+  acceptedBy: one(users, {
+    fields: [householdInvitations.acceptedById],
+    references: [users.id],
+    relationName: 'acceptedHouseholdInvitations',
+  }),
 }));
 
 export const householdMembersRelations = relations(householdMembers, ({ one }) => ({

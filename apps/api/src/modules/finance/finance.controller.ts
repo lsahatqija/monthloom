@@ -4,6 +4,7 @@ import {
   createHouseholdRequestSchema,
   createHouseholdTransactionRequestSchema,
   householdIdParamsSchema,
+  householdInvitationParamsSchema,
   householdMemberParamsSchema,
   householdMonthQuerySchema,
   householdTransactionParamsSchema,
@@ -26,6 +27,24 @@ export class FinanceController {
     const input = createHouseholdRequestSchema.parse(req.body);
     const household = await this.financeService.createHousehold(req.authUser!.id, input);
     res.status(201).json({ household });
+  };
+
+  createInvitation = async (req: Request, res: Response): Promise<void> => {
+    const { id } = householdIdParamsSchema.parse(req.params);
+    const invitation = await this.financeService.createInvitation(id, req.authUser!.id);
+    res.status(201).json(invitation);
+  };
+
+  getInvitation = async (req: Request, res: Response): Promise<void> => {
+    const { token } = householdInvitationParamsSchema.parse(req.params);
+    const invitation = await this.financeService.getInvitation(token);
+    res.status(200).json(invitation);
+  };
+
+  acceptInvitation = async (req: Request, res: Response): Promise<void> => {
+    const { token } = householdInvitationParamsSchema.parse(req.params);
+    const result = await this.financeService.acceptInvitation(token, req.authUser!.id);
+    res.status(200).json(result);
   };
 
   getPrimaryMonth = async (req: Request, res: Response): Promise<void> => {

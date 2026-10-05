@@ -9,11 +9,7 @@ import { sanitizeRedirectTarget } from '../../../lib/auth/safe-redirect';
 
 export const metadata: Metadata = { title: 'Log in' };
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: { next?: string };
-}) {
+export default async function LoginPage({ searchParams }: { searchParams: { next?: string } }) {
   const user = await getServerUser();
   const redirectTo = sanitizeRedirectTarget(searchParams.next);
 
@@ -26,7 +22,8 @@ export default async function LoginPage({
       <h1>Log in</h1>
       <LoginForm redirectTo={redirectTo} />
       <p>
-        Don&apos;t have an account? <Link href="/register">Register</Link>
+        Don&apos;t have an account?{' '}
+        <Link href={`/register?next=${encodeURIComponent(redirectTo)}`}>Register</Link>
       </p>
     </PageContainer>
   );

@@ -174,6 +174,17 @@ export const householdMonthResponseSchema = z.object({
 });
 
 export const householdResponseSchema = z.object({ household: householdSchema });
+export const householdInvitationTokenSchema = z
+  .string()
+  .regex(/^[A-Za-z0-9_-]{43}$/, 'Invalid household invitation token');
+export const householdInvitationSchema = z.object({
+  household: householdSchema.pick({ id: true, name: true, icon: true, color: true }),
+  expiresAt: isoDateTimeSchema,
+});
+export const createHouseholdInvitationResponseSchema = householdInvitationSchema.extend({
+  token: householdInvitationTokenSchema,
+});
+export const acceptHouseholdInvitationResponseSchema = z.object({ householdId: idSchema });
 export const householdTransactionResponseSchema = z.object({
   transaction: householdTransactionSchema,
 });
@@ -195,3 +206,10 @@ export type UpdateHouseholdTransactionRequest = z.infer<
   typeof updateHouseholdTransactionRequestSchema
 >;
 export type HouseholdMonthResponse = z.infer<typeof householdMonthResponseSchema>;
+export type HouseholdInvitation = z.infer<typeof householdInvitationSchema>;
+export type CreateHouseholdInvitationResponse = z.infer<
+  typeof createHouseholdInvitationResponseSchema
+>;
+export type AcceptHouseholdInvitationResponse = z.infer<
+  typeof acceptHouseholdInvitationResponseSchema
+>;
