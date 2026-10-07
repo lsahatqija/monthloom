@@ -1,14 +1,19 @@
 import type {
+  CopyHouseholdSourcesRequest,
+  CopyHouseholdSourcesResponse,
+  CreateHouseholdSourceRequest,
   CreateHouseholdTransactionRequest,
   CreateHouseholdRequest,
   CreateHouseholdInvitationResponse,
   HouseholdDto,
   HouseholdInvitation,
   HouseholdMonthResponse,
+  HouseholdSource,
   HouseholdTransaction,
   ManagedHousehold,
   TransactionEditScope,
   UpdateHouseholdRequest,
+  UpdateHouseholdSourceRequest,
   UpdateHouseholdTransactionRequest,
 } from '@template/contracts';
 
@@ -20,6 +25,7 @@ export const financeKeys = {
   primaryMonth: (month: string) => [...financeKeys.all, 'primary', month] as const,
   householdMonth: (householdId: string, month: string) =>
     [...financeKeys.all, 'household', householdId, month] as const,
+  sources: (householdId: string) => [...financeKeys.all, 'sources', householdId] as const,
 };
 
 export async function getHouseholds(): Promise<ManagedHousehold[]> {
@@ -116,6 +122,55 @@ export async function createHouseholdTransaction(
     input,
   );
   if (!data) throw new Error('Unexpected empty transaction response.');
+  return data;
+}
+
+export async function createHouseholdSource(
+  householdId: string,
+  input: CreateHouseholdSourceRequest,
+): Promise<{ source: HouseholdSource }> {
+  const data = await apiClient.post<{ source: HouseholdSource }>(
+    `households/${householdId}/sources`,
+    input,
+  );
+  if (!data) throw new Error('Unexpected empty source response.');
+  return data;
+}
+
+export async function getHouseholdSources(householdId: string): Promise<HouseholdSource[]> {
+  const data = await apiClient.get<{ sources: HouseholdSource[] }>(
+    `households/${householdId}/sources`,
+  );
+  if (!data) throw new Error('Unexpected empty sources response.');
+  return data.sources;
+}
+
+export async function updateHouseholdSource(
+  householdId: string,
+  sourceId: string,
+  input: UpdateHouseholdSourceRequest,
+): Promise<{ source: HouseholdSource }> {
+  const data = await apiClient.patch<{ source: HouseholdSource }>(
+    `households/${householdId}/sources/${sourceId}`,
+    input,
+  );
+  if (!data) throw new Error('Unexpected empty source response.');
+  return data;
+}
+
+export async function deleteHouseholdSource(householdId: string, sourceId: string): Promise<void> {
+  await apiClient.delete(`households/${householdId}/sources/${sourceId}`);
+}
+
+export async function copyHouseholdSources(
+  sourceHouseholdId: string,
+  input: CopyHouseholdSourcesRequest,
+): Promise<CopyHouseholdSourcesResponse> {
+  const data = await apiClient.post<CopyHouseholdSourcesResponse>(
+    `households/${sourceHouseholdId}/sources/copy`,
+    input,
+  );
+  if (!data) throw new Error('Unexpected empty copy response.');
   return data;
 }
 

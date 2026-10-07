@@ -17,6 +17,11 @@ export function createFinanceRouter(
   router.get('/primary/month', asyncHandler(financeController.getPrimaryMonth));
   router.get('/:id/month', asyncHandler(financeController.getHouseholdMonth));
   router.post('/:id/invitations', asyncHandler(financeController.createInvitation));
+  router.get('/:id/sources', asyncHandler(financeController.listSources));
+  router.post('/:id/sources', asyncHandler(financeController.createSource));
+  router.post('/:id/sources/copy', asyncHandler(financeController.copySources));
+  router.patch('/:id/sources/:sourceId', asyncHandler(financeController.updateSource));
+  router.delete('/:id/sources/:sourceId', asyncHandler(financeController.deleteSource));
   router.post('/:id/transactions', asyncHandler(financeController.createTransaction));
   router.patch(
     '/:id/transactions/:transactionId',

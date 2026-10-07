@@ -1,10 +1,13 @@
 import {
   Constants,
+  type CopyHouseholdSourcesRequest,
+  type CreateHouseholdSourceRequest,
   type CreateHouseholdTransactionRequest,
   type CreateHouseholdRequest,
   type HouseholdMonthResponse,
   type TransactionEditScope,
   type UpdateHouseholdRequest,
+  type UpdateHouseholdSourceRequest,
   type UpdateHouseholdTransactionRequest,
 } from '@template/contracts';
 
@@ -109,7 +112,86 @@ export class FinanceService {
     if (!(await this.financeRepository.isMember(householdId, input.userId))) {
       throw new AuthorizationError('The selected user is not a member of this household.');
     }
+    if (!(await this.financeRepository.getSource(householdId, input.sourceId))) {
+      throw new NotFoundError('The selected source was not found in this household.');
+    }
     return this.financeRepository.createTransaction(householdId, input);
+  }
+
+  async createSource(
+    householdId: string,
+    requestingUserId: string,
+    input: CreateHouseholdSourceRequest,
+  ) {
+    if (!(await this.financeRepository.isMember(householdId, requestingUserId))) {
+      throw new AuthorizationError('You are not a member of this household.');
+    }
+    const source = await this.financeRepository.createSource(householdId, input);
+    if (!source) throw new ConflictError('A source with this display name already exists.');
+    return source;
+  }
+
+  async listSources(householdId: string, requestingUserId: string) {
+    if (!(await this.financeRepository.isMember(householdId, requestingUserId))) {
+      throw new AuthorizationError('You are not a member of this household.');
+    }
+    return this.financeRepository.getSources(householdId);
+  }
+
+  async updateSource(
+    householdId: string,
+    sourceId: string,
+    requestingUserId: string,
+    input: UpdateHouseholdSourceRequest,
+  ) {
+    if (!(await this.financeRepository.isMember(householdId, requestingUserId))) {
+      throw new AuthorizationError('You are not a member of this household.');
+    }
+    const source = await this.financeRepository.updateSource(householdId, sourceId, input);
+    if (source === 'not_found') throw new NotFoundError('Source was not found.');
+    if (source === 'conflict') {
+      throw new ConflictError('A source with this display name already exists.');
+    }
+    return source;
+  }
+
+  async deleteSource(
+    householdId: string,
+    sourceId: string,
+    requestingUserId: string,
+  ): Promise<void> {
+    if (!(await this.financeRepository.isMember(householdId, requestingUserId))) {
+      throw new AuthorizationError('You are not a member of this household.');
+    }
+    const result = await this.financeRepository.deleteSource(householdId, sourceId);
+    if (result === 'not_found') throw new NotFoundError('Source was not found.');
+    if (result === 'in_use') {
+      throw new ConflictError('Sources used by transactions cannot be deleted.');
+    }
+  }
+
+  async copySources(
+    sourceHouseholdId: string,
+    requestingUserId: string,
+    input: CopyHouseholdSourcesRequest,
+  ) {
+    if (sourceHouseholdId === input.targetHouseholdId) {
+      throw new ConflictError('Choose two different households.');
+    }
+    const [canReadSource, canWriteTarget] = await Promise.all([
+      this.financeRepository.isMember(sourceHouseholdId, requestingUserId),
+      this.financeRepository.isMember(input.targetHouseholdId, requestingUserId),
+    ]);
+    if (!canReadSource || !canWriteTarget) {
+      throw new AuthorizationError('You must be a member of both households.');
+    }
+    const result = await this.financeRepository.copySources(
+      sourceHouseholdId,
+      input.targetHouseholdId,
+      input.sourceIds,
+    );
+    if (!result) throw new NotFoundError('One or more selected sources were not found.');
+    return result;
   }
 
   async updateTransaction(
@@ -123,6 +205,9 @@ export class FinanceService {
     }
     if (!(await this.financeRepository.isMember(householdId, input.transaction.userId))) {
       throw new AuthorizationError('The selected user is not a member of this household.');
+    }
+    if (!(await this.financeRepository.getSource(householdId, input.transaction.sourceId))) {
+      throw new NotFoundError('The selected source was not found in this household.');
     }
     const transaction = await this.financeRepository.updateTransaction(
       householdId,

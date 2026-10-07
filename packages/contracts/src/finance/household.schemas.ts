@@ -47,6 +47,49 @@ export const householdMonthQuerySchema = z.object({
   month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Month must use YYYY-MM format'),
 });
 
+const sourceNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Source name is required')
+  .max(Constants.DISPLAY_NAME_MAX_LENGTH);
+
+export const householdSourceSchema = z.object({
+  id: idSchema,
+  displayName: sourceNameSchema,
+  key: sourceNameSchema,
+  aliases: z.array(sourceNameSchema).min(1).max(Constants.SOURCE_ALIAS_MAX_COUNT),
+});
+
+export const createHouseholdSourceRequestSchema = z.object({
+  displayName: sourceNameSchema,
+  aliases: z.array(sourceNameSchema).max(Constants.SOURCE_ALIAS_MAX_COUNT - 1),
+});
+
+export const updateHouseholdSourceRequestSchema = createHouseholdSourceRequestSchema;
+export const copyHouseholdSourcesRequestSchema = z
+  .object({
+    targetHouseholdId: idSchema,
+    sourceIds: z.array(idSchema).min(1, 'Select at least one source'),
+  })
+  .superRefine((input, context) => {
+    if (new Set(input.sourceIds).size !== input.sourceIds.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['sourceIds'],
+        message: 'Each source can only be selected once',
+      });
+    }
+  });
+
+export const householdSourceResponseSchema = z.object({ source: householdSourceSchema });
+export const householdSourceListResponseSchema = z.object({
+  sources: z.array(householdSourceSchema),
+});
+export const copyHouseholdSourcesResponseSchema = z.object({
+  copiedCount: z.number().int().nonnegative(),
+  skippedCount: z.number().int().nonnegative(),
+});
+
 export const householdTransactionSchema = z.object({
   id: idSchema,
   kind: z.enum(['income', 'expense']),
@@ -64,7 +107,7 @@ export const householdTransactionSchema = z.object({
     profileImage: true,
     desiredColor: true,
   }),
-  source: z.object({ id: idSchema, displayName: z.string() }),
+  source: householdSourceSchema,
 });
 
 export const householdMemberSchema = publicUserSchema.pick({
@@ -91,17 +134,12 @@ export const transferHouseholdOwnershipRequestSchema = z.object({
   newOwnerId: idSchema,
 });
 
-export const householdSourceSchema = z.object({
-  id: idSchema,
-  displayName: z.string().min(1).max(Constants.DISPLAY_NAME_MAX_LENGTH),
-});
-
 const householdTransactionInputSchema = z
   .object({
     kind: z.enum(['income', 'expense']),
     type: expenseTypeSchema.nullable(),
     date: calendarDateSchema,
-    source: z.string().trim().min(1, 'Source is required').max(Constants.DISPLAY_NAME_MAX_LENGTH),
+    sourceId: idSchema,
     icon: financialIconSchema,
     color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Choose a valid color'),
     amount: transactionAmountSchema,
@@ -197,6 +235,11 @@ export type TransferHouseholdOwnershipRequest = z.infer<
   typeof transferHouseholdOwnershipRequestSchema
 >;
 export type HouseholdTransaction = z.infer<typeof householdTransactionSchema>;
+export type HouseholdSource = z.infer<typeof householdSourceSchema>;
+export type CreateHouseholdSourceRequest = z.infer<typeof createHouseholdSourceRequestSchema>;
+export type UpdateHouseholdSourceRequest = z.infer<typeof updateHouseholdSourceRequestSchema>;
+export type CopyHouseholdSourcesRequest = z.infer<typeof copyHouseholdSourcesRequestSchema>;
+export type CopyHouseholdSourcesResponse = z.infer<typeof copyHouseholdSourcesResponseSchema>;
 export type CreateHouseholdTransactionRequest = z.infer<
   typeof createHouseholdTransactionRequestSchema
 >;

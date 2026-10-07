@@ -8,7 +8,7 @@ import {
   type HouseholdTransaction,
   type TransactionSeriesSelection,
 } from '@template/contracts';
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import { Alert, Button } from '../../components/ui/index';
 import { isApiClientError } from '../../lib/api/errors';
@@ -16,6 +16,7 @@ import { useCurrentUser } from '../auth/use-current-user';
 
 import { createHouseholdTransaction, financeKeys, updateHouseholdTransaction } from './finance.api';
 import { FinancialIcon, financialIconLabel } from './financial-icon';
+import { SourceModal } from './source-modal';
 
 const COLOR_OPTIONS = [
   '#35675B',
@@ -54,7 +55,6 @@ export function TransactionForm({
   transaction,
   onClose,
 }: TransactionFormProps) {
-  const sourceListId = useId();
   const iconPickerRef = useRef<HTMLDetailsElement>(null);
   const colorPickerRef = useRef<HTMLDetailsElement>(null);
   const currentUser = useCurrentUser();
@@ -65,7 +65,9 @@ export function TransactionForm({
   const [type, setType] = useState<NonNullable<CreateHouseholdTransactionRequest['type']>>(
     transaction?.type ?? 'other',
   );
-  const [source, setSource] = useState(transaction?.source.displayName ?? '');
+  const [availableSources, setAvailableSources] = useState(sources);
+  const [sourceId, setSourceId] = useState(transaction?.source.id ?? '');
+  const [isAddingSource, setIsAddingSource] = useState(false);
   const [icon, setIcon] = useState<CreateHouseholdTransactionRequest['icon']>(
     transaction?.icon ?? 'receipt',
   );
@@ -97,11 +99,15 @@ export function TransactionForm({
         if (colorPickerRef.current) colorPickerRef.current.open = false;
         return;
       }
-      onClose();
+      if (isAddingSource) {
+        setIsAddingSource(false);
+      } else {
+        onClose();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [isAddingSource, onClose]);
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -132,7 +138,7 @@ export function TransactionForm({
       kind,
       type: kind === 'expense' ? type : null,
       date: date || todayDate(),
-      source,
+      sourceId,
       icon,
       color,
       amount,
@@ -141,6 +147,26 @@ export function TransactionForm({
       expiresOn: recurring && expiresOn ? expiresOn : null,
     });
   };
+
+  if (isAddingSource) {
+    return (
+      <SourceModal
+        householdId={householdId}
+        onClose={() => setIsAddingSource(false)}
+        onSaved={(source) => {
+          setAvailableSources((current) =>
+            [...current, source].sort(
+              (left, right) =>
+                left.displayName.localeCompare(right.displayName) ||
+                left.id.localeCompare(right.id),
+            ),
+          );
+          setSourceId(source.id);
+          setIsAddingSource(false);
+        }}
+      />
+    );
+  }
 
   return (
     <div
@@ -319,21 +345,29 @@ export function TransactionForm({
             </div>
             <label className="transactionField transactionSourceField">
               <span>Source</span>
-              <input
-                value={source}
-                list={sourceListId}
-                maxLength={Constants.DISPLAY_NAME_MAX_LENGTH}
-                placeholder={kind === 'income' ? 'e.g. Salary' : 'e.g. Grocery store'}
+              <select
+                value={sourceId}
                 autoFocus
                 required
                 disabled={mutation.isPending}
-                onChange={(event) => setSource(event.target.value)}
-              />
-              <datalist id={sourceListId}>
-                {sources.map((option) => (
-                  <option key={option.id} value={option.displayName} />
+                onChange={(event) => {
+                  if (event.target.value === 'add-new-source') {
+                    setIsAddingSource(true);
+                    return;
+                  }
+                  setSourceId(event.target.value);
+                }}
+              >
+                <option value="add-new-source">Add new source</option>
+                <option value="" disabled>
+                  Select a source
+                </option>
+                {availableSources.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.displayName}
+                  </option>
                 ))}
-              </datalist>
+              </select>
             </label>
 
             <label className="transactionField transactionTypeField">
@@ -490,6 +524,7 @@ export function TransactionForm({
               disabled={
                 mutation.isPending ||
                 !userId ||
+                !sourceId ||
                 Boolean(
                   transaction?.recurring &&
                   !selection.past &&

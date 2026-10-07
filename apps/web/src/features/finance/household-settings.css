@@ -165,12 +165,117 @@
 .householdDangerZone label {
   flex: 1 1 15rem;
 }
+.sourceSettings {
+  margin-top: var(--space-8);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--ml-divider);
+}
+.sourceSettingsHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.sourceHouseholdPicker,
+.copyHouseholdSelectors label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--ml-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.sourceHouseholdPicker {
+  width: min(100%, 24rem);
+  margin: var(--space-4) 0;
+}
+.sourceHouseholdPicker select,
+.copyHouseholdSelectors select {
+  min-height: 2.85rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--ml-border);
+  border-radius: var(--radius);
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  font: inherit;
+}
+.sourceTableScroll {
+  overflow-x: auto;
+  border: 1px solid var(--ml-border);
+  border-radius: 16px;
+  background: var(--ml-surface);
+}
+.sourceManagementTable {
+  margin-top: var(--space-4);
+}
+.sourceTable {
+  width: 100%;
+  min-width: 42rem;
+  border-collapse: collapse;
+}
+.sourceTable th,
+.sourceTable td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--ml-divider);
+  text-align: left;
+  vertical-align: middle;
+}
+.sourceTable th {
+  color: var(--ml-text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sourceTable tbody tr:last-child td {
+  border-bottom: 0;
+}
+.sourceTable code {
+  color: var(--ml-text-muted);
+  overflow-wrap: anywhere;
+}
+.sourceTableActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+.sourceTableEmpty {
+  margin: 0;
+  padding: var(--space-6);
+  color: var(--ml-text-muted);
+  text-align: center;
+}
+.copySourcesModal {
+  width: min(100%, 50rem);
+}
+.copySourcesContent {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-6);
+}
+.copyHouseholdSelectors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+.copySourceTable input[type='checkbox'] {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--ml-primary);
+}
 @media (max-width: 560px) {
   .householdFields {
     grid-template-columns: 1fr 5rem;
   }
   .householdFields label:first-child {
     grid-column: 1 / -1;
+  }
+  .sourceSettingsHeading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .copyHouseholdSelectors {
+    grid-template-columns: 1fr;
   }
 }
 

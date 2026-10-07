@@ -164,7 +164,11 @@ export const sources = pgTable(
       .notNull()
       .references(() => households.id, { onDelete: 'cascade' }),
     displayName: varchar('display_name', { length: Constants.DISPLAY_NAME_MAX_LENGTH }).notNull(),
-    nameKey: varchar('name_key', { length: Constants.DISPLAY_NAME_MAX_LENGTH }).notNull(),
+    key: varchar('name_key', { length: Constants.DISPLAY_NAME_MAX_LENGTH }).notNull(),
+    aliases: varchar('aliases', { length: Constants.DISPLAY_NAME_MAX_LENGTH })
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::varchar[]`),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -172,7 +176,11 @@ export const sources = pgTable(
     householdIdIdx: index('sources_household_id_idx').on(table.householdId),
     householdNameKeyUniqueIdx: uniqueIndex('sources_household_name_key_unique_idx').on(
       table.householdId,
-      table.nameKey,
+      table.key,
+    ),
+    aliasesIncludeDisplayNameCheck: check(
+      'sources_aliases_include_display_name_check',
+      sql`${table.displayName} = ANY(${table.aliases})`,
     ),
     householdAndIdUniqueIdx: uniqueIndex('sources_household_id_id_unique_idx').on(
       table.householdId,
