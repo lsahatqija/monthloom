@@ -9,7 +9,7 @@ import { Alert, Button, LoadingIndicator } from '../../components/ui/index';
 import { isApiClientError } from '../../lib/api/errors';
 
 import { acceptHouseholdInvitation, financeKeys, getHouseholdInvitation } from './finance.api';
-import { FinancialIcon } from './financial-icon';
+import { HouseholdIcon } from './household-icon';
 
 function errorMessage(error: unknown): string {
   return isApiClientError(error) ? error.message : 'Something went wrong. Please try again.';
@@ -46,7 +46,7 @@ export function HouseholdInvitationPrompt({
   return (
     <section className="invitationPrompt" aria-labelledby="invitation-heading">
       <span className="householdBadge" style={{ backgroundColor: invitation.household.color }}>
-        <FinancialIcon name={invitation.household.icon} size={28} />
+        <HouseholdIcon name={invitation.household.icon} size={28} />
       </span>
       <div>
         <h1 id="invitation-heading">Join {invitation.household.name}?</h1>

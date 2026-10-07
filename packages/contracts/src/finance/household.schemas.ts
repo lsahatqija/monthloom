@@ -5,6 +5,7 @@ import { Constants } from '../constants.js';
 import { publicUserSchema } from '../users/user.schemas.js';
 
 export const financialIconSchema = z.enum(Constants.FINANCIAL_ICONS);
+export const householdIconSchema = z.enum(Constants.HOUSEHOLD_ICONS);
 export const expenseTypeSchema = z.enum(Constants.EXPENSE_TYPES);
 const calendarDateSchema = z
   .string()
@@ -21,7 +22,7 @@ export const householdSchema = z.object({
     .min(Constants.HOUSEHOLD_NAME_MIN_LENGTH)
     .max(Constants.HOUSEHOLD_NAME_MAX_LENGTH),
   currency: z.string().regex(/^[A-Z]{3}$/),
-  icon: financialIconSchema,
+  icon: householdIconSchema,
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
   ownerId: idSchema,
   createdAt: isoDateTimeSchema,
@@ -34,7 +35,7 @@ const householdDetailsSchema = z.object({
     .trim()
     .min(Constants.HOUSEHOLD_NAME_MIN_LENGTH, 'Household name is required')
     .max(Constants.HOUSEHOLD_NAME_MAX_LENGTH),
-  icon: financialIconSchema,
+  icon: householdIconSchema,
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Choose a valid color'),
 });
 

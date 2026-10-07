@@ -80,6 +80,26 @@ export class Constants {
   } as const;
   static readonly DEFAULT_DESIRED_COLOR = 'indigo' as const;
 
+  /** Stable icon keys used to represent different kinds of households and properties. */
+  static readonly HOUSEHOLD_ICONS = [
+    'small-house',
+    'family-house',
+    'large-house',
+    'beach-house',
+    'mountain-cabin',
+    'cottage',
+    'farmhouse',
+    'townhouse',
+    'short-apartments',
+    'tall-apartments',
+    'office-building',
+    'rv',
+    'shack',
+    'villa',
+    'houseboat',
+    'shared-house',
+  ] as const;
+
   /** Stable icon keys used by income and expense entries. */
   static readonly FINANCIAL_ICONS = [
     'banknote',

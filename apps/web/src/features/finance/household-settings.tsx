@@ -8,7 +8,7 @@ import {
   type PublicUser,
   type UpdateHouseholdRequest,
 } from '@template/contracts';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { ProfileImage } from '../../components/profile-image';
 import { Alert, Button, Input, LoadingIndicator } from '../../components/ui/index';
@@ -25,14 +25,31 @@ import {
   setPrimaryHousehold,
   updateHousehold,
 } from './finance.api';
-import { FinancialIcon, financialIconLabel } from './financial-icon';
+import { HouseholdIcon, householdIconLabel } from './household-icon';
 
-type FinancialIconName = (typeof Constants.FINANCIAL_ICONS)[number];
+const HOUSEHOLD_COLOR_OPTIONS = [
+  '#35675B',
+  '#33805C',
+  '#2F7D78',
+  '#2F6F9F',
+  '#45658B',
+  '#67558A',
+  '#8B5FA8',
+  '#B35C7A',
+  '#C4473A',
+  '#D4683A',
+  '#C48A2C',
+  '#A3A635',
+  '#668238',
+  '#6B7280',
+  '#475569',
+  '#7C5C45',
+] as const;
 
 const defaultHousehold: CreateHouseholdRequest = {
   name: '',
-  icon: 'house',
-  color: '#35675b',
+  icon: 'small-house',
+  color: HOUSEHOLD_COLOR_OPTIONS[0],
 };
 
 function errorMessage(error: unknown): string {
@@ -48,6 +65,24 @@ function HouseholdFields({
   onChange: (value: CreateHouseholdRequest) => void;
   prefix: string;
 }) {
+  const iconPickerRef = useRef<HTMLDetailsElement>(null);
+  const colorPickerRef = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    const closePickers = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (iconPickerRef.current?.open && !iconPickerRef.current.contains(target)) {
+        iconPickerRef.current.open = false;
+      }
+      if (colorPickerRef.current?.open && !colorPickerRef.current.contains(target)) {
+        colorPickerRef.current.open = false;
+      }
+    };
+
+    document.addEventListener('mousedown', closePickers);
+    return () => document.removeEventListener('mousedown', closePickers);
+  }, []);
+
   return (
     <div className="householdFields">
       <label>
@@ -60,35 +95,80 @@ function HouseholdFields({
           required
         />
       </label>
-      <label>
-        <span>Icon</span>
-        <span className="householdIconSelect">
-          <FinancialIcon name={value.icon} />
-          <select
-            id={`${prefix}-icon`}
-            value={value.icon}
-            onChange={(event) =>
-              onChange({ ...value, icon: event.target.value as FinancialIconName })
-            }
-          >
-            {Constants.FINANCIAL_ICONS.map((icon) => (
-              <option key={icon} value={icon}>
-                {financialIconLabel(icon)}
-              </option>
-            ))}
-          </select>
-        </span>
-      </label>
-      <label>
-        <span>Color</span>
-        <input
+      <div className="householdField">
+        <span id={`${prefix}-icon-label`}>Icon</span>
+        <details
+          ref={iconPickerRef}
+          id={`${prefix}-icon`}
+          className="iconPickerDropdown householdIconDropdown"
+        >
+          <summary aria-labelledby={`${prefix}-icon-label`}>
+            <span className="selectedIconPreview" style={{ backgroundColor: value.color }}>
+              <HouseholdIcon name={value.icon} size={20} />
+            </span>
+            <span>{householdIconLabel(value.icon)}</span>
+          </summary>
+          <div className="iconPickerPopover">
+            <div className="iconPickerGrid" role="group" aria-label="Choose a household icon">
+              {Constants.HOUSEHOLD_ICONS.map((icon) => {
+                const label = householdIconLabel(icon);
+                return (
+                  <label
+                    key={icon}
+                    className={value.icon === icon ? 'isSelected' : undefined}
+                    title={label}
+                  >
+                    <input
+                      type="radio"
+                      name={`${prefix}-icon`}
+                      value={icon}
+                      checked={value.icon === icon}
+                      onChange={() => {
+                        onChange({ ...value, icon });
+                        if (iconPickerRef.current) iconPickerRef.current.open = false;
+                      }}
+                    />
+                    <HouseholdIcon name={icon} size={21} />
+                    <span className="srOnly">{label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        </details>
+      </div>
+      <div className="householdField">
+        <span id={`${prefix}-color-label`}>Color</span>
+        <details
+          ref={colorPickerRef}
           id={`${prefix}-color`}
-          className="householdColorInput"
-          type="color"
-          value={value.color}
-          onChange={(event) => onChange({ ...value, color: event.target.value })}
-        />
-      </label>
+          className="colorPickerDropdown householdColorDropdown"
+        >
+          <summary aria-labelledby={`${prefix}-color-label`}>
+            <span className="selectedColorPreview" style={{ backgroundColor: value.color }} />
+            <span>{value.color.toUpperCase()}</span>
+          </summary>
+          <div className="colorPickerPopover">
+            <div className="colorOptions" role="group" aria-label="Choose a household color">
+              {HOUSEHOLD_COLOR_OPTIONS.map((color) => (
+                <label key={color} style={{ backgroundColor: color }} title={color}>
+                  <input
+                    type="radio"
+                    name={`${prefix}-color`}
+                    value={color}
+                    checked={value.color.toUpperCase() === color}
+                    onChange={() => {
+                      onChange({ ...value, color });
+                      if (colorPickerRef.current) colorPickerRef.current.open = false;
+                    }}
+                  />
+                  <span className="srOnly">{color}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </details>
+      </div>
     </div>
   );
 }
@@ -153,7 +233,7 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
     <article className="householdCard">
       <div className="householdCardHeader">
         <span className="householdBadge" style={{ backgroundColor: household.color }}>
-          <FinancialIcon name={household.icon} size={24} />
+          <HouseholdIcon name={household.icon} size={24} />
         </span>
         <div>
           <h3>{household.name}</h3>
