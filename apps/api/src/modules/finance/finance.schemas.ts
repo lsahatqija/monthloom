@@ -1,4 +1,6 @@
 import {
+  copyHouseholdSourcesRequestSchema,
+  createHouseholdSourceRequestSchema,
   createHouseholdRequestSchema,
   createHouseholdTransactionRequestSchema,
   householdMonthQuerySchema,
@@ -6,11 +8,14 @@ import {
   removeHouseholdTransactionQuerySchema,
   transferHouseholdOwnershipRequestSchema,
   updateHouseholdRequestSchema,
+  updateHouseholdSourceRequestSchema,
   updateHouseholdTransactionRequestSchema,
 } from '@template/contracts';
 import { z } from 'zod';
 
 export {
+  copyHouseholdSourcesRequestSchema,
+  createHouseholdSourceRequestSchema,
   createHouseholdRequestSchema,
   createHouseholdTransactionRequestSchema,
   householdMonthQuerySchema,
@@ -18,6 +23,7 @@ export {
   removeHouseholdTransactionQuerySchema,
   transferHouseholdOwnershipRequestSchema,
   updateHouseholdRequestSchema,
+  updateHouseholdSourceRequestSchema,
   updateHouseholdTransactionRequestSchema,
 };
 export const householdIdParamsSchema = z.object({ id: z.string().uuid() });
@@ -29,4 +35,8 @@ export const householdMemberParamsSchema = z.object({
 export const householdTransactionParamsSchema = z.object({
   id: z.string().uuid(),
   transactionId: z.string().uuid(),
+});
+export const householdSourceParamsSchema = z.object({
+  id: z.string().uuid(),
+  sourceId: z.string().uuid(),
 });

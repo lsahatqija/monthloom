@@ -1,10 +1,14 @@
 import type {
+  CreateHouseholdSourceRequest,
+  CopyHouseholdSourcesResponse,
   CreateHouseholdTransactionRequest,
   CreateHouseholdRequest,
   HouseholdMonthResponse,
+  HouseholdSource,
   HouseholdTransaction,
   TransactionEditScope,
   UpdateHouseholdRequest,
+  UpdateHouseholdSourceRequest,
   UpdateHouseholdTransactionRequest,
 } from '@template/contracts';
 
@@ -23,6 +27,22 @@ export interface FinanceRepository {
   getMonth(householdId: string, month: string): Promise<HouseholdMonthResponse['transactions']>;
   getMembers(householdId: string): Promise<HouseholdMonthResponse['members']>;
   getSources(householdId: string): Promise<HouseholdMonthResponse['sources']>;
+  getSource(householdId: string, sourceId: string): Promise<HouseholdSource | null>;
+  createSource(
+    householdId: string,
+    input: CreateHouseholdSourceRequest,
+  ): Promise<HouseholdSource | null>;
+  updateSource(
+    householdId: string,
+    sourceId: string,
+    input: UpdateHouseholdSourceRequest,
+  ): Promise<HouseholdSource | 'not_found' | 'conflict'>;
+  deleteSource(householdId: string, sourceId: string): Promise<'deleted' | 'not_found' | 'in_use'>;
+  copySources(
+    sourceHouseholdId: string,
+    targetHouseholdId: string,
+    sourceIds: string[],
+  ): Promise<CopyHouseholdSourcesResponse | null>;
   createTransaction(
     householdId: string,
     input: CreateHouseholdTransactionRequest,

@@ -26,6 +26,7 @@ import {
   updateHousehold,
 } from './finance.api';
 import { FinancialIcon, financialIconLabel } from './financial-icon';
+import { SourceSettings } from './source-settings';
 
 type FinancialIconName = (typeof Constants.FINANCIAL_ICONS)[number];
 
@@ -346,6 +347,7 @@ export function HouseholdSettings({ user }: { user: PublicUser }) {
           <HouseholdCard key={household.id} household={household} user={user} />
         ))}
       </div>
+      {query.data ? <SourceSettings households={query.data} /> : null}
     </section>
   );
 }

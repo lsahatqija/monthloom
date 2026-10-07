@@ -51,7 +51,8 @@ export interface Source {
   id: string;
   householdId: string;
   displayName: string;
-  nameKey: string;
+  key: string;
+  aliases: string[];
   createdAt: Date;
   updatedAt: Date;
 }

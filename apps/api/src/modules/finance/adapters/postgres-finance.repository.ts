@@ -1,15 +1,19 @@
 import { randomUUID } from 'node:crypto';
 
 import type {
+  CopyHouseholdSourcesResponse,
+  CreateHouseholdSourceRequest,
   CreateHouseholdTransactionRequest,
   CreateHouseholdRequest,
   HouseholdMonthResponse,
+  HouseholdSource,
   HouseholdTransaction,
   TransactionEditScope,
   UpdateHouseholdRequest,
+  UpdateHouseholdSourceRequest,
   UpdateHouseholdTransactionRequest,
 } from '@template/contracts';
-import { and, asc, eq, gte, inArray, lt } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, lt, ne } from 'drizzle-orm';
 
 import type { Database } from '../../../infrastructure/database/client.js';
 import {
@@ -65,6 +69,26 @@ function averageAmounts(amounts: string[]): string {
     return total + Number(whole) * 100 + Number(fraction.padEnd(2, '0').slice(0, 2));
   }, 0);
   return (Math.round(totalCents / amounts.length) / 100).toFixed(2);
+}
+
+function sourceKey(value: string): string {
+  return value.normalize('NFKC').trim().toLocaleLowerCase('en-US');
+}
+
+function sourceValues(displayName: string, aliases: string[]) {
+  const normalizedDisplayName = displayName.trim();
+  const aliasesByKey = new Map<string, string>();
+  for (const alias of aliases) {
+    const normalizedAlias = alias.trim();
+    aliasesByKey.set(sourceKey(normalizedAlias), normalizedAlias);
+  }
+  const key = sourceKey(normalizedDisplayName);
+  aliasesByKey.delete(key);
+  return {
+    displayName: normalizedDisplayName,
+    key,
+    aliases: [normalizedDisplayName, ...aliasesByKey.values()],
+  };
 }
 
 export class PostgresFinanceRepository implements FinanceRepository {
@@ -165,6 +189,8 @@ export class PostgresFinanceRepository implements FinanceRepository {
       userDesiredColor: users.desiredColor,
       sourceId: sources.id,
       sourceDisplayName: sources.displayName,
+      sourceKey: sources.key,
+      sourceAliases: sources.aliases,
     };
 
     const incomeRows = await this.db
@@ -220,7 +246,12 @@ export class PostgresFinanceRepository implements FinanceRepository {
         profileImage: row.userProfileImage,
         desiredColor: row.userDesiredColor,
       },
-      source: { id: row.sourceId, displayName: row.sourceDisplayName },
+      source: {
+        id: row.sourceId,
+        displayName: row.sourceDisplayName,
+        key: row.sourceKey,
+        aliases: row.sourceAliases,
+      },
     });
 
     const actualTransactions = [
@@ -309,7 +340,12 @@ export class PostgresFinanceRepository implements FinanceRepository {
           profileImage: latest.userProfileImage,
           desiredColor: latest.userDesiredColor,
         },
-        source: { id: latest.sourceId, displayName: latest.sourceDisplayName },
+        source: {
+          id: latest.sourceId,
+          displayName: latest.sourceDisplayName,
+          key: latest.sourceKey,
+          aliases: latest.sourceAliases,
+        },
       });
     }
 
@@ -334,10 +370,149 @@ export class PostgresFinanceRepository implements FinanceRepository {
 
   async getSources(householdId: string): Promise<HouseholdMonthResponse['sources']> {
     return this.db
-      .select({ id: sources.id, displayName: sources.displayName })
+      .select({
+        id: sources.id,
+        displayName: sources.displayName,
+        key: sources.key,
+        aliases: sources.aliases,
+      })
       .from(sources)
       .where(eq(sources.householdId, householdId))
       .orderBy(asc(sources.displayName), asc(sources.id));
+  }
+
+  async getSource(householdId: string, sourceId: string): Promise<HouseholdSource | null> {
+    const [source] = await this.db
+      .select({
+        id: sources.id,
+        displayName: sources.displayName,
+        key: sources.key,
+        aliases: sources.aliases,
+      })
+      .from(sources)
+      .where(and(eq(sources.householdId, householdId), eq(sources.id, sourceId)))
+      .limit(1);
+    return source ?? null;
+  }
+
+  async createSource(
+    householdId: string,
+    input: CreateHouseholdSourceRequest,
+  ): Promise<HouseholdSource | null> {
+    const values = sourceValues(input.displayName, input.aliases);
+    const [source] = await this.db
+      .insert(sources)
+      .values({ householdId, ...values })
+      .onConflictDoNothing({ target: [sources.householdId, sources.key] })
+      .returning({
+        id: sources.id,
+        displayName: sources.displayName,
+        key: sources.key,
+        aliases: sources.aliases,
+      });
+    return source ?? null;
+  }
+
+  async updateSource(
+    householdId: string,
+    sourceId: string,
+    input: UpdateHouseholdSourceRequest,
+  ): Promise<HouseholdSource | 'not_found' | 'conflict'> {
+    return this.db.transaction(async (transaction) => {
+      const [existing] = await transaction
+        .select({ id: sources.id })
+        .from(sources)
+        .where(and(eq(sources.householdId, householdId), eq(sources.id, sourceId)))
+        .limit(1);
+      if (!existing) return 'not_found';
+
+      const values = sourceValues(input.displayName, input.aliases);
+      const [duplicate] = await transaction
+        .select({ id: sources.id })
+        .from(sources)
+        .where(
+          and(
+            eq(sources.householdId, householdId),
+            eq(sources.key, values.key),
+            ne(sources.id, sourceId),
+          ),
+        )
+        .limit(1);
+      if (duplicate) return 'conflict';
+
+      const [source] = await transaction
+        .update(sources)
+        .set({ ...values, updatedAt: new Date() })
+        .where(and(eq(sources.householdId, householdId), eq(sources.id, sourceId)))
+        .returning({
+          id: sources.id,
+          displayName: sources.displayName,
+          key: sources.key,
+          aliases: sources.aliases,
+        });
+      return source ?? 'not_found';
+    });
+  }
+
+  async deleteSource(
+    householdId: string,
+    sourceId: string,
+  ): Promise<'deleted' | 'not_found' | 'in_use'> {
+    return this.db.transaction(async (transaction) => {
+      const [source] = await transaction
+        .select({ id: sources.id })
+        .from(sources)
+        .where(and(eq(sources.householdId, householdId), eq(sources.id, sourceId)))
+        .limit(1);
+      if (!source) return 'not_found';
+
+      const [income, expense] = await Promise.all([
+        transaction
+          .select({ id: incomes.id })
+          .from(incomes)
+          .where(and(eq(incomes.householdId, householdId), eq(incomes.sourceId, sourceId)))
+          .limit(1),
+        transaction
+          .select({ id: expenses.id })
+          .from(expenses)
+          .where(and(eq(expenses.householdId, householdId), eq(expenses.sourceId, sourceId)))
+          .limit(1),
+      ]);
+      if (income.length || expense.length) return 'in_use';
+
+      await transaction
+        .delete(sources)
+        .where(and(eq(sources.householdId, householdId), eq(sources.id, sourceId)));
+      return 'deleted';
+    });
+  }
+
+  async copySources(
+    sourceHouseholdId: string,
+    targetHouseholdId: string,
+    sourceIds: string[],
+  ): Promise<CopyHouseholdSourcesResponse | null> {
+    return this.db.transaction(async (transaction) => {
+      const selectedSources = await transaction
+        .select({
+          displayName: sources.displayName,
+          key: sources.key,
+          aliases: sources.aliases,
+        })
+        .from(sources)
+        .where(and(eq(sources.householdId, sourceHouseholdId), inArray(sources.id, sourceIds)));
+      if (selectedSources.length !== sourceIds.length) return null;
+
+      const copied = await transaction
+        .insert(sources)
+        .values(selectedSources.map((source) => ({ householdId: targetHouseholdId, ...source })))
+        .onConflictDoNothing({ target: [sources.householdId, sources.key] })
+        .returning({ id: sources.id });
+      return {
+        copiedCount: copied.length,
+        skippedCount: selectedSources.length - copied.length,
+      };
+    });
   }
 
   async createTransaction(
@@ -345,17 +520,18 @@ export class PostgresFinanceRepository implements FinanceRepository {
     input: CreateHouseholdTransactionRequest,
   ): Promise<HouseholdTransaction> {
     return this.db.transaction(async (transaction) => {
-      const nameKey = input.source.trim().toLocaleLowerCase('en-US');
       const [source] = await transaction
-        .insert(sources)
-        .values({ householdId, displayName: input.source, nameKey })
-        .onConflictDoUpdate({
-          target: [sources.householdId, sources.nameKey],
-          set: { displayName: input.source, updatedAt: new Date() },
+        .select({
+          id: sources.id,
+          displayName: sources.displayName,
+          key: sources.key,
+          aliases: sources.aliases,
         })
-        .returning({ id: sources.id, displayName: sources.displayName });
+        .from(sources)
+        .where(and(eq(sources.householdId, householdId), eq(sources.id, input.sourceId)))
+        .limit(1);
 
-      if (!source) throw new Error('Failed to resolve transaction source.');
+      if (!source) throw new Error('Transaction source does not belong to the household.');
 
       const values = {
         householdId,
@@ -471,20 +647,19 @@ export class PostgresFinanceRepository implements FinanceRepository {
         return false;
       });
 
-      const nameKey = input.transaction.source.trim().toLocaleLowerCase('en-US');
       const [source] = await transaction
-        .insert(sources)
-        .values({
-          householdId,
-          displayName: input.transaction.source,
-          nameKey,
+        .select({
+          id: sources.id,
+          displayName: sources.displayName,
+          key: sources.key,
+          aliases: sources.aliases,
         })
-        .onConflictDoUpdate({
-          target: [sources.householdId, sources.nameKey],
-          set: { displayName: input.transaction.source, updatedAt: new Date() },
-        })
-        .returning({ id: sources.id, displayName: sources.displayName });
-      if (!source) throw new Error('Failed to resolve transaction source.');
+        .from(sources)
+        .where(
+          and(eq(sources.householdId, householdId), eq(sources.id, input.transaction.sourceId)),
+        )
+        .limit(1);
+      if (!source) throw new Error('Transaction source does not belong to the household.');
 
       const recurrenceId = input.transaction.recurring
         ? (original.recurrenceId ?? randomUUID())

@@ -6,6 +6,9 @@ import {
 import {
   apiErrorResponseSchema,
   authResponseSchema,
+  copyHouseholdSourcesRequestSchema,
+  copyHouseholdSourcesResponseSchema,
+  createHouseholdSourceRequestSchema,
   createHouseholdRequestSchema,
   createHouseholdTransactionRequestSchema,
   fileListResponseSchema,
@@ -14,6 +17,8 @@ import {
   householdMonthResponseSchema,
   householdListResponseSchema,
   householdResponseSchema,
+  householdSourceResponseSchema,
+  householdSourceListResponseSchema,
   householdTransactionResponseSchema,
   livenessResponseSchema,
   loginRequestSchema,
@@ -24,6 +29,7 @@ import {
   registerRequestSchema,
   transferHouseholdOwnershipRequestSchema,
   updateHouseholdRequestSchema,
+  updateHouseholdSourceRequestSchema,
   updateHouseholdTransactionRequestSchema,
 } from '@template/contracts';
 import { z } from 'zod';
@@ -197,6 +203,93 @@ registry.registerPath({
     403: {
       description: 'Not a household member.',
       content: { 'application/json': { schema: ErrorResponse } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/households/{id}/sources',
+  summary: 'Create a source for a household',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: { content: { 'application/json': { schema: createHouseholdSourceRequestSchema } } },
+  },
+  responses: {
+    201: {
+      description: 'Source created.',
+      content: { 'application/json': { schema: householdSourceResponseSchema } },
+    },
+    403: {
+      description: 'Not a household member.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/households/{id}/sources',
+  summary: 'List the sources in a household',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: { params: z.object({ id: z.string().uuid() }) },
+  responses: {
+    200: {
+      description: 'Household sources.',
+      content: { 'application/json': { schema: householdSourceListResponseSchema } },
+    },
+    403: {
+      description: 'Not a household member.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/households/{id}/sources/{sourceId}',
+  summary: 'Update a household source',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid(), sourceId: z.string().uuid() }),
+    body: { content: { 'application/json': { schema: updateHouseholdSourceRequestSchema } } },
+  },
+  responses: {
+    200: {
+      description: 'Source updated.',
+      content: { 'application/json': { schema: householdSourceResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/v1/households/{id}/sources/{sourceId}',
+  summary: 'Delete an unused household source',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: { params: z.object({ id: z.string().uuid(), sourceId: z.string().uuid() }) },
+  responses: { 204: { description: 'Source deleted.' } },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/households/{id}/sources/copy',
+  summary: 'Copy selected sources between two households',
+  tags: ['Households'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: { content: { 'application/json': { schema: copyHouseholdSourcesRequestSchema } } },
+  },
+  responses: {
+    201: {
+      description: 'Sources copied. Existing destination keys are skipped.',
+      content: { 'application/json': { schema: copyHouseholdSourcesResponseSchema } },
     },
   },
 });

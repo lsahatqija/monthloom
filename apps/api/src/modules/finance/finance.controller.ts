@@ -1,16 +1,20 @@
 import type { Request, Response } from 'express';
 
 import {
+  copyHouseholdSourcesRequestSchema,
+  createHouseholdSourceRequestSchema,
   createHouseholdRequestSchema,
   createHouseholdTransactionRequestSchema,
   householdIdParamsSchema,
   householdInvitationParamsSchema,
   householdMemberParamsSchema,
   householdMonthQuerySchema,
+  householdSourceParamsSchema,
   householdTransactionParamsSchema,
   removeHouseholdTransactionQuerySchema,
   transferHouseholdOwnershipRequestSchema,
   updateHouseholdRequestSchema,
+  updateHouseholdSourceRequestSchema,
   updateHouseholdTransactionRequestSchema,
 } from './finance.schemas.js';
 import type { FinanceService } from './finance.service.js';
@@ -97,6 +101,39 @@ export class FinanceController {
     const input = createHouseholdTransactionRequestSchema.parse(req.body);
     const transaction = await this.financeService.createTransaction(id, req.authUser!.id, input);
     res.status(201).json({ transaction });
+  };
+
+  createSource = async (req: Request, res: Response): Promise<void> => {
+    const { id } = householdIdParamsSchema.parse(req.params);
+    const input = createHouseholdSourceRequestSchema.parse(req.body);
+    const source = await this.financeService.createSource(id, req.authUser!.id, input);
+    res.status(201).json({ source });
+  };
+
+  listSources = async (req: Request, res: Response): Promise<void> => {
+    const { id } = householdIdParamsSchema.parse(req.params);
+    const sources = await this.financeService.listSources(id, req.authUser!.id);
+    res.status(200).json({ sources });
+  };
+
+  updateSource = async (req: Request, res: Response): Promise<void> => {
+    const { id, sourceId } = householdSourceParamsSchema.parse(req.params);
+    const input = updateHouseholdSourceRequestSchema.parse(req.body);
+    const source = await this.financeService.updateSource(id, sourceId, req.authUser!.id, input);
+    res.status(200).json({ source });
+  };
+
+  deleteSource = async (req: Request, res: Response): Promise<void> => {
+    const { id, sourceId } = householdSourceParamsSchema.parse(req.params);
+    await this.financeService.deleteSource(id, sourceId, req.authUser!.id);
+    res.status(204).send();
+  };
+
+  copySources = async (req: Request, res: Response): Promise<void> => {
+    const { id } = householdIdParamsSchema.parse(req.params);
+    const input = copyHouseholdSourcesRequestSchema.parse(req.body);
+    const result = await this.financeService.copySources(id, req.authUser!.id, input);
+    res.status(201).json(result);
   };
 
   updateTransaction = async (req: Request, res: Response): Promise<void> => {
