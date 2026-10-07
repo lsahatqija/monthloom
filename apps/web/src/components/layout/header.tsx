@@ -1,6 +1,7 @@
 'use client';
 
 import type { PublicUser } from '@template/contracts';
+import { CircleUserRound, Database, House, Palette } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -30,15 +31,6 @@ function MenuIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M4 7h16M4 12h16M4 17h16" />
-    </svg>
-  );
-}
-
-function SettingsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.55V21h-4v-.08A1.7 1.7 0 0 0 8.95 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15 1.7 1.7 0 0 0 3.08 14H3v-4h.08A1.7 1.7 0 0 0 4.6 8.95a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 8.95 4.6 1.7 1.7 0 0 0 10 3.08V3h4v.08a1.7 1.7 0 0 0 1.03 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.13.4.5.94 1.52 1H21v4h-.08a1.7 1.7 0 0 0-1.52 1Z" />
     </svg>
   );
 }
@@ -117,12 +109,36 @@ export function Header({ user }: { user: PublicUser | null }) {
                 <div id="account-menu" className="accountMenuPanel">
                   <p className="accountMenuName">{user.displayName}</p>
                   <Link
-                    href="/settings"
+                    href="/settings/profile"
                     className="accountMenuItem"
-                    aria-current={pathname === '/settings' ? 'page' : undefined}
+                    aria-current={pathname === '/settings/profile' ? 'page' : undefined}
                   >
-                    <SettingsIcon />
-                    Settings
+                    <CircleUserRound aria-hidden="true" />
+                    Profile
+                  </Link>
+                  <Link
+                    href="/settings/appearance"
+                    className="accountMenuItem"
+                    aria-current={pathname === '/settings/appearance' ? 'page' : undefined}
+                  >
+                    <Palette aria-hidden="true" />
+                    Appearance
+                  </Link>
+                  <Link
+                    href="/settings/households"
+                    className="accountMenuItem"
+                    aria-current={pathname === '/settings/households' ? 'page' : undefined}
+                  >
+                    <House aria-hidden="true" />
+                    Households
+                  </Link>
+                  <Link
+                    href="/settings/sources"
+                    className="accountMenuItem"
+                    aria-current={pathname === '/settings/sources' ? 'page' : undefined}
+                  >
+                    <Database aria-hidden="true" />
+                    Sources
                   </Link>
                   <LogoutButton className="accountMenuItem" />
                 </div>

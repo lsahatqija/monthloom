@@ -34,7 +34,7 @@ export function HouseholdInvitationPrompt({
     mutationFn: () => acceptHouseholdInvitation(token),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: financeKeys.all });
-      router.push('/settings');
+      router.push('/settings/households');
       router.refresh();
     },
   });

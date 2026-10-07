@@ -249,7 +249,7 @@ export function SourceSettings({ households }: { households: ManagedHousehold[] 
     <section className="sourceSettings" aria-labelledby="source-settings-heading">
       <div className="settingsSectionHeading sourceSettingsHeading">
         <div>
-          <h2 id="source-settings-heading">Manage Sources</h2>
+          <h2 id="source-settings-heading">Sources</h2>
           <p>Edit, remove, or copy sources between households.</p>
         </div>
         <Button

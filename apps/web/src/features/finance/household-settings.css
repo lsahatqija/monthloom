@@ -1,7 +1,5 @@
 .householdSettings {
-  margin-top: var(--space-8);
-  padding-top: var(--space-8);
-  border-top: 1px solid var(--ml-divider);
+  min-width: 0;
 }
 .settingsSectionHeading h2,
 .settingsSectionHeading p,
@@ -166,9 +164,7 @@
   flex: 1 1 15rem;
 }
 .sourceSettings {
-  margin-top: var(--space-8);
-  padding-top: var(--space-8);
-  border-top: 1px solid var(--ml-divider);
+  min-width: 0;
 }
 .sourceSettingsHeading {
   display: flex;
