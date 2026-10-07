@@ -341,7 +341,7 @@ export function HouseholdDashboard() {
       <div className="dashboardState">
         <h1>No households yet</h1>
         <p>Create a household in settings, or wait until another member invites you.</p>
-        <Link href="/settings" className="button">
+        <Link href="/settings/households" className="button">
           Open settings
         </Link>
       </div>
@@ -353,7 +353,7 @@ export function HouseholdDashboard() {
         <div className="dashboardState">
           <h1>Household unavailable</h1>
           <p>Create a household in settings, or wait until another member invites you.</p>
-          <Link href="/settings" className="button">
+          <Link href="/settings/households" className="button">
             Open settings
           </Link>
         </div>
@@ -498,7 +498,7 @@ export function HouseholdDashboard() {
           <strong className="expenseAmount">{money.format(Number(summary.expenses))}</strong>
         </div>
         <div className="leftoverRecap">
-          <span>Leftover</span>
+          <span>Balance</span>
           <strong>{money.format(Number(summary.leftover))}</strong>
         </div>
       </div>

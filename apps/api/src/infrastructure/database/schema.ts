@@ -22,6 +22,7 @@ export const userRoleEnum = pgEnum('user_role', [...Constants.USER_ROLES]);
 export const profileImageEnum = pgEnum('profile_image', [...Constants.PROFILE_IMAGES]);
 export const desiredColorEnum = pgEnum('desired_color', [...Constants.DESIRED_COLORS]);
 export const financialIconEnum = pgEnum('financial_icon', [...Constants.FINANCIAL_ICONS]);
+export const householdIconEnum = pgEnum('household_icon', [...Constants.HOUSEHOLD_ICONS]);
 export const expenseTypeEnum = pgEnum('expense_type', [...Constants.EXPENSE_TYPES]);
 
 export const users = pgTable(
@@ -89,7 +90,7 @@ export const households = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     name: varchar('name', { length: Constants.HOUSEHOLD_NAME_MAX_LENGTH }).notNull(),
     currency: char('currency', { length: 3 }).notNull(),
-    icon: financialIconEnum('icon').notNull().default('house'),
+    icon: householdIconEnum('icon').notNull().default('small-house'),
     color: varchar('color', { length: 7 }).notNull().default('#35675b'),
     ownerId: uuid('owner_id')
       .notNull()

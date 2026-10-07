@@ -3,13 +3,14 @@ import type { Constants } from '@template/contracts';
 import type { User } from '../users/user.types.js';
 
 export type FinancialIcon = (typeof Constants.FINANCIAL_ICONS)[number];
+export type HouseholdIcon = (typeof Constants.HOUSEHOLD_ICONS)[number];
 export type ExpenseType = (typeof Constants.EXPENSE_TYPES)[number];
 
 export interface HouseholdRecord {
   id: string;
   name: string;
   currency: string;
-  icon: FinancialIcon;
+  icon: HouseholdIcon;
   color: string;
   ownerId: string;
   createdAt: Date;
@@ -27,7 +28,7 @@ export interface HouseholdInvitationRecord {
   id: string;
   householdId: string;
   householdName: string;
-  householdIcon: FinancialIcon;
+  householdIcon: HouseholdIcon;
   householdColor: string;
   expiresAt: Date;
   acceptedAt: Date | null;
