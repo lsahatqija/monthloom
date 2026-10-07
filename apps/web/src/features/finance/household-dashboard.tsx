@@ -498,7 +498,7 @@ export function HouseholdDashboard() {
           <strong className="expenseAmount">{money.format(Number(summary.expenses))}</strong>
         </div>
         <div className="leftoverRecap">
-          <span>Leftover</span>
+          <span>Balance</span>
           <strong>{money.format(Number(summary.leftover))}</strong>
         </div>
       </div>
