@@ -1,6 +1,7 @@
 import type {
   CopyHouseholdSourcesRequest,
   CopyHouseholdSourcesResponse,
+  CreateHouseholdInvitationRequest,
   CreateHouseholdSourceRequest,
   CreateHouseholdTransactionRequest,
   CreateHouseholdRequest,
@@ -44,9 +45,11 @@ export async function createHousehold(
 
 export async function createHouseholdInvitation(
   householdId: string,
+  input: CreateHouseholdInvitationRequest,
 ): Promise<CreateHouseholdInvitationResponse> {
   const data = await apiClient.post<CreateHouseholdInvitationResponse>(
     `households/${householdId}/invitations`,
+    input,
   );
   if (!data) throw new Error('Unexpected empty invitation response.');
   return data;

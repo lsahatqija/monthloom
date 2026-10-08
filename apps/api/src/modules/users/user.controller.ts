@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 
-import { updateProfileRequestSchema } from './user.schemas.js';
+import { changePasswordRequestSchema, updateProfileRequestSchema } from './user.schemas.js';
 import type { UserService } from './user.service.js';
 
 export class UserController {
@@ -15,5 +15,11 @@ export class UserController {
     const input = updateProfileRequestSchema.parse(req.body);
     const user = await this.userService.updateProfile(req.authUser!.id, input);
     res.status(200).json({ user });
+  };
+
+  changePassword = async (req: Request, res: Response): Promise<void> => {
+    const input = changePasswordRequestSchema.parse(req.body);
+    await this.userService.changePassword(req.authUser!.id, input);
+    res.status(204).send();
   };
 }

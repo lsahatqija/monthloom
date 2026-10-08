@@ -509,6 +509,39 @@
   box-shadow: 0 8px 28px var(--ml-shadow);
 }
 
+.settingsSecurityPanel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.settingsSecurityPanel h3,
+.settingsSecurityPanel p {
+  margin: 0;
+}
+
+.settingsSecurityPanel p {
+  margin-top: var(--space-1);
+  color: var(--ml-text-muted);
+}
+
+.changePasswordModal {
+  width: min(100%, 32rem);
+}
+
+.changePasswordModal .formField {
+  margin: 0;
+}
+
+@media (max-width: 520px) {
+  .settingsSecurityPanel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 .settingsPanel .themePicker {
   margin: 0;
 }

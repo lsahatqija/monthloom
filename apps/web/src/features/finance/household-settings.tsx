@@ -185,8 +185,8 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
     household.members.find((member) => member.id !== user.id)?.id ?? '',
   );
   const [error, setError] = useState<string | null>(null);
-  const [invitationLink, setInvitationLink] = useState<string | null>(null);
-  const [copyLabel, setCopyLabel] = useState('Copy link');
+  const [invitationEmail, setInvitationEmail] = useState('');
+  const [invitationSentTo, setInvitationSentTo] = useState<string | null>(null);
   const isOwner = household.ownerId === user.id;
   const refresh = () => queryClient.invalidateQueries({ queryKey: financeKeys.all });
   const mutation = useMutation({
@@ -210,10 +210,11 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
 
   const createInvitation = () => {
     mutation.mutate(async () => {
-      const invitation = await createHouseholdInvitation(household.id);
-      const link = `${window.location.origin}/invite/${invitation.token}`;
-      setInvitationLink(link);
-      setCopyLabel('Copy link');
+      const invitation = await createHouseholdInvitation(household.id, {
+        email: invitationEmail,
+      });
+      setInvitationSentTo(invitation.sentTo);
+      setInvitationEmail('');
     });
   };
 
@@ -278,28 +279,35 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
       <div className="householdMembers">
         <div className="householdMembersHeading">
           <h4>Members</h4>
-          <Button variant="secondary" onClick={createInvitation} disabled={mutation.isPending}>
-            Create invitation link
-          </Button>
         </div>
-        {invitationLink ? (
-          <div className="householdInvitationLink">
-            <Input value={invitationLink} readOnly aria-label="Household invitation link" />
-            <Button
-              variant="secondary"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(invitationLink);
-                  setCopyLabel('Copied!');
-                } catch {
-                  setCopyLabel('Select and copy');
-                }
-              }}
-            >
-              {copyLabel}
-            </Button>
-            <small>This single-use link expires in one hour.</small>
-          </div>
+        <form
+          className="householdInvitationLink"
+          onSubmit={(event) => {
+            event.preventDefault();
+            createInvitation();
+          }}
+        >
+          <Input
+            type="email"
+            value={invitationEmail}
+            onChange={(event) => setInvitationEmail(event.target.value)}
+            placeholder="person@example.com"
+            aria-label="Email address to invite"
+            required
+          />
+          <Button
+            type="submit"
+            variant="secondary"
+            disabled={mutation.isPending || !invitationEmail.trim()}
+          >
+            {mutation.isPending ? 'Sending...' : 'Send invitation'}
+          </Button>
+          <small>The single-use invitation expires in one hour.</small>
+        </form>
+        {invitationSentTo ? (
+          <p className="householdInvitationConfirmation" role="status">
+            Invitation sent to {invitationSentTo}.
+          </p>
         ) : null}
         <ul>
           {household.members.map((member) => (

@@ -69,6 +69,7 @@ export interface FinanceRepository {
     tokenHash: string,
     expiresAt: Date,
   ): Promise<void>;
+  deleteInvitation(tokenHash: string): Promise<void>;
   findInvitation(tokenHash: string): Promise<HouseholdInvitationRecord | null>;
   acceptInvitation(tokenHash: string, userId: string, now: Date): Promise<AcceptInvitationResult>;
 }

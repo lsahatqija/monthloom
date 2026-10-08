@@ -23,6 +23,7 @@ export interface CreateUserData {
 }
 
 export interface UpdateUserData {
+  passwordHash?: string;
   displayName?: string;
   profileImage?: ProfileImage;
   desiredColor?: DesiredColor;

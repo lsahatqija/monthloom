@@ -119,6 +119,10 @@
   width: 100%;
   color: var(--ml-text-muted);
 }
+.householdInvitationConfirmation {
+  margin: var(--space-2) 0 0;
+  color: var(--ml-success, #357a4c);
+}
 .householdMembers ul {
   margin: var(--space-2) 0 0;
   padding: 0;

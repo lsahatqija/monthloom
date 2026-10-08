@@ -2,11 +2,14 @@ import path from 'node:path';
 
 import { config } from './config/index.js';
 import { db } from './infrastructure/database/client.js';
+import { LogEmailSender, SmtpEmailSender } from './infrastructure/email/index.js';
+import { logger } from './infrastructure/logging/logger.js';
 import { LocalFileStorage } from './infrastructure/storage/index.js';
 import { PostgresSessionRepository } from './modules/auth/adapters/postgres-session.repository.js';
 import { AuthController } from './modules/auth/auth.controller.js';
 import { createAuthMiddleware, requireRole } from './modules/auth/auth.middleware.js';
 import { AuthService } from './modules/auth/auth.service.js';
+import { AutomatedEmailService } from './modules/email/automated-email.service.js';
 import { PostgresFileRepository } from './modules/files/adapters/postgres-file.repository.js';
 import { FileController } from './modules/files/file.controller.js';
 import { FileService } from './modules/files/file.service.js';
@@ -29,9 +32,14 @@ export function buildAppDependencies() {
   const fileRepository = new PostgresFileRepository(db);
   const financeRepository = new PostgresFinanceRepository(db);
   const fileStorage = new LocalFileStorage(path.resolve(config.upload.directory));
+  const emailSender =
+    config.email.transport === 'smtp'
+      ? new SmtpEmailSender(config.email)
+      : new LogEmailSender(logger);
+  const emailService = new AutomatedEmailService(emailSender);
 
   const userService = new UserService(userRepository);
-  const financeService = new FinanceService(financeRepository);
+  const financeService = new FinanceService(financeRepository, emailService);
   const authService = new AuthService(userRepository, sessionRepository);
   const fileService = new FileService(fileRepository, fileStorage);
   const systemService = new SystemService();
