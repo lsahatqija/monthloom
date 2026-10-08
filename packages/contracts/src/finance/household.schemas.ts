@@ -220,8 +220,11 @@ export const householdInvitationSchema = z.object({
   household: householdSchema.pick({ id: true, name: true, icon: true, color: true }),
   expiresAt: isoDateTimeSchema,
 });
+export const createHouseholdInvitationRequestSchema = z.object({
+  email: z.string().trim().email().max(320),
+});
 export const createHouseholdInvitationResponseSchema = householdInvitationSchema.extend({
-  token: householdInvitationTokenSchema,
+  sentTo: z.string().email(),
 });
 export const acceptHouseholdInvitationResponseSchema = z.object({ householdId: idSchema });
 export const householdTransactionResponseSchema = z.object({
@@ -251,6 +254,9 @@ export type UpdateHouseholdTransactionRequest = z.infer<
 >;
 export type HouseholdMonthResponse = z.infer<typeof householdMonthResponseSchema>;
 export type HouseholdInvitation = z.infer<typeof householdInvitationSchema>;
+export type CreateHouseholdInvitationRequest = z.infer<
+  typeof createHouseholdInvitationRequestSchema
+>;
 export type CreateHouseholdInvitationResponse = z.infer<
   typeof createHouseholdInvitationResponseSchema
 >;

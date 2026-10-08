@@ -6,6 +6,7 @@ import {
 import {
   apiErrorResponseSchema,
   authResponseSchema,
+  changePasswordRequestSchema,
   copyHouseholdSourcesRequestSchema,
   copyHouseholdSourcesResponseSchema,
   createHouseholdSourceRequestSchema,
@@ -61,6 +62,28 @@ registry.registerPath({
     200: {
       description: 'Households and their members.',
       content: { 'application/json': { schema: householdListResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'put',
+  path: '/api/v1/users/me/password',
+  summary: "Change the authenticated user's password",
+  tags: ['Users'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  request: {
+    body: { content: { 'application/json': { schema: changePasswordRequestSchema } } },
+  },
+  responses: {
+    204: { description: 'Password changed.' },
+    400: {
+      description: 'Invalid current or new password.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
+    401: {
+      description: 'Authentication required.',
+      content: { 'application/json': { schema: ErrorResponse } },
     },
   },
 });

@@ -1,6 +1,7 @@
-import type { PublicUser, UpdateProfileRequest } from '@template/contracts';
+import type { ChangePasswordRequest, PublicUser, UpdateProfileRequest } from '@template/contracts';
 
-import { NotFoundError } from '../../shared/errors/index.js';
+import { hashPassword, verifyPassword } from '../../infrastructure/security/password.js';
+import { NotFoundError, ValidationError } from '../../shared/errors/index.js';
 
 import type { UserRepository } from './user.repository.js';
 import type { User } from './user.types.js';
@@ -32,5 +33,22 @@ export class UserService {
   async updateProfile(id: string, input: UpdateProfileRequest): Promise<PublicUser> {
     const updated = await this.userRepository.update(id, input);
     return toPublicUser(updated);
+  }
+
+  async changePassword(id: string, input: ChangePasswordRequest): Promise<void> {
+    const user = await this.userRepository.findById(id);
+    if (!user) {
+      throw new NotFoundError('User not found.');
+    }
+
+    const currentPasswordIsValid = await verifyPassword(user.passwordHash, input.currentPassword);
+    if (!currentPasswordIsValid) {
+      throw new ValidationError('Current password is incorrect.', {
+        currentPassword: ['Current password is incorrect.'],
+      });
+    }
+
+    const passwordHash = await hashPassword(input.newPassword);
+    await this.userRepository.update(id, { passwordHash });
   }
 }

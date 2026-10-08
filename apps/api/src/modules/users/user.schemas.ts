@@ -1,3 +1,3 @@
-import { updateProfileRequestSchema } from '@template/contracts';
+import { changePasswordRequestSchema, updateProfileRequestSchema } from '@template/contracts';
 
-export { updateProfileRequestSchema };
+export { changePasswordRequestSchema, updateProfileRequestSchema };

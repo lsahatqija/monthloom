@@ -940,6 +940,10 @@ export class PostgresFinanceRepository implements FinanceRepository {
     });
   }
 
+  async deleteInvitation(tokenHash: string): Promise<void> {
+    await this.db.delete(householdInvitations).where(eq(householdInvitations.tokenHash, tokenHash));
+  }
+
   async findInvitation(tokenHash: string): Promise<HouseholdInvitationRecord | null> {
     const [record] = await this.db
       .select({

@@ -1,18 +1,22 @@
 import {
   Constants,
   type CopyHouseholdSourcesRequest,
+  type CreateHouseholdInvitationRequest,
   type CreateHouseholdSourceRequest,
   type CreateHouseholdTransactionRequest,
   type CreateHouseholdRequest,
   type HouseholdMonthResponse,
+  type PublicUser,
   type TransactionEditScope,
   type UpdateHouseholdRequest,
   type UpdateHouseholdSourceRequest,
   type UpdateHouseholdTransactionRequest,
 } from '@template/contracts';
 
+import { config } from '../../config/index.js';
 import { generateSessionToken, hashSessionToken } from '../../infrastructure/security/tokens.js';
 import { AuthorizationError, ConflictError, NotFoundError } from '../../shared/errors/index.js';
+import type { AutomatedEmailService } from '../email/automated-email.service.js';
 
 import type { FinanceRepository } from './finance.repository.js';
 import type { HouseholdRecord } from './finance.types.js';
@@ -36,7 +40,10 @@ function fromCents(amount: number): string {
 }
 
 export class FinanceService {
-  constructor(private readonly financeRepository: FinanceRepository) {}
+  constructor(
+    private readonly financeRepository: FinanceRepository,
+    private readonly emailService: AutomatedEmailService,
+  ) {}
 
   async createHousehold(userId: string, input: CreateHouseholdRequest) {
     return serializeHousehold(await this.financeRepository.createHousehold(userId, input));
@@ -305,23 +312,44 @@ export class FinanceService {
     }
   }
 
-  async createInvitation(householdId: string, userId: string) {
-    if (!(await this.financeRepository.isMember(householdId, userId))) {
+  async createInvitation(
+    householdId: string,
+    invitingUser: PublicUser,
+    input: CreateHouseholdInvitationRequest,
+  ) {
+    if (!(await this.financeRepository.isMember(householdId, invitingUser.id))) {
       throw new AuthorizationError('You are not a member of this household.');
     }
     const household = await this.financeRepository.findHousehold(householdId);
     if (!household) throw new NotFoundError('Household was not found.');
 
     const token = generateSessionToken();
+    const tokenHash = hashSessionToken(token);
     const expiresAt = new Date(Date.now() + Constants.HOUSEHOLD_INVITATION_TTL_MS);
     await this.financeRepository.createInvitation(
       householdId,
-      userId,
-      hashSessionToken(token),
+      invitingUser.id,
+      tokenHash,
       expiresAt,
     );
+    const invitationUrl = new URL(`/invite/${token}`, config.web.publicUrl).toString();
+    const sentTo = input.email.trim().toLowerCase();
+
+    try {
+      await this.emailService.sendHouseholdInvitation({
+        to: sentTo,
+        inviterName: invitingUser.displayName,
+        householdName: household.name,
+        invitationUrl,
+        expiresAt,
+      });
+    } catch (error) {
+      await this.financeRepository.deleteInvitation(tokenHash).catch(() => undefined);
+      throw error;
+    }
+
     return {
-      token,
+      sentTo,
       household: {
         id: household.id,
         name: household.name,

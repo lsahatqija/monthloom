@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 
+import { ChangePassword } from '@/features/users/change-password';
 import { ProfileForm } from '@/features/users/profile-form';
 import { getServerUser } from '@/lib/auth/get-server-user';
 
@@ -23,6 +24,7 @@ export default async function ProfileSettingsPage() {
         <p className="settingsRole">{user.role} account</p>
       </div>
       <ProfileForm user={user} />
+      <ChangePassword />
     </section>
   );
 }

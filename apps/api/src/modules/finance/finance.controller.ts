@@ -4,6 +4,7 @@ import {
   copyHouseholdSourcesRequestSchema,
   createHouseholdSourceRequestSchema,
   createHouseholdRequestSchema,
+  createHouseholdInvitationRequestSchema,
   createHouseholdTransactionRequestSchema,
   householdIdParamsSchema,
   householdInvitationParamsSchema,
@@ -35,7 +36,8 @@ export class FinanceController {
 
   createInvitation = async (req: Request, res: Response): Promise<void> => {
     const { id } = householdIdParamsSchema.parse(req.params);
-    const invitation = await this.financeService.createInvitation(id, req.authUser!.id);
+    const input = createHouseholdInvitationRequestSchema.parse(req.body);
+    const invitation = await this.financeService.createInvitation(id, req.authUser!, input);
     res.status(201).json(invitation);
   };
 

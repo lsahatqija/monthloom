@@ -356,10 +356,22 @@ sequenceDiagram
 
 ### Invitation flow
 
-Any household member may create an invitation. The API returns the raw token once and stores only
-its hash. The public invitation lookup validates existence, unused state, and expiry without
-requiring authentication. Acceptance requires a session, atomically adds membership and marks the
-invitation accepted, and rejects reused, expired, or already-member cases.
+Any household member may create an invitation for an email address. The API stores only the hash
+of the raw token and sends the raw token inside the invitation link by transactional email. The
+public invitation lookup validates existence, unused state, and expiry without requiring
+authentication. Acceptance requires a session, atomically adds membership and marks the invitation
+accepted, and rejects reused, expired, or already-member cases. If email delivery fails, the newly
+created invitation is removed so an unreachable token is not left behind.
+
+### Email delivery
+
+Automated email is composed centrally as plain text and responsive HTML, then sent through an
+`EmailSender` infrastructure interface. The SMTP adapter works with conventional transactional
+email providers; a log adapter is the safe local default and records recipient/subject metadata
+without leaking token-bearing message bodies. Account verification, password reset, household
+invitation, and monthly report templates are available, while each feature remains responsible for
+token lifecycle and scheduling. Configure `EMAIL_TRANSPORT=smtp`, sender identity, and SMTP
+connection variables to enable real delivery.
 
 ### File upload flow
 
@@ -446,6 +458,8 @@ Before production deployment, the implementation still requires environment-spec
 - use managed PostgreSQL with backup and recovery procedures;
 - replace local file storage with durable object storage for horizontal API scaling;
 - provide production secret management;
+- authenticate the sending domain (SPF, DKIM, and DMARC), configure SMTP delivery, and monitor
+  bounces/complaints;
 - establish database migration and rollback procedures;
 - add observability, retention, and alerting; and
 - define malware scanning/content policy for uploads where required.

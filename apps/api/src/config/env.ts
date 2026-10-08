@@ -8,9 +8,9 @@ import { z } from 'zod';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 
-const boolFromString = z
-  .enum(['true', 'false'])
-  .transform((value) => value === 'true');
+const boolFromString = z.enum(['true', 'false']).transform((value) => value === 'true');
+const emptyStringAsUndefined = (schema: z.ZodTypeAny) =>
+  z.preprocess((value) => (value === '' ? undefined : value), schema.optional());
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -23,18 +23,33 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
   SESSION_SECRET: z.string().min(16, 'SESSION_SECRET must be at least 16 characters'),
-  SESSION_DURATION_HOURS: z.coerce.number().int().min(1).default(24 * 7),
+  SESSION_DURATION_HOURS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .default(24 * 7),
   SESSION_COOKIE_NAME: z.string().min(1).default('template_session'),
   SESSION_COOKIE_SECURE: boolFromString.default('false'),
 
   JSON_BODY_LIMIT: z.string().min(1).default('1mb'),
 
   UPLOAD_DIR: z.string().min(1).default('uploads'),
-  UPLOAD_MAX_SIZE_BYTES: z.coerce.number().int().min(1).default(5 * 1024 * 1024),
-  UPLOAD_ALLOWED_MIME_TYPES: z
-    .string()
+  UPLOAD_MAX_SIZE_BYTES: z.coerce
+    .number()
+    .int()
     .min(1)
-    .default('image/jpeg,image/png,image/webp'),
+    .default(5 * 1024 * 1024),
+  UPLOAD_ALLOWED_MIME_TYPES: z.string().min(1).default('image/jpeg,image/png,image/webp'),
+
+  EMAIL_TRANSPORT: z.enum(['log', 'smtp']).default('log'),
+  EMAIL_FROM_NAME: z.string().min(1).default('Monthloom'),
+  EMAIL_FROM_ADDRESS: z.string().email().default('no-reply@monthloom.local'),
+  EMAIL_REPLY_TO: emptyStringAsUndefined(z.string().email()),
+  SMTP_HOST: emptyStringAsUndefined(z.string().min(1)),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+  SMTP_SECURE: boolFromString.default('false'),
+  SMTP_USER: emptyStringAsUndefined(z.string().min(1)),
+  SMTP_PASSWORD: emptyStringAsUndefined(z.string().min(1)),
 
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 
@@ -95,6 +110,22 @@ export const config = {
     directory: env.UPLOAD_DIR,
     maxSizeBytes: env.UPLOAD_MAX_SIZE_BYTES,
     allowedMimeTypes: env.UPLOAD_ALLOWED_MIME_TYPES.split(',').map((type) => type.trim()),
+  },
+
+  email: {
+    transport: env.EMAIL_TRANSPORT,
+    from: {
+      name: env.EMAIL_FROM_NAME,
+      address: env.EMAIL_FROM_ADDRESS,
+    },
+    replyTo: env.EMAIL_REPLY_TO,
+    smtp: {
+      host: env.SMTP_HOST,
+      port: env.SMTP_PORT,
+      secure: env.SMTP_SECURE,
+      user: env.SMTP_USER,
+      password: env.SMTP_PASSWORD,
+    },
   },
 
   logging: {
