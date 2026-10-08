@@ -128,24 +128,37 @@ protected branches. This repository setting must be enabled on GitHub; a workflo
 does not prevent merging. Require branches to be current or use a merge queue with an
 appropriate `merge_group` trigger if you adopt one.
 
-When adding deployment, call the test workflow for the same commit and make deployment depend
-on it. For example, within your future deployment workflow:
+After the `Tests` workflow succeeds for a push to `main` (including a merged pull request), the
+separate `.github/workflows/publish.yml` workflow checks out the exact commit that passed and
+publishes its images. Failed tests, pull requests, other branches, manual runs and reusable
+workflow calls do not publish. Keep the branch ruleset enabled to ensure changes reach `main`
+only through passing pull requests.
 
-```yaml
-jobs:
-  tests:
-    uses: ./.github/workflows/tests.yml
-  deploy:
-    needs: tests
-    runs-on: ubuntu-latest
-    steps:
-      # Add checkout/build/deploy steps for the same commit here.
-      - run: echo "Replace this placeholder with the actual deployment"
-```
+Configure these repository secrets under **Settings > Secrets and variables > Actions**:
 
-Do not use `continue-on-error` for the tests or `if: always()` on the deployment job. This runs
-the suite before deployment against disposable infrastructure. Post-deployment smoke tests
-should be added separately when a hosting target exists. No deployment job is enabled here.
+- `DOCKERHUB_USERNAME`: the Docker Hub account with push access to `lsahatqija/monthloom`.
+- `DOCKERHUB_TOKEN`: a Docker Hub access token with read/write permission for that repository.
+
+Optionally configure the Actions repository variable `NEXT_PUBLIC_API_URL` with the public
+API URL used by browsers. It defaults to `http://localhost:4000` and is baked into the web
+image at build time; changing a running container's environment does not replace it.
+
+The job uses `compose.yml` with `compose.publish.yml` to build the API and web images, then
+pushes both to the single Docker Hub repository with separate service tags:
+
+- `lsahatqija/monthloom:api-<commit-sha>` and `lsahatqija/monthloom:web-<commit-sha>`.
+- `lsahatqija/monthloom:api-latest` and `lsahatqija/monthloom:web-latest`.
+
+Both builds must succeed before publishing begins. Publishing jobs are serialized; pushes of
+multiple images/tags are not atomic, so use matching commit tags for deployments. PostgreSQL
+continues to use its official image and is not republished. This workflow publishes images;
+it does not start containers on a hosting server. Post-deployment smoke tests should be added
+separately when a hosting target exists.
+
+The root `.dockerignore` excludes local dependencies, generated builds and `.env` files from
+the shared build context used by both Dockerfiles.
+
+Authentication follows the [Docker GitHub Actions guidance](https://docs.docker.com/build/ci/github-actions/).
 
 References: [Vitest coverage](https://vitest.dev/guide/coverage.html),
 [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/), and
