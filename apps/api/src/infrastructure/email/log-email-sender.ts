@@ -8,7 +8,7 @@ export class LogEmailSender implements EmailSender {
 
   async send(message: EmailMessage): Promise<void> {
     this.logger.info(
-      { email: { to: message.to, subject: message.subject } },
+      { email: { to: message.to, template: message.label } },
       'Email captured by log transport',
     );
   }

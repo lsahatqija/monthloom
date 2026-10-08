@@ -65,6 +65,27 @@ export const sessions = pgTable(
   }),
 );
 
+export const passwordResetTokens = pgTable(
+  'password_reset_tokens',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    tokenHash: varchar('token_hash', { length: 64 }).notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+  },
+  (table) => ({
+    tokenHashUniqueIdx: uniqueIndex('password_reset_tokens_token_hash_unique_idx').on(
+      table.tokenHash,
+    ),
+    userIdIdx: index('password_reset_tokens_user_id_idx').on(table.userId),
+    expiresAtIdx: index('password_reset_tokens_expires_at_idx').on(table.expiresAt),
+  }),
+);
+
 export const files = pgTable(
   'files',
   {
@@ -272,6 +293,7 @@ export const expenses = pgTable(
 
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
+  passwordResetTokens: many(passwordResetTokens),
   files: many(files),
   householdMemberships: many(householdMembers),
   incomes: many(incomes),
@@ -280,6 +302,10 @@ export const usersRelations = relations(users, ({ many }) => ({
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),
+}));
+
+export const passwordResetTokensRelations = relations(passwordResetTokens, ({ one }) => ({
+  user: one(users, { fields: [passwordResetTokens.userId], references: [users.id] }),
 }));
 
 export const filesRelations = relations(files, ({ one }) => ({

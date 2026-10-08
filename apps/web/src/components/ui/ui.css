@@ -522,6 +522,31 @@
   margin: 0;
 }
 
+.settingsSecurityActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.formAuxiliaryLink {
+  align-self: flex-end;
+  font-size: 0.88rem;
+}
+
+.authConfirmation {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.authConfirmation p {
+  margin: 0;
+}
+
+.authConfirmation .button {
+  justify-self: start;
+}
+
 .settingsSecurityPanel p {
   margin-top: var(--space-1);
   color: var(--ml-text-muted);
@@ -539,6 +564,14 @@
   .settingsSecurityPanel {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .settingsSecurityActions {
+    justify-content: stretch;
+  }
+
+  .settingsSecurityActions .button {
+    flex: 1 1 auto;
   }
 }
 

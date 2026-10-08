@@ -1,4 +1,12 @@
-import type { AuthResponse, LoginRequest, MeResponse, RegisterRequest } from '@template/contracts';
+import type {
+  AuthResponse,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
+  LoginRequest,
+  MeResponse,
+  RegisterRequest,
+  ResetPasswordRequest,
+} from '@template/contracts';
 
 import { apiClient } from '../../lib/api/client';
 
@@ -25,4 +33,16 @@ export async function login(input: LoginRequest): Promise<AuthResponse> {
 
 export async function logout(): Promise<void> {
   await apiClient.post<void>('auth/logout');
+}
+
+export async function requestPasswordReset(
+  input: ForgotPasswordRequest,
+): Promise<ForgotPasswordResponse> {
+  const data = await apiClient.post<ForgotPasswordResponse>('auth/forgot-password', input);
+  if (!data) throw new Error('Unexpected empty password reset response.');
+  return data;
+}
+
+export async function resetPassword(input: ResetPasswordRequest): Promise<void> {
+  await apiClient.post<void>('auth/reset-password', input);
 }

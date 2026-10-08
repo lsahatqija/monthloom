@@ -24,6 +24,7 @@
     "docker:logs": "docker compose -f compose.yml logs -f",
     "db:migrate": "pnpm --filter @template/api run db:migrate",
     "db:seed": "pnpm --filter @template/api run db:seed",
+    "email:templates:sync": "pnpm --filter @template/api run email:templates:sync",
     "clean": "pnpm --recursive run clean"
   },
   "devDependencies": {

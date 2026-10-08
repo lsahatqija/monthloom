@@ -31,6 +31,36 @@ export const loginRequestSchema = z.object({
 
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 
+export const forgotPasswordRequestSchema = z.object({
+  email: z.string().trim().email('Invalid email address').max(Constants.EMAIL_MAX_LENGTH),
+});
+
+export type ForgotPasswordRequest = z.infer<typeof forgotPasswordRequestSchema>;
+
+export const forgotPasswordResponseSchema = z.object({ message: z.string() });
+export type ForgotPasswordResponse = z.infer<typeof forgotPasswordResponseSchema>;
+
+export const passwordResetTokenSchema = z
+  .string()
+  .regex(/^[A-Za-z0-9_-]{43}$/, 'Invalid password reset token');
+
+export const newPasswordFieldsSchema = z
+  .object({
+    newPassword: passwordSchema,
+    confirmNewPassword: passwordSchema,
+  })
+  .refine((input) => input.newPassword === input.confirmNewPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmNewPassword'],
+  });
+
+export const resetPasswordRequestSchema = z.intersection(
+  z.object({ token: passwordResetTokenSchema }),
+  newPasswordFieldsSchema,
+);
+
+export type ResetPasswordRequest = z.infer<typeof resetPasswordRequestSchema>;
+
 /** Response returned by register/login/me. The session token itself only ever travels via cookie. */
 export const authResponseSchema = z.object({
   user: publicUserSchema,
