@@ -52,7 +52,12 @@ const envSchema = z.object({
 
   RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().min(1).default(15),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().min(1).default(300),
+  AUTH_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().min(1).default(15),
   AUTH_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().min(1).default(10),
+  PASSWORD_RESET_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().min(1).default(30),
+  PASSWORD_RESET_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().min(1).default(5),
+  EMAIL_VERIFICATION_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().min(1).default(60),
+  EMAIL_VERIFICATION_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().min(1).default(10),
 
   TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
 });
@@ -125,9 +130,22 @@ export const config = {
   },
 
   rateLimit: {
-    windowMinutes: env.RATE_LIMIT_WINDOW_MINUTES,
-    maxRequests: env.RATE_LIMIT_MAX_REQUESTS,
-    authMaxRequests: env.AUTH_RATE_LIMIT_MAX_REQUESTS,
+    general: {
+      windowMinutes: env.RATE_LIMIT_WINDOW_MINUTES,
+      maxRequests: env.RATE_LIMIT_MAX_REQUESTS,
+    },
+    authentication: {
+      windowMinutes: env.AUTH_RATE_LIMIT_WINDOW_MINUTES,
+      maxRequests: env.AUTH_RATE_LIMIT_MAX_REQUESTS,
+    },
+    passwordReset: {
+      windowMinutes: env.PASSWORD_RESET_RATE_LIMIT_WINDOW_MINUTES,
+      maxRequests: env.PASSWORD_RESET_RATE_LIMIT_MAX_REQUESTS,
+    },
+    emailVerification: {
+      windowMinutes: env.EMAIL_VERIFICATION_RATE_LIMIT_WINDOW_MINUTES,
+      maxRequests: env.EMAIL_VERIFICATION_RATE_LIMIT_MAX_REQUESTS,
+    },
   },
 
   trustedProxyHops: env.TRUSTED_PROXY_HOPS,

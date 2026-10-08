@@ -122,7 +122,8 @@ middleware. There is no dependency-injection framework or global service locator
 
 All versioned endpoints use `/api/v1`. State-changing versioned requests are checked by
 `verifyRequestOrigin` against configured allowed origins. Authentication-specific endpoints also
-have a stricter rate limiter.
+have purpose-specific rate limiters: credential attempts, password recovery, and email verification
+each use an independent request bucket with separately configurable limits and windows.
 
 ### Modules
 
