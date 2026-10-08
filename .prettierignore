@@ -6,4 +6,5 @@ out
 pnpm-lock.yaml
 apps/api/uploads
 coverage
+test-results
 *.tsbuildinfo

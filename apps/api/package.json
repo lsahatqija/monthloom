@@ -16,7 +16,8 @@
     "db:migrate": "tsx src/infrastructure/database/migrate.ts",
     "db:seed": "tsx src/infrastructure/database/seed.ts",
     "email:templates:sync": "tsx src/infrastructure/email/sync-resend-templates.ts",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "test": "vitest run --root ../.. --config vitest.config.ts --project=api-*"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^7.1.1",
@@ -49,11 +50,13 @@
     "@types/multer": "^1.4.11",
     "@types/node": "^20.14.15",
     "@types/pg": "^8.11.6",
+    "@types/supertest": "^6.0.0",
     "@types/swagger-ui-express": "^4.1.6",
     "drizzle-kit": "^0.24.0",
     "eslint": "^8.57.0",
     "pino-pretty": "^11.2.2",
     "rimraf": "^6.0.1",
+    "supertest": "^7.0.0",
     "tsx": "^4.16.2",
     "typescript": "^5.5.4"
   }

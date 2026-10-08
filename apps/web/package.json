@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "clean": "rimraf .next"
+    "clean": "rimraf .next",
+    "test": "vitest run --root ../.. --config vitest.config.ts --project=web-*"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -27,11 +28,15 @@
   "devDependencies": {
     "@eslint/eslintrc": "^2.1.4",
     "@template/eslint-config": "workspace:*",
+    "@testing-library/jest-dom": "^6.6.0",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.0",
     "@types/node": "^20.14.15",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.5",
+    "jsdom": "^26.0.0",
     "rimraf": "^6.0.1",
     "typescript": "^5.5.4"
   }

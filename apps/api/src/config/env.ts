@@ -6,7 +6,10 @@ import { z } from 'zod';
 
 // Local dev scripts run with cwd set to apps/api, but the shared .env lives at the repo root.
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+// Tests supply an isolated environment and must never load local credentials.
+if (process.env.NODE_ENV !== 'test') {
+  dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+}
 
 const boolFromString = z.enum(['true', 'false']).transform((value) => value === 'true');
 const emptyStringAsUndefined = (schema: z.ZodTypeAny) =>
