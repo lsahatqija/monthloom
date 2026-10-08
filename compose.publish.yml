@@ -1,0 +1,10 @@
+# Overlay for building and publishing both application images to Docker Hub.
+# Use with: docker compose -f compose.yml -f compose.publish.yml ...
+services:
+  api:
+    image: lsahatqija/monthloom:api-${IMAGE_TAG:-latest}
+  web:
+    image: lsahatqija/monthloom:web-${IMAGE_TAG:-latest}
+    build:
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
