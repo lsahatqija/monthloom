@@ -1,3 +1,13 @@
-import { registerRequestSchema, loginRequestSchema } from '@template/contracts';
+import {
+  forgotPasswordRequestSchema,
+  loginRequestSchema,
+  registerRequestSchema,
+  resetPasswordRequestSchema,
+} from '@template/contracts';
 
-export { registerRequestSchema, loginRequestSchema };
+export {
+  forgotPasswordRequestSchema,
+  loginRequestSchema,
+  registerRequestSchema,
+  resetPasswordRequestSchema,
+};

@@ -12,3 +12,9 @@ export interface CreateSessionData {
   tokenHash: string;
   expiresAt: Date;
 }
+
+export interface CreatePasswordResetTokenData {
+  userId: string;
+  tokenHash: string;
+  expiresAt: Date;
+}

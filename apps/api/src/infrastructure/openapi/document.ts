@@ -14,6 +14,8 @@ import {
   createHouseholdTransactionRequestSchema,
   fileListResponseSchema,
   fileMetadataSchema,
+  forgotPasswordRequestSchema,
+  forgotPasswordResponseSchema,
   householdMonthQuerySchema,
   householdMonthResponseSchema,
   householdListResponseSchema,
@@ -28,6 +30,7 @@ import {
   readinessResponseSchema,
   removeHouseholdTransactionQuerySchema,
   registerRequestSchema,
+  resetPasswordRequestSchema,
   transferHouseholdOwnershipRequestSchema,
   updateHouseholdRequestSchema,
   updateHouseholdSourceRequestSchema,
@@ -436,6 +439,40 @@ registry.registerPath({
     },
     401: {
       description: 'Invalid credentials.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/auth/forgot-password',
+  summary: 'Request a password reset email',
+  description: 'Always returns the same response so registered email addresses are not disclosed.',
+  tags: ['Auth'],
+  request: {
+    body: { content: { 'application/json': { schema: forgotPasswordRequestSchema } } },
+  },
+  responses: {
+    202: {
+      description: 'The reset request was accepted.',
+      content: { 'application/json': { schema: forgotPasswordResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/auth/reset-password',
+  summary: 'Set a new password using a single-use reset token',
+  tags: ['Auth'],
+  request: {
+    body: { content: { 'application/json': { schema: resetPasswordRequestSchema } } },
+  },
+  responses: {
+    204: { description: 'Password reset and existing sessions revoked.' },
+    400: {
+      description: 'The token is invalid or expired, or the password is invalid.',
       content: { 'application/json': { schema: ErrorResponse } },
     },
   },

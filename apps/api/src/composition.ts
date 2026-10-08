@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { config } from './config/index.js';
 import { db } from './infrastructure/database/client.js';
-import { LogEmailSender, SmtpEmailSender } from './infrastructure/email/index.js';
+import { LogEmailSender, ResendEmailSender } from './infrastructure/email/index.js';
 import { logger } from './infrastructure/logging/logger.js';
 import { LocalFileStorage } from './infrastructure/storage/index.js';
 import { PostgresSessionRepository } from './modules/auth/adapters/postgres-session.repository.js';
@@ -33,14 +33,14 @@ export function buildAppDependencies() {
   const financeRepository = new PostgresFinanceRepository(db);
   const fileStorage = new LocalFileStorage(path.resolve(config.upload.directory));
   const emailSender =
-    config.email.transport === 'smtp'
-      ? new SmtpEmailSender(config.email)
+    config.email.transport === 'resend'
+      ? new ResendEmailSender(config.email)
       : new LogEmailSender(logger);
   const emailService = new AutomatedEmailService(emailSender);
 
   const userService = new UserService(userRepository);
-  const financeService = new FinanceService(financeRepository, emailService);
-  const authService = new AuthService(userRepository, sessionRepository);
+  const financeService = new FinanceService(financeRepository, emailService, logger);
+  const authService = new AuthService(userRepository, sessionRepository, emailService, logger);
   const fileService = new FileService(fileRepository, fileStorage);
   const systemService = new SystemService();
 

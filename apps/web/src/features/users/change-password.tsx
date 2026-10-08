@@ -8,31 +8,51 @@ import { useForm } from 'react-hook-form';
 
 import { Alert, Button, FieldError, FormField, Input, Label } from '../../components/ui/index';
 import { isApiClientError } from '../../lib/api/errors';
+import { requestPasswordReset } from '../auth/auth.api';
 
 import { changePassword } from './users.api';
 
-export function ChangePassword() {
+export function ChangePassword({ email }: { email: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [wasChanged, setWasChanged] = useState(false);
+  const resetMutation = useMutation({ mutationFn: requestPasswordReset });
 
   return (
     <>
       {wasChanged ? <Alert>Password changed successfully.</Alert> : null}
+      {resetMutation.isSuccess ? <Alert>{resetMutation.data.message}</Alert> : null}
+      {resetMutation.isError ? (
+        <Alert variant="error">
+          {isApiClientError(resetMutation.error)
+            ? resetMutation.error.message
+            : 'Something went wrong. Please try again.'}
+        </Alert>
+      ) : null}
       <div className="settingsPanel settingsSecurityPanel">
         <div>
           <h3>Password</h3>
           <p>Update the password you use to sign in.</p>
         </div>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => {
-            setWasChanged(false);
-            setIsOpen(true);
-          }}
-        >
-          Change Password
-        </Button>
+        <div className="settingsSecurityActions">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={resetMutation.isPending}
+            onClick={() => resetMutation.mutate({ email })}
+          >
+            {resetMutation.isPending ? 'Sending...' : 'Email reset link'}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setWasChanged(false);
+              setIsOpen(true);
+            }}
+          >
+            Change Password
+          </Button>
+        </div>
       </div>
       {isOpen ? (
         <ChangePasswordModal

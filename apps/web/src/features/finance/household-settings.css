@@ -108,15 +108,51 @@
 .householdMembersHeading {
   justify-content: space-between;
 }
-.householdInvitationLink {
+.invitationModeSwitch {
+  display: inline-flex;
   margin-top: var(--space-3);
+  padding: 0.2rem;
+  border: 1px solid var(--ml-border);
+  border-radius: var(--radius);
+  background: var(--ml-surface-hover);
+}
+.invitationModeSwitch button {
+  padding: 0.45rem 0.8rem;
+  border: 0;
+  border-radius: calc(var(--radius) - 0.2rem);
+  background: transparent;
+  color: var(--ml-text-muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.invitationModeSwitch button[aria-pressed='true'] {
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  box-shadow: 0 1px 4px var(--ml-shadow);
+}
+.invitationModeSwitch button:focus-visible {
+  outline: 2px solid var(--ml-focus-ring);
+  outline-offset: 2px;
+}
+.invitationModeSwitch button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.householdInvitationPanel {
+  display: block;
+  margin-top: var(--space-3);
+}
+.householdInvitationLink {
+  width: 100%;
 }
 .householdInvitationLink input {
   min-width: 12rem;
   flex: 1 1 20rem;
 }
-.householdInvitationLink small {
-  width: 100%;
+.householdInvitationPanel > small {
+  display: block;
+  margin-top: var(--space-2);
   color: var(--ml-text-muted);
 }
 .householdInvitationConfirmation {

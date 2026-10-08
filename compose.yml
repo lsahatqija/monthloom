@@ -41,11 +41,7 @@ services:
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-Monthloom}
       EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-no-reply@monthloom.local}
       EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_SECURE: ${SMTP_SECURE:-false}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
       LOG_LEVEL: info
     ports:
       - '4000:4000'

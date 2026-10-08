@@ -1,8 +1,11 @@
-import type { CreateSessionData, Session } from './auth.types.js';
+import type { CreatePasswordResetTokenData, CreateSessionData, Session } from './auth.types.js';
 
 /** Business-oriented persistence operations for authentication sessions. */
 export interface SessionRepository {
   create(input: CreateSessionData): Promise<Session>;
   findByTokenHash(tokenHash: string): Promise<Session | null>;
   revoke(id: string): Promise<void>;
+  createPasswordResetToken(input: CreatePasswordResetTokenData): Promise<void>;
+  deletePasswordResetToken(tokenHash: string): Promise<void>;
+  resetPassword(tokenHash: string, passwordHash: string, now: Date): Promise<boolean>;
 }

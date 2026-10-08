@@ -24,7 +24,7 @@ export default async function ProfileSettingsPage() {
         <p className="settingsRole">{user.role} account</p>
       </div>
       <ProfileForm user={user} />
-      <ChangePassword />
+      <ChangePassword email={user.email} />
     </section>
   );
 }

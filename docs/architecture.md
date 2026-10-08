@@ -134,6 +134,12 @@ same kind of session. The raw opaque token is only returned in an HttpOnly cooki
 hash is persisted. Logout marks the session revoked and clears the cookie. Session validation
 rejects missing, revoked, or expired rows.
 
+Password-reset requests always return the same accepted response, whether or not the normalized
+email belongs to an account. For existing accounts, the API generates an expiring opaque token,
+stores only its SHA-256 hash, and sends the raw token in the Resend-hosted reset template. Resetting
+atomically consumes the single-use token, invalidates the user's other reset links, changes the
+Argon2 password hash, and revokes all existing sessions. The browser also clears its session cookie.
+
 #### Users
 
 The users module exposes the current public profile and profile updates. Internal user records,
@@ -280,6 +286,7 @@ the server authoritative for untrusted input.
 ```mermaid
 erDiagram
     USERS ||--o{ SESSIONS : owns
+    USERS ||--o{ PASSWORD_RESET_TOKENS : requests
     USERS ||--o{ FILES : owns
     USERS ||--o{ HOUSEHOLD_MEMBERS : joins
     USERS ||--o{ HOUSEHOLDS : owns
@@ -298,6 +305,7 @@ erDiagram
 | ----------------------- | ------------------------------------------------------------------------ |
 | `users`                 | Normalized unique email, Argon2 hash, display/profile fields, role       |
 | `sessions`              | Unique token hash, expiry, revocation timestamp, cascading user FK       |
+| `password_reset_tokens` | Unique token hash, expiry, single-use timestamp, cascading user FK       |
 | `files`                 | Owner, generated unique storage key, original name, MIME type, byte size |
 | `households`            | Currency, visual identity, owner; owner deletion is restricted           |
 | `household_members`     | Composite household/user key, join time, per-user primary flag           |
@@ -356,22 +364,36 @@ sequenceDiagram
 
 ### Invitation flow
 
-Any household member may create an invitation for an email address. The API stores only the hash
-of the raw token and sends the raw token inside the invitation link by transactional email. The
-public invitation lookup validates existence, unused state, and expiry without requiring
-authentication. Acceptance requires a session, atomically adds membership and marks the invitation
-accepted, and rejects reused, expired, or already-member cases. If email delivery fails, the newly
-created invitation is removed so an unreachable token is not left behind.
+Any household member may create a shareable invitation link or send invitations to as many as 20
+comma-separated email recipients at once. Every recipient gets a separate single-use token and
+link. The API stores only token hashes; raw tokens are returned for shareable links or sent inside
+transactional email. The public invitation lookup validates existence, unused state, and expiry
+without requiring authentication. Acceptance requires a session, atomically adds membership and
+marks the invitation accepted, and rejects reused, expired, or already-member cases. If an email
+delivery fails, only that recipient's newly created invitation is removed, and the response reports
+successful and failed recipients separately for safe retry handling.
 
 ### Email delivery
 
 Automated email is composed centrally as plain text and responsive HTML, then sent through an
-`EmailSender` infrastructure interface. The SMTP adapter works with conventional transactional
-email providers; a log adapter is the safe local default and records recipient/subject metadata
-without leaking token-bearing message bodies. Account verification, password reset, household
-invitation, and monthly report templates are available, while each feature remains responsible for
-token lifecycle and scheduling. Configure `EMAIL_TRANSPORT=smtp`, sender identity, and SMTP
-connection variables to enable real delivery.
+`EmailSender` infrastructure interface. The Resend adapter uses the official Node.js SDK and a
+backend-only API key; a log adapter is the safe local default and records recipient/subject
+metadata without leaking token-bearing message bodies. Account verification, password reset,
+household invitation, and monthly report templates are available, while each feature remains
+responsible for token lifecycle and scheduling. Configure `EMAIL_TRANSPORT=resend`, a verified
+sending-domain address, and `RESEND_API_KEY` to enable real delivery.
+
+The four published Resend templates use stable aliases (`monthloom-welcome`,
+`monthloom-password-reset`, `monthloom-household-invitation`, and
+`monthloom-monthly-balance`). Their versioned definitions live in the repository and can be safely
+created or updated with `pnpm email:templates:sync`. Registration sends the welcome template as a
+non-critical side effect; a delivery failure is logged but never invalidates the newly created
+account. Password-reset and monthly-report composition are ready for their token workflow and
+scheduler respectively.
+
+Template synchronization prefers the optional full-access `RESEND_ADMIN_KEY` and falls back to
+`RESEND_API_KEY`. The admin key is a provisioning credential and should not be configured in the
+production application; runtime delivery only needs a sending-access `RESEND_API_KEY`.
 
 ### File upload flow
 
@@ -386,7 +408,7 @@ The major route groups are:
 
 | Base path            | Operations                                                                                   |
 | -------------------- | -------------------------------------------------------------------------------------------- |
-| `/api/v1/auth`       | Register, login, logout, current session user                                                |
+| `/api/v1/auth`       | Register, login, logout, password reset, current session user                                |
 | `/api/v1/users`      | Read and update the current profile                                                          |
 | `/api/v1/households` | Household CRUD, primary selection, members, invitations, monthly view, transactions, sources |
 | `/api/v1/files`      | Upload, list, metadata, content, delete                                                      |
@@ -400,6 +422,7 @@ implementation if the generated description and code ever differ.
 
 - Passwords are hashed with Argon2.
 - Session tokens are cryptographically random, opaque, hashed at rest, expiring, and revocable.
+- Password-reset tokens are random, hashed at rest, expire after one hour, and are consumed once.
 - Session cookies are `HttpOnly`, `SameSite=Lax`, path-scoped to `/`, and `Secure` when configured.
 - Authenticated CORS uses explicit origins and credentials; write requests additionally verify
   `Origin` as CSRF defense in depth.
@@ -458,7 +481,7 @@ Before production deployment, the implementation still requires environment-spec
 - use managed PostgreSQL with backup and recovery procedures;
 - replace local file storage with durable object storage for horizontal API scaling;
 - provide production secret management;
-- authenticate the sending domain (SPF, DKIM, and DMARC), configure SMTP delivery, and monitor
+- authenticate the sending domain (SPF, DKIM, and DMARC), configure Resend delivery, and monitor
   bounces/complaints;
 - establish database migration and rollback procedures;
 - add observability, retention, and alerting; and

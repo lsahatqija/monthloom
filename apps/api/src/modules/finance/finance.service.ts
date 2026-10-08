@@ -14,6 +14,7 @@ import {
 } from '@template/contracts';
 
 import { config } from '../../config/index.js';
+import type { Logger } from '../../infrastructure/logging/logger.js';
 import { generateSessionToken, hashSessionToken } from '../../infrastructure/security/tokens.js';
 import { AuthorizationError, ConflictError, NotFoundError } from '../../shared/errors/index.js';
 import type { AutomatedEmailService } from '../email/automated-email.service.js';
@@ -43,6 +44,7 @@ export class FinanceService {
   constructor(
     private readonly financeRepository: FinanceRepository,
     private readonly emailService: AutomatedEmailService,
+    private readonly logger: Logger,
   ) {}
 
   async createHousehold(userId: string, input: CreateHouseholdRequest) {
@@ -323,39 +325,67 @@ export class FinanceService {
     const household = await this.financeRepository.findHousehold(householdId);
     if (!household) throw new NotFoundError('Household was not found.');
 
-    const token = generateSessionToken();
-    const tokenHash = hashSessionToken(token);
     const expiresAt = new Date(Date.now() + Constants.HOUSEHOLD_INVITATION_TTL_MS);
-    await this.financeRepository.createInvitation(
-      householdId,
-      invitingUser.id,
-      tokenHash,
-      expiresAt,
-    );
-    const invitationUrl = new URL(`/invite/${token}`, config.web.publicUrl).toString();
-    const sentTo = input.email.trim().toLowerCase();
+    const householdSummary = {
+      id: household.id,
+      name: household.name,
+      icon: household.icon,
+      color: household.color,
+    };
 
-    try {
-      await this.emailService.sendHouseholdInvitation({
-        to: sentTo,
-        inviterName: invitingUser.displayName,
-        householdName: household.name,
-        invitationUrl,
+    if (input.mode === 'link') {
+      const token = generateSessionToken();
+      await this.financeRepository.createInvitation(
+        householdId,
+        invitingUser.id,
+        hashSessionToken(token),
         expiresAt,
-      });
-    } catch (error) {
-      await this.financeRepository.deleteInvitation(tokenHash).catch(() => undefined);
-      throw error;
+      );
+      return {
+        mode: 'link' as const,
+        token,
+        household: householdSummary,
+        expiresAt: expiresAt.toISOString(),
+      };
     }
 
+    const deliveryResults = await Promise.all(
+      input.emails.map(async (email) => {
+        const recipient = email.toLowerCase();
+        const token = generateSessionToken();
+        const tokenHash = hashSessionToken(token);
+
+        try {
+          await this.financeRepository.createInvitation(
+            householdId,
+            invitingUser.id,
+            tokenHash,
+            expiresAt,
+          );
+          await this.emailService.sendHouseholdInvitation({
+            to: recipient,
+            inviterName: invitingUser.displayName,
+            householdName: household.name,
+            invitationUrl: new URL(`/invite/${token}`, config.web.publicUrl).toString(),
+            expiresAt,
+          });
+          return { recipient, sent: true } as const;
+        } catch (error) {
+          await this.financeRepository.deleteInvitation(tokenHash).catch(() => undefined);
+          this.logger.error(
+            { err: error, householdId },
+            'Failed to send a household invitation email',
+          );
+          return { recipient, sent: false } as const;
+        }
+      }),
+    );
+
     return {
-      sentTo,
-      household: {
-        id: household.id,
-        name: household.name,
-        icon: household.icon,
-        color: household.color,
-      },
+      mode: 'email' as const,
+      sentTo: deliveryResults.filter((result) => result.sent).map((result) => result.recipient),
+      failedTo: deliveryResults.filter((result) => !result.sent).map((result) => result.recipient),
+      household: householdSummary,
       expiresAt: expiresAt.toISOString(),
     };
   }

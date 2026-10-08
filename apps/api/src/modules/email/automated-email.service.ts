@@ -1,5 +1,7 @@
 import type { EmailMessage, EmailSender } from '../../infrastructure/email/index.js';
 
+import { resendTemplateAliases } from './resend-template-definitions.js';
+
 const BRAND_COLOR = '#78553d';
 
 function escapeHtml(value: string): string {
@@ -39,6 +41,16 @@ export interface LinkEmailInput {
   url: string;
 }
 
+export interface WelcomeEmailInput {
+  to: string;
+  displayName: string;
+  dashboardUrl: string;
+}
+
+export interface PasswordResetEmailInput extends LinkEmailInput {
+  expiresIn: string;
+}
+
 export interface HouseholdInvitationEmailInput {
   to: string;
   inviterName: string;
@@ -62,6 +74,19 @@ export interface MonthlyReportEmailInput {
 export class AutomatedEmailService {
   constructor(private readonly sender: EmailSender) {}
 
+  sendWelcome(input: WelcomeEmailInput): Promise<void> {
+    return this.sender.send({
+      kind: 'template',
+      label: 'welcome',
+      to: input.to,
+      templateId: resendTemplateAliases.welcome,
+      variables: {
+        DISPLAY_NAME: escapeHtml(input.displayName),
+        DASHBOARD_URL: escapeHtml(input.dashboardUrl),
+      },
+    });
+  }
+
   sendAccountVerification(input: LinkEmailInput): Promise<void> {
     return this.sender.send(
       this.linkEmail(
@@ -74,45 +99,50 @@ export class AutomatedEmailService {
     );
   }
 
-  sendPasswordReset(input: LinkEmailInput): Promise<void> {
-    return this.sender.send(
-      this.linkEmail(
-        input,
-        'Reset your Monthloom password',
-        'Reset your password',
-        'Use the secure link below to choose a new password. If you did not request this, you can ignore this email.',
-        'Reset password',
-      ),
-    );
+  sendPasswordReset(input: PasswordResetEmailInput): Promise<void> {
+    return this.sender.send({
+      kind: 'template',
+      label: 'password-reset',
+      to: input.to,
+      templateId: resendTemplateAliases.passwordReset,
+      variables: {
+        DISPLAY_NAME: escapeHtml(input.displayName),
+        RESET_URL: escapeHtml(input.url),
+        EXPIRES_IN: escapeHtml(input.expiresIn),
+      },
+    });
   }
 
   sendHouseholdInvitation(input: HouseholdInvitationEmailInput): Promise<void> {
-    const expires = input.expiresAt.toISOString();
-    const subject = `${input.inviterName} invited you to ${input.householdName}`;
-    const intro = `${input.inviterName} invited you to join the ${input.householdName} household on Monthloom.`;
     return this.sender.send({
+      kind: 'template',
+      label: 'household-invitation',
       to: input.to,
-      subject,
-      text: `${intro}\n\nAccept the invitation: ${input.invitationUrl}\n\nThis single-use invitation expires at ${expires}.`,
-      html: layout(
-        subject,
-        `Join ${input.householdName}`,
-        `<p style="line-height:1.6">${escapeHtml(intro)}</p>${actionButton('Accept invitation', input.invitationUrl)}<p style="color:#74675e;font-size:14px">This single-use invitation expires at ${escapeHtml(expires)}.</p>`,
-      ),
+      templateId: resendTemplateAliases.householdInvitation,
+      variables: {
+        INVITER_NAME: escapeHtml(input.inviterName),
+        HOUSEHOLD_NAME: escapeHtml(input.householdName),
+        INVITATION_URL: escapeHtml(input.invitationUrl),
+        EXPIRES_AT: escapeHtml(input.expiresAt.toISOString()),
+      },
     });
   }
 
   sendMonthlyReport(input: MonthlyReportEmailInput): Promise<void> {
-    const subject = `${input.householdName}: ${input.monthLabel} report`;
     return this.sender.send({
+      kind: 'template',
+      label: 'monthly-balance',
       to: input.to,
-      subject,
-      text: `Hi ${input.displayName},\n\n${input.monthLabel} for ${input.householdName}\nIncome: ${input.income}\nExpenses: ${input.expenses}\nLeft over: ${input.leftover}\n\nView report: ${input.reportUrl}`,
-      html: layout(
-        subject,
-        `${input.monthLabel} at a glance`,
-        `<p>Hi ${escapeHtml(input.displayName)},</p><p><strong>${escapeHtml(input.householdName)}</strong></p><ul><li>Income: ${escapeHtml(input.income)}</li><li>Expenses: ${escapeHtml(input.expenses)}</li><li>Left over: ${escapeHtml(input.leftover)}</li></ul>${actionButton('View full report', input.reportUrl)}`,
-      ),
+      templateId: resendTemplateAliases.monthlyBalance,
+      variables: {
+        DISPLAY_NAME: escapeHtml(input.displayName),
+        HOUSEHOLD_NAME: escapeHtml(input.householdName),
+        MONTH_LABEL: escapeHtml(input.monthLabel),
+        INCOME: escapeHtml(input.income),
+        EXPENSES: escapeHtml(input.expenses),
+        LEFTOVER: escapeHtml(input.leftover),
+        REPORT_URL: escapeHtml(input.reportUrl),
+      },
     });
   }
 
@@ -124,6 +154,8 @@ export class AutomatedEmailService {
     action: string,
   ): EmailMessage {
     return {
+      kind: 'rendered',
+      label: 'account-verification',
       to: input.to,
       subject,
       text: `Hi ${input.displayName},\n\n${copy}\n\n${input.url}`,

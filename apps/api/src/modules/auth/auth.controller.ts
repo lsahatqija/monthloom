@@ -3,8 +3,13 @@ import type { Request, Response } from 'express';
 import { config } from '../../config/index.js';
 
 import { clearSessionCookie, setSessionCookie } from './auth.cookies.js';
-import { loginRequestSchema, registerRequestSchema } from './auth.schemas.js';
-import type { AuthService } from './auth.service.js';
+import {
+  forgotPasswordRequestSchema,
+  loginRequestSchema,
+  registerRequestSchema,
+  resetPasswordRequestSchema,
+} from './auth.schemas.js';
+import { PASSWORD_RESET_REQUEST_MESSAGE, type AuthService } from './auth.service.js';
 
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -21,6 +26,19 @@ export class AuthController {
     const { user, sessionToken } = await this.authService.login(input);
     setSessionCookie(res, sessionToken);
     res.status(200).json({ user });
+  };
+
+  forgotPassword = async (req: Request, res: Response): Promise<void> => {
+    const input = forgotPasswordRequestSchema.parse(req.body);
+    await this.authService.requestPasswordReset(input);
+    res.status(202).json({ message: PASSWORD_RESET_REQUEST_MESSAGE });
+  };
+
+  resetPassword = async (req: Request, res: Response): Promise<void> => {
+    const input = resetPasswordRequestSchema.parse(req.body);
+    await this.authService.resetPassword(input);
+    clearSessionCookie(res);
+    res.status(204).send();
   };
 
   logout = async (req: Request, res: Response): Promise<void> => {

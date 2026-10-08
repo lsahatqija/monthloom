@@ -41,15 +41,12 @@ const envSchema = z.object({
     .default(5 * 1024 * 1024),
   UPLOAD_ALLOWED_MIME_TYPES: z.string().min(1).default('image/jpeg,image/png,image/webp'),
 
-  EMAIL_TRANSPORT: z.enum(['log', 'smtp']).default('log'),
+  EMAIL_TRANSPORT: z.enum(['log', 'resend']).default('log'),
   EMAIL_FROM_NAME: z.string().min(1).default('Monthloom'),
   EMAIL_FROM_ADDRESS: z.string().email().default('no-reply@monthloom.local'),
   EMAIL_REPLY_TO: emptyStringAsUndefined(z.string().email()),
-  SMTP_HOST: emptyStringAsUndefined(z.string().min(1)),
-  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
-  SMTP_SECURE: boolFromString.default('false'),
-  SMTP_USER: emptyStringAsUndefined(z.string().min(1)),
-  SMTP_PASSWORD: emptyStringAsUndefined(z.string().min(1)),
+  RESEND_API_KEY: emptyStringAsUndefined(z.string().startsWith('re_')),
+  RESEND_ADMIN_KEY: emptyStringAsUndefined(z.string().startsWith('re_')),
 
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 
@@ -119,13 +116,8 @@ export const config = {
       address: env.EMAIL_FROM_ADDRESS,
     },
     replyTo: env.EMAIL_REPLY_TO,
-    smtp: {
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: env.SMTP_SECURE,
-      user: env.SMTP_USER,
-      password: env.SMTP_PASSWORD,
-    },
+    resendApiKey: env.RESEND_API_KEY,
+    resendAdminKey: env.RESEND_ADMIN_KEY,
   },
 
   logging: {

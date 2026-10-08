@@ -14,6 +14,9 @@ const redactPaths = [
   '*.token',
   '*.sessionToken',
   '*.secret',
+  '*.apiKey',
+  '*.resendApiKey',
+  '*.resendAdminKey',
 ];
 
 export const logger = pino({

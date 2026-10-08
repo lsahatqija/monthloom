@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { loginRequestSchema, type LoginRequest } from '@template/contracts';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
@@ -54,8 +55,16 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
 
       <FormField>
         <Label htmlFor="password">Password</Label>
-        <Input id="password" type="password" autoComplete="current-password" {...register('password')} />
+        <Input
+          id="password"
+          type="password"
+          autoComplete="current-password"
+          {...register('password')}
+        />
         <FieldError message={errors.password?.message} />
+        <Link className="formAuxiliaryLink" href="/forgot-password">
+          Forgot password?
+        </Link>
       </FormField>
 
       <Button type="submit" disabled={isSubmitting || mutation.isPending}>
