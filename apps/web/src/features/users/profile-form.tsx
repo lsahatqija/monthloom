@@ -12,7 +12,7 @@ import { useForm } from 'react-hook-form';
 import { ProfileAppearanceFields } from '../../components/profile-appearance-fields';
 import { Alert, Button, FieldError, FormField, Input, Label } from '../../components/ui/index';
 import { isApiClientError } from '../../lib/api/errors';
-import { authKeys } from '../auth/auth.api';
+import { authKeys, sendEmailVerification } from '../auth/auth.api';
 
 import { updateProfile } from './users.api';
 
@@ -52,6 +52,8 @@ export function ProfileForm({ user }: { user: PublicUser }) {
     },
   });
 
+  const verificationMutation = useMutation({ mutationFn: sendEmailVerification });
+
   return (
     <form
       onSubmit={handleSubmit((values) => mutation.mutate(values))}
@@ -60,6 +62,33 @@ export function ProfileForm({ user }: { user: PublicUser }) {
     >
       {errors.root?.message ? <Alert variant="error">{errors.root.message}</Alert> : null}
       {mutation.isSuccess ? <Alert>Profile updated.</Alert> : null}
+
+      {!user.emailVerified ? (
+        <div className="emailVerificationPrompt">
+          <Alert>
+            Verify your email address to use password recovery, email invitations, and other email
+            features.
+          </Alert>
+          {verificationMutation.isError ? (
+            <Alert variant="error">
+              {isApiClientError(verificationMutation.error)
+                ? verificationMutation.error.message
+                : 'The verification email could not be sent. Please try again.'}
+            </Alert>
+          ) : null}
+          {verificationMutation.isSuccess ? (
+            <Alert>{verificationMutation.data.message}</Alert>
+          ) : null}
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={verificationMutation.isPending || verificationMutation.isSuccess}
+            onClick={() => verificationMutation.mutate()}
+          >
+            {verificationMutation.isPending ? 'Sending...' : 'Verify Email'}
+          </Button>
+        </div>
+      ) : null}
 
       <FormField>
         <Label htmlFor="displayName">Display name</Label>

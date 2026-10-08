@@ -1,4 +1,9 @@
-import type { CreatePasswordResetTokenData, CreateSessionData, Session } from './auth.types.js';
+import type {
+  CreateEmailVerificationTokenData,
+  CreatePasswordResetTokenData,
+  CreateSessionData,
+  Session,
+} from './auth.types.js';
 
 /** Business-oriented persistence operations for authentication sessions. */
 export interface SessionRepository {
@@ -8,4 +13,7 @@ export interface SessionRepository {
   createPasswordResetToken(input: CreatePasswordResetTokenData): Promise<void>;
   deletePasswordResetToken(tokenHash: string): Promise<void>;
   resetPassword(tokenHash: string, passwordHash: string, now: Date): Promise<boolean>;
+  createEmailVerificationToken(input: CreateEmailVerificationTokenData): Promise<void>;
+  deleteEmailVerificationToken(tokenHash: string): Promise<void>;
+  verifyEmail(tokenHash: string, now: Date): Promise<boolean>;
 }

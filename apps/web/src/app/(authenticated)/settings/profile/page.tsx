@@ -21,6 +21,7 @@ export default async function ProfileSettingsPage() {
           <strong>{user.displayName}</strong>
         </p>
         <p>{user.email}</p>
+        <p>{user.emailVerified ? 'Email verified' : 'Email not verified'}</p>
         <p className="settingsRole">{user.role} account</p>
       </div>
       <ProfileForm user={user} />

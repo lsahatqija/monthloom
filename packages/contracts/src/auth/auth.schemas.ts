@@ -40,6 +40,16 @@ export type ForgotPasswordRequest = z.infer<typeof forgotPasswordRequestSchema>;
 export const forgotPasswordResponseSchema = z.object({ message: z.string() });
 export type ForgotPasswordResponse = z.infer<typeof forgotPasswordResponseSchema>;
 
+export const emailVerificationTokenSchema = z
+  .string()
+  .regex(/^[A-Za-z0-9_-]{43}$/, 'Invalid email verification token');
+
+export const verifyEmailRequestSchema = z.object({ token: emailVerificationTokenSchema });
+export type VerifyEmailRequest = z.infer<typeof verifyEmailRequestSchema>;
+
+export const emailVerificationResponseSchema = z.object({ message: z.string() });
+export type EmailVerificationResponse = z.infer<typeof emailVerificationResponseSchema>;
+
 export const passwordResetTokenSchema = z
   .string()
   .regex(/^[A-Za-z0-9_-]{43}$/, 'Invalid password reset token');

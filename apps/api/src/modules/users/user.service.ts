@@ -10,6 +10,7 @@ export function toPublicUser(user: User): PublicUser {
   return {
     id: user.id,
     email: user.email,
+    emailVerified: user.emailVerified,
     displayName: user.displayName,
     profileImage: user.profileImage,
     desiredColor: user.desiredColor,

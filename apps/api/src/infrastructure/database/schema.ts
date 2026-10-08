@@ -30,6 +30,7 @@ export const users = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     email: varchar('email', { length: Constants.EMAIL_MAX_LENGTH }).notNull(),
+    emailVerified: boolean('email_verified').notNull().default(false),
     passwordHash: varchar('password_hash', { length: 255 }).notNull(),
     displayName: varchar('display_name', { length: Constants.DISPLAY_NAME_MAX_LENGTH }).notNull(),
     profileImage: profileImageEnum('profile_image')
@@ -83,6 +84,26 @@ export const passwordResetTokens = pgTable(
     ),
     userIdIdx: index('password_reset_tokens_user_id_idx').on(table.userId),
     expiresAtIdx: index('password_reset_tokens_expires_at_idx').on(table.expiresAt),
+  }),
+);
+
+export const emailVerificationTokens = pgTable(
+  'email_verification_tokens',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    tokenHash: varchar('token_hash', { length: 64 }).notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    tokenHashUniqueIdx: uniqueIndex('email_verification_tokens_token_hash_unique_idx').on(
+      table.tokenHash,
+    ),
+    userIdIdx: index('email_verification_tokens_user_id_idx').on(table.userId),
+    expiresAtIdx: index('email_verification_tokens_expires_at_idx').on(table.expiresAt),
   }),
 );
 
@@ -294,6 +315,7 @@ export const expenses = pgTable(
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   passwordResetTokens: many(passwordResetTokens),
+  emailVerificationTokens: many(emailVerificationTokens),
   files: many(files),
   householdMemberships: many(householdMembers),
   incomes: many(incomes),
@@ -307,6 +329,13 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
 export const passwordResetTokensRelations = relations(passwordResetTokens, ({ one }) => ({
   user: one(users, { fields: [passwordResetTokens.userId], references: [users.id] }),
 }));
+
+export const emailVerificationTokensRelations = relations(
+  emailVerificationTokens,
+  ({ one }) => ({
+    user: one(users, { fields: [emailVerificationTokens.userId], references: [users.id] }),
+  }),
+);
 
 export const filesRelations = relations(files, ({ one }) => ({
   owner: one(users, { fields: [files.ownerId], references: [users.id] }),

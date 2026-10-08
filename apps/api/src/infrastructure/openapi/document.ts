@@ -16,6 +16,7 @@ import {
   fileMetadataSchema,
   forgotPasswordRequestSchema,
   forgotPasswordResponseSchema,
+  emailVerificationResponseSchema,
   householdMonthQuerySchema,
   householdMonthResponseSchema,
   householdListResponseSchema,
@@ -31,6 +32,7 @@ import {
   removeHouseholdTransactionQuerySchema,
   registerRequestSchema,
   resetPasswordRequestSchema,
+  verifyEmailRequestSchema,
   transferHouseholdOwnershipRequestSchema,
   updateHouseholdRequestSchema,
   updateHouseholdSourceRequestSchema,
@@ -473,6 +475,44 @@ registry.registerPath({
     204: { description: 'Password reset and existing sessions revoked.' },
     400: {
       description: 'The token is invalid or expired, or the password is invalid.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/auth/verify-email',
+  summary: 'Verify an email address using a single-use token',
+  tags: ['Auth'],
+  request: {
+    body: { content: { 'application/json': { schema: verifyEmailRequestSchema } } },
+  },
+  responses: {
+    200: {
+      description: 'Email address verified.',
+      content: { 'application/json': { schema: emailVerificationResponseSchema } },
+    },
+    400: {
+      description: 'The token is invalid or expired.',
+      content: { 'application/json': { schema: ErrorResponse } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/auth/send-email-verification',
+  summary: 'Send a new email-verification link',
+  tags: ['Auth'],
+  security: [{ [bearerCookieSecurity.name]: [] }],
+  responses: {
+    202: {
+      description: 'Verification email request accepted.',
+      content: { 'application/json': { schema: emailVerificationResponseSchema } },
+    },
+    401: {
+      description: 'Authentication required.',
       content: { 'application/json': { schema: ErrorResponse } },
     },
   },

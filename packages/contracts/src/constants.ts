@@ -11,6 +11,7 @@ export class Constants {
   static readonly PASSWORD_MAX_LENGTH = 200;
   static readonly HOUSEHOLD_INVITATION_TTL_MS = 60 * 60 * 1000;
   static readonly PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
+  static readonly EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 
   static readonly USER_ROLES = ['user', 'admin'] as const;
 

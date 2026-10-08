@@ -4,6 +4,7 @@ import type { DesiredColor, ProfileImage, UserRole } from '@template/contracts';
 export interface User {
   id: string;
   email: string;
+  emailVerified: boolean;
   passwordHash: string;
   displayName: string;
   profileImage: ProfileImage;
@@ -23,6 +24,7 @@ export interface CreateUserData {
 }
 
 export interface UpdateUserData {
+  emailVerified?: boolean;
   passwordHash?: string;
   displayName?: string;
   profileImage?: ProfileImage;

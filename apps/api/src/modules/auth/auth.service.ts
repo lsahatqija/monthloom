@@ -5,6 +5,7 @@ import {
   type PublicUser,
   type RegisterRequest,
   type ResetPasswordRequest,
+  type VerifyEmailRequest,
 } from '@template/contracts';
 
 import { config } from '../../config/index.js';
@@ -29,6 +30,8 @@ export interface AuthResult {
 
 export const PASSWORD_RESET_REQUEST_MESSAGE =
   'If an account exists for that email, a password reset link has been sent.';
+export const EMAIL_VERIFICATION_SENT_MESSAGE = 'A verification link has been sent to your email.';
+export const EMAIL_VERIFIED_MESSAGE = 'Your email address has been verified.';
 
 export class AuthService {
   constructor(
@@ -56,13 +59,21 @@ export class AuthService {
     });
 
     const sessionToken = await this.createSession(user.id);
+    let verification: { tokenHash: string; url: string } | undefined;
     try {
+      verification = await this.createEmailVerificationToken(user.id);
       await this.emailService.sendWelcome({
         to: user.email,
         displayName: user.displayName,
-        dashboardUrl: new URL('/dashboard', config.web.publicUrl).toString(),
+        verificationUrl: verification.url,
+        expiresIn: '24 hours',
       });
     } catch (error) {
+      if (verification) {
+        await this.sessionRepository
+          .deleteEmailVerificationToken(verification.tokenHash)
+          .catch(() => undefined);
+      }
       // A non-critical welcome email must never leave a successfully created account unusable.
       this.logger.error({ err: error, userId: user.id }, 'Failed to send welcome email');
     }
@@ -89,7 +100,7 @@ export class AuthService {
 
   async requestPasswordReset(input: ForgotPasswordRequest): Promise<void> {
     const user = await this.userRepository.findByEmail(normalizeEmail(input.email));
-    if (!user) return;
+    if (!user || !user.emailVerified) return;
 
     const token = generateSessionToken();
     const tokenHash = hashSessionToken(token);
@@ -125,6 +136,37 @@ export class AuthService {
     }
   }
 
+  async sendEmailVerification(userId: string): Promise<void> {
+    const user = await this.userRepository.findById(userId);
+    if (!user || user.emailVerified) return;
+
+    const verification = await this.createEmailVerificationToken(user.id);
+    try {
+      await this.emailService.sendAccountVerification({
+        to: user.email,
+        displayName: user.displayName,
+        url: verification.url,
+        expiresIn: '24 hours',
+      });
+    } catch (error) {
+      await this.sessionRepository
+        .deleteEmailVerificationToken(verification.tokenHash)
+        .catch(() => undefined);
+      this.logger.error({ err: error, userId: user.id }, 'Failed to send email verification');
+      throw error;
+    }
+  }
+
+  async verifyEmail(input: VerifyEmailRequest): Promise<void> {
+    const verified = await this.sessionRepository.verifyEmail(
+      hashSessionToken(input.token),
+      new Date(),
+    );
+    if (!verified) {
+      throw new ValidationError('This email verification link is invalid or has expired.');
+    }
+  }
+
   async logout(sessionToken: string): Promise<void> {
     const tokenHash = hashSessionToken(sessionToken);
     const session = await this.sessionRepository.findByTokenHash(tokenHash);
@@ -152,5 +194,21 @@ export class AuthService {
 
     await this.sessionRepository.create({ userId, tokenHash, expiresAt });
     return sessionToken;
+  }
+
+  private async createEmailVerificationToken(
+    userId: string,
+  ): Promise<{ tokenHash: string; url: string }> {
+    const token = generateSessionToken();
+    const tokenHash = hashSessionToken(token);
+    await this.sessionRepository.createEmailVerificationToken({
+      userId,
+      tokenHash,
+      expiresAt: new Date(Date.now() + Constants.EMAIL_VERIFICATION_TTL_MS),
+    });
+    return {
+      tokenHash,
+      url: new URL(`/verify-email/${token}`, config.web.publicUrl).toString(),
+    };
   }
 }
