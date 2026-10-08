@@ -185,8 +185,14 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
     household.members.find((member) => member.id !== user.id)?.id ?? '',
   );
   const [error, setError] = useState<string | null>(null);
-  const [invitationEmail, setInvitationEmail] = useState('');
-  const [invitationSentTo, setInvitationSentTo] = useState<string | null>(null);
+  const [invitationMode, setInvitationMode] = useState<'link' | 'email'>('link');
+  const [invitationEmails, setInvitationEmails] = useState('');
+  const [invitationLink, setInvitationLink] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [invitationDelivery, setInvitationDelivery] = useState<{
+    sentTo: string[];
+    failedTo: string[];
+  } | null>(null);
   const isOwner = household.ownerId === user.id;
   const refresh = () => queryClient.invalidateQueries({ queryKey: financeKeys.all });
   const mutation = useMutation({
@@ -208,13 +214,41 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
     mutation.mutate(() => updateHousehold(household.id, input));
   };
 
-  const createInvitation = () => {
+  const createLinkInvitation = () => {
     mutation.mutate(async () => {
       const invitation = await createHouseholdInvitation(household.id, {
-        email: invitationEmail,
+        mode: 'link',
       });
-      setInvitationSentTo(invitation.sentTo);
-      setInvitationEmail('');
+      if (invitation.mode !== 'link') throw new Error('Unexpected invitation response.');
+      setInvitationLink(`${window.location.origin}/invite/${invitation.token}`);
+      setLinkCopied(false);
+    });
+  };
+
+  const copyInvitationLink = async () => {
+    if (!invitationLink) return;
+    try {
+      await navigator.clipboard.writeText(invitationLink);
+      setLinkCopied(true);
+      setError(null);
+    } catch {
+      setError('The invitation link could not be copied. Please copy it from the field.');
+    }
+  };
+
+  const sendEmailInvitations = () => {
+    const emails = invitationEmails
+      .split(',')
+      .map((email) => email.trim())
+      .filter(Boolean);
+    mutation.mutate(async () => {
+      const invitation = await createHouseholdInvitation(household.id, {
+        mode: 'email',
+        emails,
+      });
+      if (invitation.mode !== 'email') throw new Error('Unexpected invitation response.');
+      setInvitationDelivery({ sentTo: invitation.sentTo, failedTo: invitation.failedTo });
+      setInvitationEmails(invitation.failedTo.join(', '));
     });
   };
 
@@ -280,35 +314,98 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
         <div className="householdMembersHeading">
           <h4>Members</h4>
         </div>
-        <form
-          className="householdInvitationLink"
-          onSubmit={(event) => {
-            event.preventDefault();
-            createInvitation();
-          }}
-        >
-          <Input
-            type="email"
-            value={invitationEmail}
-            onChange={(event) => setInvitationEmail(event.target.value)}
-            placeholder="person@example.com"
-            aria-label="Email address to invite"
-            required
-          />
-          <Button
-            type="submit"
-            variant="secondary"
-            disabled={mutation.isPending || !invitationEmail.trim()}
+        <div className="invitationModeSwitch" role="group" aria-label="Invitation method">
+          <button
+            type="button"
+            aria-pressed={invitationMode === 'link'}
+            disabled={mutation.isPending}
+            onClick={() => setInvitationMode('link')}
           >
-            {mutation.isPending ? 'Sending...' : 'Send invitation'}
-          </Button>
-          <small>The single-use invitation expires in one hour.</small>
-        </form>
-        {invitationSentTo ? (
-          <p className="householdInvitationConfirmation" role="status">
-            Invitation sent to {invitationSentTo}.
-          </p>
-        ) : null}
+            Share link
+          </button>
+          <button
+            type="button"
+            aria-pressed={invitationMode === 'email'}
+            disabled={mutation.isPending}
+            onClick={() => setInvitationMode('email')}
+          >
+            Email
+          </button>
+        </div>
+
+        {invitationMode === 'link' ? (
+          <div className="householdInvitationPanel">
+            {invitationLink ? (
+              <div className="householdInvitationLink">
+                <Input
+                  value={invitationLink}
+                  aria-label="Household invitation link"
+                  readOnly
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+                <Button type="button" onClick={copyInvitationLink}>
+                  {linkCopied ? 'Copied!' : 'Copy link'}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={mutation.isPending}
+                onClick={createLinkInvitation}
+              >
+                {mutation.isPending ? 'Creating...' : 'Create invitation link'}
+              </Button>
+            )}
+            <small>Anyone with this single-use link can join. It expires in one hour.</small>
+          </div>
+        ) : (
+          <form
+            className="householdInvitationPanel"
+            onSubmit={(event) => {
+              event.preventDefault();
+              sendEmailInvitations();
+            }}
+          >
+            <div className="householdInvitationLink">
+              <Input
+                type="email"
+                multiple
+                value={invitationEmails}
+                onChange={(event) => {
+                  setInvitationEmails(event.target.value);
+                  setInvitationDelivery(null);
+                }}
+                placeholder="alex@example.com, sam@example.com"
+                aria-label="Email addresses to invite, separated by commas"
+                required
+              />
+              <Button
+                type="submit"
+                variant="secondary"
+                disabled={mutation.isPending || !invitationEmails.trim()}
+              >
+                {mutation.isPending ? 'Sending...' : 'Send invitation'}
+              </Button>
+            </div>
+            <small>
+              Separate up to {Constants.HOUSEHOLD_INVITATION_MAX_RECIPIENTS} addresses with commas.
+              Each person receives a unique link that expires in one hour.
+            </small>
+            {invitationDelivery?.sentTo.length ? (
+              <p className="householdInvitationConfirmation" role="status">
+                {invitationDelivery.sentTo.length === 1 ? 'Invitation' : 'Invitations'} sent to{' '}
+                {invitationDelivery.sentTo.join(', ')}.
+              </p>
+            ) : null}
+            {invitationDelivery?.failedTo.length ? (
+              <Alert variant="error">
+                Could not send to {invitationDelivery.failedTo.join(', ')}. The field now contains
+                only these addresses so you can retry.
+              </Alert>
+            ) : null}
+          </form>
+        )}
         <ul>
           {household.members.map((member) => (
             <li key={member.id}>

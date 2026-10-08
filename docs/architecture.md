@@ -364,12 +364,14 @@ sequenceDiagram
 
 ### Invitation flow
 
-Any household member may create an invitation for an email address. The API stores only the hash
-of the raw token and sends the raw token inside the invitation link by transactional email. The
-public invitation lookup validates existence, unused state, and expiry without requiring
-authentication. Acceptance requires a session, atomically adds membership and marks the invitation
-accepted, and rejects reused, expired, or already-member cases. If email delivery fails, the newly
-created invitation is removed so an unreachable token is not left behind.
+Any household member may create a shareable invitation link or send invitations to as many as 20
+comma-separated email recipients at once. Every recipient gets a separate single-use token and
+link. The API stores only token hashes; raw tokens are returned for shareable links or sent inside
+transactional email. The public invitation lookup validates existence, unused state, and expiry
+without requiring authentication. Acceptance requires a session, atomically adds membership and
+marks the invitation accepted, and rejects reused, expired, or already-member cases. If an email
+delivery fails, only that recipient's newly created invitation is removed, and the response reports
+successful and failed recipients separately for safe retry handling.
 
 ### Email delivery
 

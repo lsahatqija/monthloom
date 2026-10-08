@@ -39,7 +39,7 @@ export function buildAppDependencies() {
   const emailService = new AutomatedEmailService(emailSender);
 
   const userService = new UserService(userRepository);
-  const financeService = new FinanceService(financeRepository, emailService);
+  const financeService = new FinanceService(financeRepository, emailService, logger);
   const authService = new AuthService(userRepository, sessionRepository, emailService, logger);
   const fileService = new FileService(fileRepository, fileStorage);
   const systemService = new SystemService();

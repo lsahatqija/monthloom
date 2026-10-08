@@ -220,12 +220,38 @@ export const householdInvitationSchema = z.object({
   household: householdSchema.pick({ id: true, name: true, icon: true, color: true }),
   expiresAt: isoDateTimeSchema,
 });
-export const createHouseholdInvitationRequestSchema = z.object({
-  email: z.string().trim().email().max(320),
-});
-export const createHouseholdInvitationResponseSchema = householdInvitationSchema.extend({
-  sentTo: z.string().email(),
-});
+const householdInvitationEmailSchema = z.string().trim().email().max(Constants.EMAIL_MAX_LENGTH);
+
+export const createHouseholdInvitationRequestSchema = z.discriminatedUnion('mode', [
+  z.object({ mode: z.literal('link') }),
+  z.object({
+    mode: z.literal('email'),
+    emails: z
+      .array(householdInvitationEmailSchema)
+      .min(1, 'Enter at least one email address')
+      .max(Constants.HOUSEHOLD_INVITATION_MAX_RECIPIENTS)
+      .superRefine((emails, context) => {
+        const normalizedEmails = emails.map((email) => email.toLowerCase());
+        if (new Set(normalizedEmails).size !== normalizedEmails.length) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Each email address can only be invited once',
+          });
+        }
+      }),
+  }),
+]);
+export const createHouseholdInvitationResponseSchema = z.discriminatedUnion('mode', [
+  householdInvitationSchema.extend({
+    mode: z.literal('link'),
+    token: householdInvitationTokenSchema,
+  }),
+  householdInvitationSchema.extend({
+    mode: z.literal('email'),
+    sentTo: z.array(householdInvitationEmailSchema),
+    failedTo: z.array(householdInvitationEmailSchema),
+  }),
+]);
 export const acceptHouseholdInvitationResponseSchema = z.object({ householdId: idSchema });
 export const householdTransactionResponseSchema = z.object({
   transaction: householdTransactionSchema,
