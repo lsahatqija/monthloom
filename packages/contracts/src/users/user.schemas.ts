@@ -17,6 +17,7 @@ export type DesiredColor = z.infer<typeof desiredColorSchema>;
 export const publicUserSchema = z.object({
   id: idSchema,
   email: z.string().email().max(Constants.EMAIL_MAX_LENGTH),
+  emailVerified: z.boolean(),
   displayName: z
     .string()
     .min(Constants.DISPLAY_NAME_MIN_LENGTH)

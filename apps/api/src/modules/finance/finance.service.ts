@@ -322,6 +322,9 @@ export class FinanceService {
     if (!(await this.financeRepository.isMember(householdId, invitingUser.id))) {
       throw new AuthorizationError('You are not a member of this household.');
     }
+    if (input.mode === 'email' && !invitingUser.emailVerified) {
+      throw new AuthorizationError('Verify your email address before sending invitations.');
+    }
     const household = await this.financeRepository.findHousehold(householdId);
     if (!household) throw new NotFoundError('Household was not found.');
 

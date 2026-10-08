@@ -18,3 +18,9 @@ export interface CreatePasswordResetTokenData {
   tokenHash: string;
   expiresAt: Date;
 }
+
+export interface CreateEmailVerificationTokenData {
+  userId: string;
+  tokenHash: string;
+  expiresAt: Date;
+}

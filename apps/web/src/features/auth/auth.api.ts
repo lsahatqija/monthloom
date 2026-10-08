@@ -2,10 +2,12 @@ import type {
   AuthResponse,
   ForgotPasswordRequest,
   ForgotPasswordResponse,
+  EmailVerificationResponse,
   LoginRequest,
   MeResponse,
   RegisterRequest,
   ResetPasswordRequest,
+  VerifyEmailRequest,
 } from '@template/contracts';
 
 import { apiClient } from '../../lib/api/client';
@@ -45,4 +47,16 @@ export async function requestPasswordReset(
 
 export async function resetPassword(input: ResetPasswordRequest): Promise<void> {
   await apiClient.post<void>('auth/reset-password', input);
+}
+
+export async function sendEmailVerification(): Promise<EmailVerificationResponse> {
+  const data = await apiClient.post<EmailVerificationResponse>('auth/send-email-verification');
+  if (!data) throw new Error('Unexpected empty email verification response.');
+  return data;
+}
+
+export async function verifyEmail(input: VerifyEmailRequest): Promise<EmailVerificationResponse> {
+  const data = await apiClient.post<EmailVerificationResponse>('auth/verify-email', input);
+  if (!data) throw new Error('Unexpected empty email verification response.');
+  return data;
 }

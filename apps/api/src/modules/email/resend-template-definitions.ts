@@ -26,6 +26,7 @@ const variable = (key: string) => ({ key, type: 'string' as const });
 
 export const resendTemplateAliases = {
   welcome: 'monthloom-welcome',
+  emailVerification: 'monthloom-email-verification',
   passwordReset: 'monthloom-password-reset',
   householdInvitation: 'monthloom-household-invitation',
   monthlyBalance: 'monthloom-monthly-balance',
@@ -39,9 +40,20 @@ export const resendTemplateDefinitions = [
     html: layout(
       'Your Monthloom account is ready.',
       'Welcome to Monthloom',
-      `<p style="line-height:1.6">Hi {{{DISPLAY_NAME}}},</p><p style="line-height:1.6">Your account is ready. Start organizing your household finances and building a clearer monthly picture.</p>${button('Open Monthloom', 'DASHBOARD_URL')}`,
+      `<p style="line-height:1.6">Hi {{{DISPLAY_NAME}}},</p><p style="line-height:1.6">Your account is ready. Verify your email address to enable Monthloom's email features.</p>${button('Open Monthloom', 'VERIFICATION_URL')}<p style="color:#74675e;font-size:14px">This verification link expires in {{{EXPIRES_IN}}}.</p>`,
     ),
-    variables: [variable('DISPLAY_NAME'), variable('DASHBOARD_URL')],
+    variables: [variable('DISPLAY_NAME'), variable('VERIFICATION_URL'), variable('EXPIRES_IN')],
+  },
+  {
+    name: 'Monthloom email verification',
+    alias: resendTemplateAliases.emailVerification,
+    subject: 'Verify your Monthloom email address',
+    html: layout(
+      'Verify your email address to use Monthloom email features.',
+      'Verify your email',
+      `<p style="line-height:1.6">Hi {{{DISPLAY_NAME}}},</p><p style="line-height:1.6">Confirm that this email address belongs to you to enable Monthloom's email features.</p>${button('Verify email', 'VERIFICATION_URL')}<p style="color:#74675e;font-size:14px">This verification link expires in {{{EXPIRES_IN}}}.</p>`,
+    ),
+    variables: [variable('DISPLAY_NAME'), variable('VERIFICATION_URL'), variable('EXPIRES_IN')],
   },
   {
     name: 'Monthloom password reset',

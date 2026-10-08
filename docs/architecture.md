@@ -383,13 +383,14 @@ household invitation, and monthly report templates are available, while each fea
 responsible for token lifecycle and scheduling. Configure `EMAIL_TRANSPORT=resend`, a verified
 sending-domain address, and `RESEND_API_KEY` to enable real delivery.
 
-The four published Resend templates use stable aliases (`monthloom-welcome`,
-`monthloom-password-reset`, `monthloom-household-invitation`, and
+The five published Resend templates use stable aliases (`monthloom-welcome`,
+`monthloom-email-verification`, `monthloom-password-reset`, `monthloom-household-invitation`, and
 `monthloom-monthly-balance`). Their versioned definitions live in the repository and can be safely
-created or updated with `pnpm email:templates:sync`. Registration sends the welcome template as a
-non-critical side effect; a delivery failure is logged but never invalidates the newly created
-account. Password-reset and monthly-report composition are ready for their token workflow and
-scheduler respectively.
+created or updated with `pnpm email:templates:sync`. Registration sends the welcome template with a
+single-use email verification link. Unverified users can request another verification email from
+profile settings; password recovery and email invitations remain unavailable until verification.
+Welcome delivery remains a non-critical side effect; a failure is logged but never invalidates the
+newly created account. Monthly-report composition is ready for its scheduler.
 
 Template synchronization prefers the optional full-access `RESEND_ADMIN_KEY` and falls back to
 `RESEND_API_KEY`. The admin key is a provisioning credential and should not be configured in the

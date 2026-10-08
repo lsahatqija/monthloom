@@ -1,9 +1,19 @@
 import { and, eq, gt, isNull } from 'drizzle-orm';
 
 import type { Database } from '../../../infrastructure/database/client.js';
-import { passwordResetTokens, sessions, users } from '../../../infrastructure/database/schema.js';
+import {
+  emailVerificationTokens,
+  passwordResetTokens,
+  sessions,
+  users,
+} from '../../../infrastructure/database/schema.js';
 import type { SessionRepository } from '../auth.repository.js';
-import type { CreatePasswordResetTokenData, CreateSessionData, Session } from '../auth.types.js';
+import type {
+  CreateEmailVerificationTokenData,
+  CreatePasswordResetTokenData,
+  CreateSessionData,
+  Session,
+} from '../auth.types.js';
 
 function toDomainSession(record: typeof sessions.$inferSelect): Session {
   return {
@@ -85,6 +95,45 @@ export class PostgresSessionRepository implements SessionRepository {
         .set({ revokedAt: now })
         .where(and(eq(sessions.userId, token.userId), isNull(sessions.revokedAt)));
 
+      return true;
+    });
+  }
+
+  async createEmailVerificationToken(input: CreateEmailVerificationTokenData): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx
+        .delete(emailVerificationTokens)
+        .where(eq(emailVerificationTokens.userId, input.userId));
+      await tx.insert(emailVerificationTokens).values(input);
+    });
+  }
+
+  async deleteEmailVerificationToken(tokenHash: string): Promise<void> {
+    await this.db
+      .delete(emailVerificationTokens)
+      .where(eq(emailVerificationTokens.tokenHash, tokenHash));
+  }
+
+  async verifyEmail(tokenHash: string, now: Date): Promise<boolean> {
+    return this.db.transaction(async (tx) => {
+      const [token] = await tx
+        .delete(emailVerificationTokens)
+        .where(
+          and(
+            eq(emailVerificationTokens.tokenHash, tokenHash),
+            gt(emailVerificationTokens.expiresAt, now),
+          ),
+        )
+        .returning({ userId: emailVerificationTokens.userId });
+      if (!token) return false;
+
+      await tx
+        .update(users)
+        .set({ emailVerified: true, updatedAt: now })
+        .where(eq(users.id, token.userId));
+      await tx
+        .delete(emailVerificationTokens)
+        .where(eq(emailVerificationTokens.userId, token.userId));
       return true;
     });
   }

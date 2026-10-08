@@ -9,6 +9,7 @@ function toDomainUser(record: typeof users.$inferSelect): User {
   return {
     id: record.id,
     email: record.email,
+    emailVerified: record.emailVerified,
     passwordHash: record.passwordHash,
     displayName: record.displayName,
     profileImage: record.profileImage,

@@ -3,6 +3,7 @@ import {
   loginRequestSchema,
   registerRequestSchema,
   resetPasswordRequestSchema,
+  verifyEmailRequestSchema,
 } from '@template/contracts';
 
 export {
@@ -10,4 +11,5 @@ export {
   loginRequestSchema,
   registerRequestSchema,
   resetPasswordRequestSchema,
+  verifyEmailRequestSchema,
 };
