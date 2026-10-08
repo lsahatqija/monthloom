@@ -38,6 +38,16 @@ Household settings cover invitations, membership, ownership, and visual identity
 keep payees and income origins consistent across entries. Each person also controls their own
 display name, profile image, identifying color, and browser-local appearance preferences.
 
+## Testing
+
+Run `pnpm test:db:up`, then `pnpm test` for all unit and integration tests. Run
+`pnpm test:unit` without Docker, or target a module with `pnpm test finance`.
+Stop the isolated test database with `pnpm test:db:down`.
+
+GitHub Actions runs lint, type checks, tests and coverage checks on pull requests and pushes.
+See [the testing guide](docs/testing.md) for package commands, watch mode, test isolation,
+coverage reports, adding regression tests and requiring tests before deployment.
+
 ## Architecture
 
 Monthloom is a pnpm workspace with two independently deployable applications and a shared
