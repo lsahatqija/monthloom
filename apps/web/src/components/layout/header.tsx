@@ -10,6 +10,8 @@ import { useEffect, useRef, useState } from 'react';
 import { LogoutButton } from '../../features/auth/logout-button';
 import { useTheme } from '../theme-provider';
 
+import { InfoModal } from './info-modal';
+
 function SunIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -83,6 +85,7 @@ export function Header({ user }: { user: PublicUser | null }) {
         </Link>
 
         <div className="headerActions">
+          {pathname === '/' ? <InfoModal /> : null}
           <button
             type="button"
             className="iconButton"
