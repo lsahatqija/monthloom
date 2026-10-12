@@ -23,7 +23,6 @@ jobs:
     env:
       IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
       COMPOSE_FILE: compose.yml:compose.publish.yml
-      NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'http://localhost:4000' }}
     steps:
       - name: Check out the tested commit
         uses: actions/checkout@v4

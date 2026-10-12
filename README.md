@@ -169,9 +169,11 @@ membership and ownership. The API also applies origin checks, secure HTTP header
 origins, input and upload validation, request limits, and consistent error responses with request
 IDs.
 
-The included Compose configuration is intended for local use. Before a production deployment,
-review [`docs/production-concerns.md`](docs/production-concerns.md), including HTTPS, secrets,
-backups, durable object storage, migrations, observability, and upload scanning.
+The default Compose configuration is intended for local use. A hardened single-server Compose
+stack and step-by-step runbook for Ubuntu on Hetzner are provided in
+[`docs/deployment-hetzner.md`](docs/deployment-hetzner.md). Also review
+[`docs/production-concerns.md`](docs/production-concerns.md), especially the remaining work around
+off-server backups, durable object storage, observability, and upload scanning.
 
 ## License
 

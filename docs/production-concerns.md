@@ -1,19 +1,23 @@
-# Production concerns not implemented in this template
+# Production concerns
 
-This template intentionally stops short of production-hardening concerns that are highly specific
-to your hosting environment and organization. Before deploying to production, address:
+The Hetzner single-server deployment implements TLS termination, private container networks,
+secure cookies, and persistent local volumes. The following concerns remain environment- and
+organization-specific and must be addressed before relying on the service for irreplaceable data:
 
-- **HTTPS termination** — this template runs plain HTTP locally and via Compose. Use a reverse
-  proxy, load balancer, or platform-managed TLS in production, and set `SESSION_COOKIE_SECURE=true`.
-- **Managed database** — the bundled PostgreSQL container is for local development only. Use a
-  managed/HA Postgres instance (with backups) in production.
+- **Managed database** — the Hetzner stack runs PostgreSQL in a local Docker volume. This is
+  suitable for an initial single-server deployment but is not highly available. Use managed/HA
+  Postgres when availability requirements justify it.
 - **Object storage** — `LocalFileStorage` is a development adapter. Implement a `FileStorage`
   adapter backed by S3, Azure Blob Storage, or Google Cloud Storage for production (see ADR 0004).
-- **Backup policy** — no backup automation is included for the database or uploaded files.
-- **Secret management** — `.env` files are for local development only. Use a secret manager (cloud
-  provider secret store, Vault, etc.) in production instead of plain environment files.
+- **Backup policy** — a backup helper is included, but scheduling, encrypted off-server transfer,
+  retention, monitoring, and restore drills must be configured operationally.
+- **Secret management** — the initial deployment uses an owner-only `.env.production` file.
+  Move to a secret manager when the operational environment supports one.
 - **Monitoring, metrics and tracing** — only structured request/error logging is included. No
   hosted logging, metrics, tracing, analytics, or error-reporting provider is wired up.
 - **Horizontal scaling of sessions** — sessions are stored in Postgres (not in-memory), so multiple
   API instances already share session state; however, no load balancer or autoscaling
   configuration is provided.
+
+See [`deployment-hetzner.md`](deployment-hetzner.md) for the implemented topology and launch
+runbook.

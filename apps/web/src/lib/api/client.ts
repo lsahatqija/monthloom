@@ -15,7 +15,8 @@ export interface RequestOptions {
 }
 
 function resolveBaseUrl(): string {
-  return typeof window === 'undefined' ? webConfig.internalApiUrl : webConfig.publicApiUrl;
+  if (typeof window === 'undefined') return webConfig.internalApiUrl;
+  return webConfig.publicApiUrl || window.location.origin;
 }
 
 /** Endpoint paths are given relative to the versioned API base, e.g. "auth/me" or "files/123". */

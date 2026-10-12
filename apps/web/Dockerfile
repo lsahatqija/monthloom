@@ -10,7 +10,7 @@ COPY tsconfig.base.json ./
 COPY packages ./packages
 COPY assets ./assets
 COPY apps/web ./apps/web
-ARG NEXT_PUBLIC_API_URL=http://localhost:4000
+ARG NEXT_PUBLIC_API_URL=
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @template/contracts run build
