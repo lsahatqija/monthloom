@@ -67,29 +67,49 @@ dig +short AAAA app.example.com
 Ports 80 and 443 must reach this server before
 [Caddy can issue the certificate](https://caddyserver.com/docs/quick-starts/https).
 
-## 4. Install the release files
+## 4. Put the deployment files on the server
 
-Use `/opt/monthloom` as the application directory. Either clone the private repository with a
-read-only deploy key or copy just these release files to the server:
+Docker Hub contains the built API and web application images only. It does **not** contain the
+Compose file, Caddy configuration, `.env.production`, backup script, update script, or systemd
+units. Those files must exist on the Ubuntu server.
 
-- `compose.prod.yml`
-- `infrastructure/production/Caddyfile`
-- `infrastructure/production/deploy.sh`
-- `infrastructure/production/backup.sh`
-- `infrastructure/production/update.sh`
-- `infrastructure/production/install-auto-update.sh`
-- `infrastructure/production/systemd/`
-- `infrastructure/production/env.example`
+| Location                       | What it contains                                                    | How it changes                                                |
+| ------------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------- |
+| GitHub                         | Source code and deployment files                                    | Updated by normal Git pushes                                  |
+| Docker Hub                     | Built `api-*` and `web-*` images                                    | Updated by GitHub Actions                                     |
+| `/opt/monthloom` on the server | Compose, Caddy, scripts, systemd source units and `.env.production` | Initially cloned; deployment-file changes are pulled manually |
+| Docker volumes on the server   | PostgreSQL data, uploads and Caddy certificates                     | Changed by the running application                            |
 
-On the server:
+The recommended approach is to keep a Git checkout at `/opt/monthloom`. Run the following commands
+**on the Ubuntu server**, not on the development computer:
 
 ```bash
 sudo install -d -o "$USER" -g "$USER" -m 750 /opt/monthloom
+git clone --branch main --single-branch https://github.com/lsahatqija/monthloom.git /opt/monthloom
 cd /opt/monthloom
 cp infrastructure/production/env.example .env.production
 chmod 600 .env.production
+chmod +x infrastructure/production/*.sh
 openssl rand -hex 32
 ```
+
+If the repository is private, configure a read-only GitHub deploy key before cloning. An
+alternative is to copy `compose.prod.yml`, `docs/deployment-hetzner.md`, and the complete
+`infrastructure/production/` directory to `/opt/monthloom`, preserving that directory structure.
+The Git checkout is preferable because future deployment-file changes can be installed with:
+
+```bash
+cd /opt/monthloom
+git pull --ff-only
+```
+
+The server does not build or execute the checked-out application source. Docker Compose pulls and
+runs the prebuilt images from Docker Hub. Likewise, the automatic image updater does not run
+`git pull`: application image releases are automatic, while changes to Compose, Caddy, scripts, or
+systemd units are deliberately applied manually.
+
+Generate a session secret with the `openssl` command above, then edit `.env.production` and put its
+output in `SESSION_SECRET`.
 
 Edit `.env.production`, replacing every placeholder. `POSTGRES_PASSWORD` and the password inside
 `DATABASE_URL` must represent the same value. URL-encode reserved characters in `DATABASE_URL`.
@@ -111,7 +131,8 @@ docker compose --env-file .env.production -f compose.prod.yml logs -f --tail=100
 
 The API applies database migrations before it starts accepting traffic. The deployment waits for
 PostgreSQL, the API, Next.js, and Caddy health checks. On first start, Caddy obtains the TLS
-certificate and stores it in the `caddy_data` volume.
+certificate and stores it in the `caddy_data` volume. If a service does not become healthy,
+`deploy.sh` prints the Compose status and the last 100 log lines for diagnosis.
 
 Verify from another machine:
 

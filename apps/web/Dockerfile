@@ -20,6 +20,7 @@ FROM node:22-alpine AS runtime
 ARG VCS_REF=development
 LABEL org.opencontainers.image.revision=${VCS_REF}
 ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
 RUN addgroup -S webapp && adduser -S webapp -G webapp
 WORKDIR /app
 COPY --from=build /repo/apps/web/public ./apps/web/public

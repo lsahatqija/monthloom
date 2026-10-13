@@ -17,5 +17,11 @@ flock 9
 
 docker compose --env-file "$env_file" -f "$compose_file" config --quiet
 docker compose --env-file "$env_file" -f "$compose_file" pull
-docker compose --env-file "$env_file" -f "$compose_file" up -d --remove-orphans --wait
+if ! docker compose --env-file "$env_file" -f "$compose_file" up -d --remove-orphans --wait; then
+  echo "Deployment did not become healthy. Current status and recent logs:" >&2
+  docker compose --env-file "$env_file" -f "$compose_file" ps >&2 || true
+  docker compose --env-file "$env_file" -f "$compose_file" logs --tail=100 \
+    postgres api web caddy >&2 || true
+  exit 1
+fi
 docker compose --env-file "$env_file" -f "$compose_file" ps

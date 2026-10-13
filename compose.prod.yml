@@ -45,6 +45,7 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
+      HOSTNAME: 0.0.0.0
       PORT: 3000
       API_INTERNAL_URL: http://api:4000
     expose:

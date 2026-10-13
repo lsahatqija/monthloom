@@ -96,6 +96,8 @@ if "${compose[@]}" up -d --remove-orphans --wait; then
 fi
 
 echo "The updated stack did not become healthy." >&2
+"${compose[@]}" ps >&2 || true
+"${compose[@]}" logs --tail=100 api web >&2 || true
 printf '%s\n' "$desired_api_revision" > "$failed_revision_file"
 if [[ "$can_rollback" == true ]]; then
   echo "Attempting to restore the previously running application images." >&2
