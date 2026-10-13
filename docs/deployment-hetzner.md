@@ -14,8 +14,9 @@ Before changing DNS, choose:
 
 - The hostname, such as `app.example.com`. `DOMAIN` never includes `https://` or a path.
 - An operations email for ACME expiry/account notices.
-- The immutable Git commit SHA to deploy. CI publishes `api-<sha>` and `web-<sha>` images after
-  tests pass on `main`; do not deploy `latest` if you want deterministic rollback.
+- Whether to follow the automatic `latest` channel or pin an immutable Git commit SHA. CI publishes
+  both `api-<sha>`/`web-<sha>` and paired `api-latest`/`web-latest` images after tests pass on
+  `main`.
 - The production sender domain and Resend API key, or `EMAIL_TRANSPORT=log` for a launch without
   outbound email. Account verification and password-reset messages are not delivered in `log`
   mode.
@@ -37,6 +38,9 @@ Do not open 3000, 4000, or 5432. Keep the Hetzner firewall even if UFW is also e
 disabling SSH password authentication, verify a second terminal can log in using a non-root sudo
 user and an SSH key. Enable automatic security updates and take a Hetzner snapshot before major
 host-level changes; a snapshot is not a database backup.
+
+Ubuntu 26.04 uses Chrony as its default time daemon, so `systemd-timesyncd` is normally absent.
+Verify synchronization with `systemctl status chrony` and `chronyc tracking`.
 
 Install Docker Engine and the Compose plugin from
 [Docker's official Ubuntu repository](https://docs.docker.com/engine/install/ubuntu/). Add the
@@ -72,6 +76,9 @@ read-only deploy key or copy just these release files to the server:
 - `infrastructure/production/Caddyfile`
 - `infrastructure/production/deploy.sh`
 - `infrastructure/production/backup.sh`
+- `infrastructure/production/update.sh`
+- `infrastructure/production/install-auto-update.sh`
+- `infrastructure/production/systemd/`
 - `infrastructure/production/env.example`
 
 On the server:
@@ -88,8 +95,8 @@ Edit `.env.production`, replacing every placeholder. `POSTGRES_PASSWORD` and the
 `DATABASE_URL` must represent the same value. URL-encode reserved characters in `DATABASE_URL`.
 Never commit or copy this file into logs or tickets.
 
-If Docker Hub images are private, run `docker login` using a read-only access token. Confirm the
-selected SHA images exist before proceeding.
+If Docker Hub images are private, run `sudo docker login` using a read-only access token because
+the automatic update service runs as root. Confirm the selected images exist before proceeding.
 
 ## 5. First deployment
 
@@ -97,7 +104,7 @@ Run:
 
 ```bash
 cd /opt/monthloom
-chmod +x infrastructure/production/deploy.sh infrastructure/production/backup.sh
+chmod +x infrastructure/production/*.sh
 ./infrastructure/production/deploy.sh
 docker compose --env-file .env.production -f compose.prod.yml logs -f --tail=100
 ```
@@ -142,15 +149,57 @@ gunzip -c postgres.sql.gz | docker compose --env-file .env.production -f compose
 Uploads can be restored by extracting `uploads.tar.gz` into the `monthloom-prod_uploads_data`
 volume while the API is stopped. Never test a restore over the live volumes.
 
-## 7. Routine releases and rollback
+## 7. Automatic releases and rollback
 
-After CI publishes a tested commit, change only `IMAGE_TAG` in `.env.production`, create a backup,
-and run `deploy.sh`. Review readiness and application logs after each release.
+Set `IMAGE_TAG=latest` in `.env.production`. Once the first deployment is healthy, install the
+systemd timer:
 
-To roll back application code, set `IMAGE_TAG` to the previous known-good SHA and rerun the deploy
-script. Database migrations currently run automatically and may not be reversible, so review every
-migration for backward compatibility before deployment. A destructive migration requires a
-tested database restore or an explicit down-migration plan.
+```bash
+cd /opt/monthloom
+sudo ./infrastructure/production/install-auto-update.sh
+sudo systemctl start monthloom-update.service
+systemctl status monthloom-update.service --no-pager
+systemctl list-timers monthloom-update.timer --no-pager
+```
+
+The timer checks Docker Hub five minutes after boot and five minutes after each completed check.
+It pulls only the API and web images, confirms both `latest` tags carry the same CI commit label,
+and compares their image IDs with the running containers. If nothing changed, it exits without
+restarting anything. For an update it:
+
+1. Tags the running application images locally as `api-rollback` and `web-rollback`.
+2. Creates a database and upload backup.
+3. Recreates the changed services and waits for all health checks.
+4. Attempts to restore the previous application images if the new stack is unhealthy.
+
+After a failed release, the updater records its commit and will not repeatedly redeploy that same
+revision. A later CI revision is tried normally. After diagnosing a transient failure, retry the
+same revision by removing `/var/lib/monthloom-updater/failed-revision` and starting the service
+manually.
+
+Inspect automatic-update logs with:
+
+```bash
+journalctl -u monthloom-update.service --since today
+```
+
+Database migrations run when the new API starts. An application-image rollback cannot reverse a
+database migration, so every production migration must remain backward-compatible. A destructive
+migration requires a separately tested rollout and restore plan; do not let it ride the automatic
+channel.
+
+To stop automatic releases and pin a version:
+
+```bash
+sudo systemctl disable --now monthloom-update.timer
+```
+
+Then set `IMAGE_TAG` to the previous known-good commit SHA and run `deploy.sh`. The immutable SHA
+tags remain available even though normal deployments follow `latest`.
+
+The timer updates application images only. Pull repository changes manually before applying
+updates to Compose, Caddy, deployment scripts, or systemd units, then rerun
+`install-auto-update.sh` if a unit changed.
 
 Useful operations:
 

@@ -17,6 +17,8 @@ RUN pnpm --filter @template/contracts run build
 RUN pnpm --filter @template/web run build
 
 FROM node:22-alpine AS runtime
+ARG VCS_REF=development
+LABEL org.opencontainers.image.revision=${VCS_REF}
 ENV NODE_ENV=production
 RUN addgroup -S webapp && adduser -S webapp -G webapp
 WORKDIR /app

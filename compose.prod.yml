@@ -37,7 +37,7 @@ services:
       start_period: 10s
 
   web:
-    image: lsahatqija/monthloom:web-${IMAGE_TAG:?Set IMAGE_TAG to a tested commit SHA}
+    image: lsahatqija/monthloom:web-${IMAGE_TAG:?Set IMAGE_TAG in .env.production}
     restart: unless-stopped
     init: true
     depends_on:
@@ -66,7 +66,7 @@ services:
       start_period: 20s
 
   api:
-    image: lsahatqija/monthloom:api-${IMAGE_TAG:?Set IMAGE_TAG to a tested commit SHA}
+    image: lsahatqija/monthloom:api-${IMAGE_TAG:?Set IMAGE_TAG in .env.production}
     restart: unless-stopped
     init: true
     depends_on:

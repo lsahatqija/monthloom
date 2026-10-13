@@ -15,6 +15,8 @@ RUN pnpm --filter @template/api run build
 RUN pnpm --filter @template/api deploy --prod /prod/api
 
 FROM node:22-alpine AS runtime
+ARG VCS_REF=development
+LABEL org.opencontainers.image.revision=${VCS_REF}
 ENV NODE_ENV=production
 RUN addgroup -S apiapp && adduser -S apiapp -G apiapp
 WORKDIR /app

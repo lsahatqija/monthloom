@@ -3,9 +3,13 @@
 services:
   api:
     image: lsahatqija/monthloom:api-${IMAGE_TAG:-latest}
+    build:
+      args:
+        VCS_REF: ${IMAGE_TAG:-development}
   web:
     image: lsahatqija/monthloom:web-${IMAGE_TAG:-latest}
     build:
       # Override compose.yml: production browser traffic is same-origin through Caddy.
       args:
         NEXT_PUBLIC_API_URL: ''
+        VCS_REF: ${IMAGE_TAG:-development}
