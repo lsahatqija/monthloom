@@ -30,7 +30,9 @@ services:
       - frontend
     logging: *default-logging
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://localhost:2019/config/ >/dev/null']
+      # Probe Caddy's local admin API. Use IPv4 explicitly because Alpine may resolve localhost
+      # to ::1 while Caddy's admin listener is bound to 127.0.0.1.
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:2019/config/ >/dev/null']
       interval: 30s
       timeout: 5s
       retries: 3

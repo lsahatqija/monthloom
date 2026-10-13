@@ -146,6 +146,29 @@ Then register, sign in, upload and download a small image, and confirm the brows
 `Secure`, `HttpOnly`, `SameSite=Lax` session cookie. Check that ports 3000, 4000, and 5432 are not
 reachable externally.
 
+If a container is unhealthy, inspect the health command and service logs rather than relying on
+Compose's dependency summary:
+
+```bash
+docker compose --env-file .env.production -f compose.prod.yml ps
+docker inspect --format '{{json .State.Health}}' \
+  "$(docker compose --env-file .env.production -f compose.prod.yml ps -q caddy)" | jq
+docker compose --env-file .env.production -f compose.prod.yml logs --tail=200 caddy
+```
+
+Browser API traffic is same-origin in production. If the browser reports CORS, first inspect the
+failed request URL in its Network panel. It must start with
+`https://<DOMAIN>/api/`, never `http://localhost:4000`. Then verify the API's effective setting:
+
+```bash
+grep '^DOMAIN=' .env.production
+docker compose --env-file .env.production -f compose.prod.yml exec api \
+  sh -c 'printf "%s\n" "$CORS_ALLOWED_ORIGINS"'
+```
+
+Both values must correspond exactly to the browser origin, including `https` and excluding a
+trailing slash.
+
 ## 6. Backups before launch
 
 The included helper creates a compressed logical PostgreSQL dump, a compressed upload archive,
