@@ -85,6 +85,16 @@ export function Header({ user }: { user: PublicUser | null }) {
         </Link>
 
         <div className="headerActions">
+          <Link
+            href="/"
+            className="iconButton"
+            aria-label="Home"
+            title="Home"
+            aria-current={pathname === '/' ? 'page' : undefined}
+            onClick={() => setIsOpen(false)}
+          >
+            <House aria-hidden="true" />
+          </Link>
           {pathname === '/' ? <InfoModal /> : null}
           <button
             type="button"
@@ -111,6 +121,15 @@ export function Header({ user }: { user: PublicUser | null }) {
               {isOpen ? (
                 <div id="account-menu" className="accountMenuPanel">
                   <p className="accountMenuName">{user.displayName}</p>
+                  <Link
+                    href="/"
+                    className="accountMenuItem"
+                    aria-current={pathname === '/' ? 'page' : undefined}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <House aria-hidden="true" />
+                    Home
+                  </Link>
                   <Link
                     href="/settings/profile"
                     className="accountMenuItem"

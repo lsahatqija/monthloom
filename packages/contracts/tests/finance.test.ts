@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   copyHouseholdSourcesRequestSchema,
+  createHouseholdRequestSchema,
+  updateHouseholdRequestSchema,
+  HOUSEHOLD_CURRENCIES,
   createHouseholdInvitationRequestSchema,
   createHouseholdTransactionRequestSchema,
   householdMonthQuerySchema,
@@ -22,6 +25,29 @@ const transaction = {
 };
 
 describe('finance contracts', () => {
+  it('accepts supported household currencies and defaults older create requests to EUR', () => {
+    const details = { name: 'Home', icon: 'small-house', color: '#123456' };
+    expect(createHouseholdRequestSchema.parse(details).currency).toBe('EUR');
+    expect(HOUSEHOLD_CURRENCIES.slice(0, 2).map(([code]) => code)).toEqual(['EUR', 'USD']);
+    for (const [currency] of HOUSEHOLD_CURRENCIES) {
+      expect(createHouseholdRequestSchema.parse({ ...details, currency }).currency).toBe(currency);
+      expect(updateHouseholdRequestSchema.parse({ currency })).toEqual({ currency });
+    }
+    expect(updateHouseholdRequestSchema.parse({ name: 'Renamed' })).toEqual({ name: 'Renamed' });
+  });
+
+  it.each(['XYZ', 'eur', '', 'EURO'])('rejects unsupported household currency %s', (currency) => {
+    expect(updateHouseholdRequestSchema.safeParse({ currency }).success).toBe(false);
+    expect(
+      createHouseholdRequestSchema.safeParse({
+        name: 'Home',
+        icon: 'small-house',
+        color: '#123456',
+        currency,
+      }).success,
+    ).toBe(false);
+  });
+
   it('accepts a valid transaction', () => {
     expect(createHouseholdTransactionRequestSchema.parse(transaction)).toEqual(transaction);
   });

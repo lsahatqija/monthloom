@@ -103,7 +103,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
         .limit(1);
       const [record] = await transaction
         .insert(households)
-        .values({ ...input, ownerId: userId, currency: 'EUR' })
+        .values({ ...input, ownerId: userId })
         .returning();
 
       if (!record) throw new Error('Failed to create household.');

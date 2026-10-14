@@ -418,6 +418,7 @@ export function HouseholdDashboard() {
   const money = new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency: household.currency,
+    currencyDisplay: 'narrowSymbol',
   });
   const date = new Intl.DateTimeFormat(undefined, { day: '2-digit', month: 'short' });
   const expenseTypes = Array.from(
@@ -511,10 +512,9 @@ export function HouseholdDashboard() {
             <button
               type="button"
               className="addTransactionButton"
-              aria-label="Add transaction"
               onClick={() => setAddingTransaction(true)}
             >
-              <span aria-hidden="true">+</span>
+              Add transaction
             </button>
           </div>
         </div>

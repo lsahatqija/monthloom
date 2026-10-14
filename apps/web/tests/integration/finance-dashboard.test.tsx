@@ -45,13 +45,13 @@ const transactions = [
   },
 ];
 
-function mockDashboard() {
+function mockDashboard(currency = 'EUR') {
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input, options) => {
     const url = new URL(String(input));
     if (url.pathname === '/api/v1/households') return Response.json({ households: [household] });
     if (url.pathname === '/api/v1/households/home/month')
       return Response.json({
-        household,
+        household: { ...household, currency },
         month: url.searchParams.get('month'),
         summary: { income: '100.00', expenses: '20.00', leftover: '80.00' },
         members: [member],
@@ -66,6 +66,19 @@ function mockDashboard() {
 }
 
 describe('household dashboard', () => {
+  it.each([
+    ['EUR', '€'],
+    ['USD', '$'],
+    ['JPY', '¥'],
+    ['GBP', '£'],
+  ])('displays the household currency %s in transactions and totals', async (currency, symbol) => {
+    mockDashboard(currency);
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+    expect(screen.getByRole('table')).toHaveTextContent(symbol!);
+    expect(screen.getByText('Total income').nextElementSibling).toHaveTextContent(symbol!);
+  });
+
   it('shows an actionable empty state when no households exist', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ households: [] })));
     renderWithQuery(<HouseholdDashboard />);

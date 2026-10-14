@@ -38,6 +38,45 @@ function renderForm(transaction?: HouseholdTransaction) {
 }
 
 describe('transaction form + query + HTTP client', () => {
+  it('starts recurring transactions without expiration and reveals a required date when enabled', async () => {
+    renderForm();
+    await userEvent.click(screen.getByRole('switch', { name: /Recurring transaction/ }));
+    const expires = screen.getByRole('switch', { name: 'Expires' });
+    expect(expires).not.toBeChecked();
+    expect(screen.queryByLabelText('Expiration date')).not.toBeInTheDocument();
+    await userEvent.click(expires);
+    expect(screen.getByLabelText('Expiration date')).toBeRequired();
+    await userEvent.click(expires);
+    expect(screen.queryByLabelText('Expiration date')).not.toBeInTheDocument();
+  });
+
+  it.each([true, false])('saves an existing expiration with Expires set to %s', async (expires) => {
+    const fetch = vi.fn().mockResolvedValue(Response.json({ transaction: { id: 'entry' } }));
+    vi.stubGlobal('fetch', fetch);
+    const { onClose } = renderForm({
+      id: 'entry',
+      kind: 'expense',
+      type: 'groceries',
+      date: '2026-01-01',
+      icon: 'receipt',
+      color: '#123456',
+      amount: '12.34',
+      recurring: true,
+      expiresOn: '2026-12-31',
+      projected: false,
+      user: member,
+      source,
+    });
+    expect(screen.getByRole('switch', { name: 'Expires' })).toBeChecked();
+    expect(screen.getByLabelText('Expiration date')).toHaveValue('2026-12-31');
+    if (!expires) await userEvent.click(screen.getByRole('switch', { name: 'Expires' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(JSON.parse(fetch.mock.calls[0]![1].body)).toMatchObject({
+      transaction: { recurring: true, expiresOn: expires ? '2026-12-31' : null },
+    });
+  });
+
   it('requires a source, normalizes decimal commas and submits income without an expense type', async () => {
     const fetch = vi.fn().mockResolvedValue(Response.json({ transaction: { id: 'new' } }));
     vi.stubGlobal('fetch', fetch);
