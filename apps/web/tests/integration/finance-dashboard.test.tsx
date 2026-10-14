@@ -117,8 +117,7 @@ describe('household dashboard', () => {
     renderWithQuery(<HouseholdDashboard />);
     await screen.findByRole('heading', { name: 'Our Home' });
     await userEvent.click(screen.getByLabelText('Actions for Employer'));
-    const incomeRow = screen.getByText('Employer', { selector: 'td' }).closest('tr')!;
-    await userEvent.click(within(incomeRow).getByRole('button', { name: 'Remove' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
     const dialog = screen.getByRole('alertdialog');
     expect(fetch.mock.calls.some(([, options]) => options?.method === 'DELETE')).toBe(false);
     await userEvent.click(within(dialog).getByRole('button', { name: 'Remove' }));
@@ -127,5 +126,26 @@ describe('household dashboard', () => {
       expect.stringContaining('/transactions/income?scope=current'),
       expect.objectContaining({ method: 'DELETE' }),
     );
+  });
+
+  it('closes a transaction menu after selecting Edit or clicking elsewhere', async () => {
+    mockDashboard();
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+
+    const actions = screen.getByLabelText('Actions for Employer');
+    const menu = actions.closest('details')!;
+    await userEvent.click(actions);
+    expect(menu).toHaveAttribute('open');
+    expect(document.querySelector('.transactionMenuPopover')?.parentElement).toBe(document.body);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(menu).not.toHaveAttribute('open');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await userEvent.click(actions);
+    expect(menu).toHaveAttribute('open');
+    await userEvent.click(screen.getByRole('heading', { name: 'Activity' }));
+    expect(menu).not.toHaveAttribute('open');
   });
 });

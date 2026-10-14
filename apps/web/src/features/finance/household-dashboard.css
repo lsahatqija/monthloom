@@ -1109,10 +1109,8 @@
   color: var(--ml-text);
 }
 .transactionMenuPopover {
-  position: absolute;
-  z-index: 5;
-  top: calc(100% + 0.25rem);
-  right: 0;
+  position: fixed;
+  z-index: 100;
   display: grid;
   min-width: 8rem;
   overflow: hidden;
