@@ -67,17 +67,17 @@ export function Header({ user }: { user: PublicUser | null }) {
         <Link href="/" className="brand" aria-label="Monthloom home">
           <Image
             className="brandLight"
-            src="/brand/monthloom-light.png"
-            width={512}
-            height={122}
+            src="/brand/monthloom-horizontal-light.png"
+            width={1880}
+            height={342}
             priority
             alt="Monthloom"
           />
           <Image
             className="brandDark"
-            src="/brand/monthloom-dark.png"
-            width={512}
-            height={122}
+            src="/brand/monthloom-horizontal-dark.png"
+            width={1852}
+            height={342}
             priority
             alt=""
             aria-hidden="true"

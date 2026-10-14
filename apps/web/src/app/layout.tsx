@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
+import { PwaRegistration } from '../components/pwa-registration';
 import { ThemeProvider } from '../components/theme-provider';
 import { QueryProvider } from '../providers/query-provider';
 
@@ -16,7 +17,16 @@ export const metadata: Metadata = {
     template: '%s | Monthloom',
   },
   description: 'Plan and share your monthly household finances.',
-  icons: { icon: '/favicon.ico' },
+  applicationName: 'Monthloom',
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [
+      { url: '/icons/icon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -34,6 +44,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: appearanceScript }} />
       </head>
       <body>
+        <PwaRegistration />
         <ThemeProvider>
           <QueryProvider>{children}</QueryProvider>
         </ThemeProvider>
