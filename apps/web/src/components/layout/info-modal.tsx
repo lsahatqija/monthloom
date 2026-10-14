@@ -3,7 +3,13 @@
 import { Info, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-export function InfoModal() {
+export function InfoModal({
+  triggerVariant = 'icon',
+  onClose,
+}: {
+  triggerVariant?: 'icon' | 'menuItem';
+  onClose?: () => void;
+}) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -20,7 +26,7 @@ export function InfoModal() {
     <>
       <button
         type="button"
-        className="iconButton"
+        className={triggerVariant === 'menuItem' ? 'accountMenuItem' : 'iconButton'}
         aria-label="Open app info"
         title="Info"
         aria-haspopup="dialog"
@@ -30,12 +36,16 @@ export function InfoModal() {
         }}
       >
         <Info aria-hidden="true" />
+        {triggerVariant === 'menuItem' ? 'Info' : null}
       </button>
       <dialog
         ref={dialogRef}
         className="infoModal"
         aria-labelledby="info-modal-title"
-        onClose={() => setIsOpen(false)}
+        onClose={() => {
+          setIsOpen(false);
+          onClose?.();
+        }}
         onClick={(event) => {
           if (event.target !== event.currentTarget) return;
           const bounds = event.currentTarget.getBoundingClientRect();

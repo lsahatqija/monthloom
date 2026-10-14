@@ -15,8 +15,6 @@ import {
   getHouseholdMonth,
   getHouseholds,
   removeHouseholdTransaction,
-  setPrimaryHousehold,
-  updateHousehold,
 } from './finance.api';
 import { FinancialIcon, financialIconLabel } from './financial-icon';
 import { TransactionForm } from './transaction-form';
@@ -141,7 +139,8 @@ function TransactionMenu({
 
     const closeOnOutsideClick = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (!menuRef.current?.contains(target) && !popoverRef.current?.contains(target)) setOpen(false);
+      if (!menuRef.current?.contains(target) && !popoverRef.current?.contains(target))
+        setOpen(false);
     };
 
     document.addEventListener('mousedown', closeOnOutsideClick);
@@ -196,11 +195,7 @@ function TransactionMenu({
       <summary aria-label={`Actions for ${entry.source.displayName}`}>⋯</summary>
       {open && typeof document !== 'undefined'
         ? createPortal(
-            <div
-              ref={popoverRef}
-              className="transactionMenuPopover"
-              style={popoverPosition}
-            >
+            <div ref={popoverRef} className="transactionMenuPopover" style={popoverPosition}>
               <button type="button" onClick={() => selectAction(onEdit)}>
                 Edit
               </button>
@@ -212,77 +207,6 @@ function TransactionMenu({
           )
         : null}
     </details>
-  );
-}
-
-function HouseholdName({ id, name }: { id: string; name: string }) {
-  const queryClient = useQueryClient();
-  const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(name);
-  const mutation = useMutation({
-    mutationFn: () => updateHousehold(id, { name: value }),
-    onSuccess: async () => {
-      setEditing(false);
-      await queryClient.invalidateQueries({ queryKey: financeKeys.all });
-    },
-  });
-
-  if (editing) {
-    return (
-      <form
-        className="householdNameForm"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (value.trim()) mutation.mutate();
-        }}
-      >
-        <label className="srOnly" htmlFor="household-name">
-          Household name
-        </label>
-        <input
-          id="household-name"
-          className="householdNameInput"
-          value={value}
-          maxLength={160}
-          autoFocus
-          onChange={(event) => setValue(event.target.value)}
-        />
-        <button type="submit" className="nameAction" disabled={mutation.isPending || !value.trim()}>
-          Save
-        </button>
-        <button
-          type="button"
-          className="nameAction"
-          onClick={() => {
-            setValue(name);
-            setEditing(false);
-          }}
-        >
-          Cancel
-        </button>
-        {mutation.isError ? (
-          <span className="nameError">
-            {isApiClientError(mutation.error) ? mutation.error.message : 'Could not save the name.'}
-          </span>
-        ) : null}
-      </form>
-    );
-  }
-
-  return (
-    <div className="householdTitleRow">
-      <h1>{name}</h1>
-      <button
-        type="button"
-        className="editNameButton"
-        onClick={() => setEditing(true)}
-        aria-label="Edit household name"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="m4 20 4.2-1 10.6-10.6a2 2 0 0 0-2.8-2.8L5.4 16.2 4 20Zm10.5-12.9 2.8 2.8" />
-        </svg>
-      </button>
-    </div>
   );
 }
 
@@ -380,7 +304,6 @@ function RemoveTransactionDialog({
 
 export function HouseholdDashboard() {
   const months = useMemo(monthOptions, []);
-  const queryClient = useQueryClient();
   const [month, setMonth] = useState(months.find((option) => option.isCurrent)!.value);
   const [householdId, setHouseholdId] = useState('');
   const [addingTransaction, setAddingTransaction] = useState(false);
@@ -409,13 +332,6 @@ export function HouseholdDashboard() {
     queryFn: () => getHouseholdMonth(householdId, month),
     enabled: Boolean(householdId),
   });
-  const defaultMutation = useMutation({
-    mutationFn: () => setPrimaryHousehold(householdId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: financeKeys.households() });
-    },
-  });
-
   if (householdsQuery.isPending || (householdsQuery.data?.length && query.isPending)) {
     return (
       <div className="dashboardState">
@@ -461,7 +377,6 @@ export function HouseholdDashboard() {
   }
 
   const { household, summary, transactions } = query.data;
-  const selectedHousehold = householdsQuery.data?.find((entry) => entry.id === household.id);
   const activeFilterCount = Object.entries(filters).filter(
     ([key, value]) => value !== '' && value !== 'all' && !(key === 'recurring' && value === 'all'),
   ).length;
@@ -499,8 +414,8 @@ export function HouseholdDashboard() {
     setSortKey(nextSortKey);
     setSortDirection('ascending');
   };
-  const sortableHeader = (key: TransactionSortKey, label: string) => (
-    <th aria-sort={sortKey === key ? sortDirection : 'none'}>
+  const sortableHeader = (key: TransactionSortKey, label: string, className?: string) => (
+    <th className={className} aria-sort={sortKey === key ? sortDirection : 'none'}>
       <button type="button" className="transactionSortButton" onClick={() => sortBy(key)}>
         {label}
         <span className="transactionSortIndicator" aria-hidden="true">
@@ -530,35 +445,30 @@ export function HouseholdDashboard() {
   return (
     <section className="householdDashboard" aria-label="Household dashboard">
       <div className="dashboardHeading">
-        <HouseholdName id={household.id} name={household.name} />
         <div className="dashboardSelectors">
-          <label className="householdPicker">
-            <span className="srOnly">Household</span>
-            <select
-              value={householdId}
-              onChange={(event) => {
-                setHouseholdId(event.target.value);
-                setFilters(emptyTransactionFilters);
-              }}
-            >
-              {householdsQuery.data?.map((entry) => (
-                <option key={entry.id} value={entry.id}>
-                  {entry.name}
-                  {entry.isPrimary ? ' (default)' : ''}
-                </option>
-              ))}
-            </select>
-          </label>
-          {selectedHousehold && !selectedHousehold.isPrimary ? (
-            <button
-              type="button"
-              className="defaultHouseholdButton"
-              disabled={defaultMutation.isPending}
-              onClick={() => defaultMutation.mutate()}
-            >
-              {defaultMutation.isPending ? 'Saving…' : 'Make default'}
-            </button>
-          ) : null}
+          <div className="householdControl">
+            {(householdsQuery.data?.length ?? 0) > 1 ? (
+              <label className="householdPicker">
+                <span className="srOnly">Household</span>
+                <select
+                  value={householdId}
+                  onChange={(event) => {
+                    setHouseholdId(event.target.value);
+                    setFilters(emptyTransactionFilters);
+                  }}
+                >
+                  {householdsQuery.data?.map((entry) => (
+                    <option key={entry.id} value={entry.id}>
+                      {entry.name}
+                      {entry.isPrimary ? ' (default)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <h1 className="householdNameText">{household.name}</h1>
+            )}
+          </div>
           <label className="monthPicker">
             <span className="srOnly">Month</span>
             <select value={month} onChange={(event) => setMonth(event.target.value)}>
@@ -575,14 +485,6 @@ export function HouseholdDashboard() {
           </label>
         </div>
       </div>
-      {defaultMutation.isError ? (
-        <Alert variant="error">
-          {isApiClientError(defaultMutation.error)
-            ? defaultMutation.error.message
-            : 'We could not update your default household.'}
-        </Alert>
-      ) : null}
-
       <div className="financeRecap" aria-label="Monthly recap">
         <div>
           <span>Total income</span>
@@ -749,10 +651,10 @@ export function HouseholdDashboard() {
                 <tr>
                   {sortableHeader('date', 'Date')}
                   <th aria-label="Icon" />
-                  {sortableHeader('user', 'User')}
+                  {sortableHeader('amount', 'Amount', 'transactionAmountColumn')}
                   {sortableHeader('source', 'Source')}
                   {sortableHeader('type', 'Type')}
-                  {sortableHeader('amount', 'Amount')}
+                  {sortableHeader('user', 'User')}
                   <th aria-label="Actions" />
                 </tr>
               </thead>
@@ -770,6 +672,19 @@ export function HouseholdDashboard() {
                     <td>
                       <EntryIcon entry={entry} />
                     </td>
+                    <td
+                      className={`transactionAmountColumn ${
+                        entry.kind === 'income' ? 'incomeAmount' : 'expenseAmount'
+                      }`}
+                    >
+                      {entry.kind === 'income' ? '+' : '−'}
+                      {money.format(Number(entry.amount))}
+                    </td>
+                    <td>
+                      {entry.projected ? <span className="srOnly">Projected: </span> : null}
+                      {entry.source.displayName}
+                    </td>
+                    <td>{transactionTypeLabel(entry)}</td>
                     <td>
                       <span className="transactionUser">
                         <ProfileImage
@@ -779,15 +694,6 @@ export function HouseholdDashboard() {
                         />
                         <span>{entry.user.displayName}</span>
                       </span>
-                    </td>
-                    <td>
-                      {entry.projected ? <span className="srOnly">Projected: </span> : null}
-                      {entry.source.displayName}
-                    </td>
-                    <td>{transactionTypeLabel(entry)}</td>
-                    <td className={entry.kind === 'income' ? 'incomeAmount' : 'expenseAmount'}>
-                      {entry.kind === 'income' ? '+' : '−'}
-                      {money.format(Number(entry.amount))}
                     </td>
                     <td>
                       {entry.projected ? null : (
@@ -815,7 +721,6 @@ export function HouseholdDashboard() {
         </div>
       </div>
 
-      <footer className="householdFooter" aria-label="Household footer" />
       {addingTransaction ? (
         <TransactionForm
           householdId={household.id}

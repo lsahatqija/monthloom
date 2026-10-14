@@ -97,11 +97,62 @@ describe('household dashboard', () => {
     );
   });
 
+  it('shows a household name for one household and a selector for multiple households', async () => {
+    mockDashboard();
+    const { unmount } = renderWithQuery(<HouseholdDashboard />);
+    expect(await screen.findByRole('heading', { name: 'Our Home' })).toBeVisible();
+    expect(screen.queryByRole('combobox', { name: 'Household' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit household name' })).not.toBeInTheDocument();
+    unmount();
+
+    const secondHousehold = {
+      id: 'second-home',
+      name: 'Weekend Home',
+      currency: 'EUR',
+      isPrimary: false,
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) => {
+        const url = new URL(String(input));
+        if (url.pathname === '/api/v1/households') {
+          return Response.json({ households: [household, secondHousehold] });
+        }
+        if (
+          url.pathname === '/api/v1/households/home/month' ||
+          url.pathname === '/api/v1/households/second-home/month'
+        ) {
+          const selected = url.pathname.includes('second-home') ? secondHousehold : household;
+          return Response.json({
+            household: selected,
+            month: url.searchParams.get('month'),
+            summary: { income: '100.00', expenses: '20.00', leftover: '80.00' },
+            members: [member],
+            sources: [shop, work],
+            transactions,
+          });
+        }
+        throw new Error(`Unexpected test request: ${url}`);
+      }),
+    );
+    renderWithQuery(<HouseholdDashboard />);
+    const selector = await screen.findByRole('combobox', { name: 'Household' });
+    expect(within(selector).getAllByRole('option')).toHaveLength(2);
+    await userEvent.selectOptions(selector, 'second-home');
+    await waitFor(() => expect(selector).toHaveValue('second-home'));
+    expect(screen.queryByRole('button', { name: 'Make default' })).not.toBeInTheDocument();
+  });
+
   it('sorts by signed amount and filters expenses without changing monthly totals', async () => {
     mockDashboard();
     renderWithQuery(<HouseholdDashboard />);
     await screen.findByRole('heading', { name: 'Our Home' });
     const table = screen.getByRole('table');
+    expect(
+      within(table)
+        .getAllByRole('columnheader')
+        .map((header) => header.textContent),
+    ).toEqual(['Date↑', '', 'Amount↕', 'Source↕', 'Type↕', 'User↕', '']);
     expect(within(table).getAllByRole('row')[1]).toHaveTextContent('Employer');
     await userEvent.click(screen.getByRole('button', { name: 'Amount' }));
     expect(within(table).getAllByRole('row')[1]).toHaveTextContent('Grocer');
