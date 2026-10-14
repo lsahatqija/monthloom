@@ -154,6 +154,64 @@
   background: var(--ml-primary);
   color: var(--ml-on-primary);
 }
+.installPromptBackdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  align-items: end;
+  padding: var(--space-4);
+  background: color-mix(in srgb, var(--ml-text) 48%, transparent);
+  backdrop-filter: blur(3px);
+}
+.installPrompt {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-4);
+  width: min(100%, 28rem);
+  margin: 0 auto max(var(--space-2), env(safe-area-inset-bottom));
+  padding: var(--space-6);
+  border: 1px solid var(--ml-border);
+  border-radius: 22px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  box-shadow: 0 24px 70px var(--ml-shadow);
+}
+.installPrompt img {
+  border-radius: 13px;
+}
+.installPrompt h2 {
+  margin: 0 0 var(--space-1);
+  font-size: 1.2rem;
+}
+.installPrompt p {
+  margin: 0;
+  color: var(--ml-text-muted);
+}
+.installPromptActions {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+.installPromptActions button {
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.installPromptPrimary {
+  background: var(--ml-primary);
+  color: var(--ml-on-primary);
+}
+.installPromptSecondary {
+  border-color: var(--ml-border) !important;
+  background: transparent;
+  color: var(--ml-text);
+}
 .infoModal {
   width: min(38rem, calc(100% - 2rem));
   max-height: calc(100dvh - 2rem);

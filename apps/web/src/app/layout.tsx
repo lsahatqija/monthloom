@@ -44,10 +44,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: appearanceScript }} />
       </head>
       <body>
-        <PwaRegistration />
-        <ThemeProvider>
-          <QueryProvider>{children}</QueryProvider>
-        </ThemeProvider>
+        <PwaRegistration>
+          <ThemeProvider>
+            <QueryProvider>{children}</QueryProvider>
+          </ThemeProvider>
+        </PwaRegistration>
       </body>
     </html>
   );
