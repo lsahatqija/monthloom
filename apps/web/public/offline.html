@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#35675b" />
+    <title>Monthloom is offline</title>
+    <style>
+      body {
+        display: grid;
+        min-height: 100vh;
+        margin: 0;
+        padding: 1.5rem;
+        place-items: center;
+        background: #f7f5ef;
+        color: #293c36;
+        font-family:
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+        text-align: center;
+      }
+      main {
+        max-width: 28rem;
+      }
+      img {
+        border-radius: 18px;
+      }
+      p {
+        line-height: 1.6;
+      }
+      button {
+        padding: 0.75rem 1rem;
+        border: 0;
+        border-radius: 10px;
+        background: #35675b;
+        color: #fff;
+        font: inherit;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icons/icon-192.png" width="80" height="80" alt="" />
+      <h1>You're offline</h1>
+      <p>Reconnect to the internet to continue using Monthloom.</p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>

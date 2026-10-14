@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -9,7 +9,6 @@ import {
 
 function InstallMenuEntry() {
   const { canOfferInstall, openInstallPrompt } = usePwaInstall();
-
   return canOfferInstall ? <button onClick={openInstallPrompt}>Install from menu</button> : null;
 }
 
@@ -20,13 +19,13 @@ const originalMatchMedia = window.matchMedia;
 function setDevice(userAgent: string, standalone = false) {
   Object.defineProperty(window.navigator, 'userAgent', { configurable: true, value: userAgent });
   Object.defineProperty(window.navigator, 'platform', { configurable: true, value: '' });
-  window.matchMedia = vi.fn().mockReturnValue({ matches: standalone }) as typeof window.matchMedia;
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches: query === '(display-mode: standalone)' ? standalone : false,
+  })) as typeof window.matchMedia;
 }
 
 describe('PWA installation', () => {
-  beforeEach(() => {
-    sessionStorage.clear();
-  });
+  beforeEach(() => sessionStorage.clear());
 
   afterEach(() => {
     if (originalUserAgent) Object.defineProperty(window.navigator, 'userAgent', originalUserAgent);
@@ -35,7 +34,7 @@ describe('PWA installation', () => {
   });
 
   it('only identifies mobile, non-standalone sessions as mobile browsers', () => {
-    setDevice('Mozilla/5.0 (Linux; Android 15; Mobile)');
+    setDevice('Mozilla/5.0 (Linux; Android 15; Mobile) Chrome/140.0');
     expect(isMobileBrowser(window.navigator, window)).toBe(true);
 
     setDevice('Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
@@ -45,8 +44,34 @@ describe('PWA installation', () => {
     expect(isMobileBrowser(window.navigator, window)).toBe(false);
   });
 
-  it('offers the native install prompt and keeps a menu entry after dismissal', async () => {
-    setDevice('Mozilla/5.0 (Linux; Android 15; Mobile)');
+  it('shows the floating prompt immediately on mobile and opens the native installer', async () => {
+    setDevice('Mozilla/5.0 (Linux; Android 15; Mobile) Chrome/140.0');
+    const nativePrompt = vi.fn().mockResolvedValue(undefined);
+    const installEvent = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), {
+      prompt: nativePrompt,
+      userChoice: Promise.resolve({ outcome: 'accepted', platform: 'web' }),
+    });
+
+    render(
+      <PwaRegistration>
+        <InstallMenuEntry />
+      </PwaRegistration>,
+    );
+
+    expect(await screen.findByRole('dialog', { name: 'Install Monthloom' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Preparing…' })).toBeDisabled();
+    await act(async () => {
+      window.dispatchEvent(installEvent);
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Install' }));
+
+    await waitFor(() => expect(nativePrompt).toHaveBeenCalledOnce());
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Install from menu' })).not.toBeInTheDocument();
+  });
+
+  it('can be cancelled while leaving installation available from the mobile menu', async () => {
+    setDevice('Mozilla/5.0 (Linux; Android 15; Mobile) Chrome/140.0');
     const nativePrompt = vi.fn().mockResolvedValue(undefined);
     const installEvent = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), {
       prompt: nativePrompt,
@@ -58,17 +83,19 @@ describe('PWA installation', () => {
         <InstallMenuEntry />
       </PwaRegistration>,
     );
-    window.dispatchEvent(installEvent);
 
-    expect(await screen.findByRole('dialog', { name: 'Install Monthloom' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Install' }));
+    await screen.findByRole('dialog', { name: 'Install Monthloom' });
+    await act(async () => {
+      window.dispatchEvent(installEvent);
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Not now' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole('button', { name: 'Install from menu' }));
     await waitFor(() => expect(nativePrompt).toHaveBeenCalledOnce());
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(screen.getByRole('button', { name: 'Install from menu' })).toBeInTheDocument();
   });
 
-  it('shows Add to Home Screen instructions on iOS', async () => {
+  it('explains the platform limitation when iOS cannot expose an installer', async () => {
     setDevice('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)');
 
     render(
@@ -77,8 +104,9 @@ describe('PWA installation', () => {
       </PwaRegistration>,
     );
 
-    expect(await screen.findByText(/Tap the Share button.*Add to Home Screen/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
-    expect(screen.getByRole('button', { name: 'Install from menu' })).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'Show me how' }));
+    expect(
+      screen.getByText(/Apple does not allow sites to open this dialog automatically/),
+    ).toBeInTheDocument();
   });
 });
