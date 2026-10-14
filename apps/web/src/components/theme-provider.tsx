@@ -16,6 +16,11 @@ export const THEMES = [
   { id: 'lavender-mist', label: 'Lavender Mist' },
   { id: 'apricot-cotton', label: 'Apricot Cotton' },
   { id: 'blue-hour', label: 'Blue Hour' },
+  { id: 'rosewood-ember', label: 'Rosewood Ember' },
+  { id: 'golden-hour', label: 'Golden Hour' },
+  { id: 'terracotta-grove', label: 'Terracotta Grove' },
+  { id: 'high-contrast', label: 'High Contrast' },
+  { id: 'monochrome', label: 'Monochrome' },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]['id'];
@@ -23,11 +28,14 @@ export type ColorMode = 'light' | 'dark';
 
 const THEME_STORAGE_KEY = 'monthloom-theme';
 const MODE_STORAGE_KEY = 'monthloom-mode';
+const DARK_HEADER_STORAGE_KEY = 'monthloom-dark-header';
 
 interface ThemeContextValue {
   theme: ThemeId;
   mode: ColorMode;
+  darkHeaderInLightMode: boolean;
   setTheme: (theme: ThemeId) => void;
+  setDarkHeaderInLightMode: (enabled: boolean) => void;
   toggleMode: () => void;
 }
 
@@ -42,19 +50,33 @@ function applyAppearance(theme: ThemeId, mode: ColorMode) {
   document.documentElement.dataset.mode = mode;
 }
 
+function applyHeaderStyle(enabled: boolean) {
+  document.documentElement.dataset.headerStyle = enabled ? 'dark' : 'theme';
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeId>('linen-sage');
   const [mode, setMode] = useState<ColorMode>('light');
+  const [darkHeaderInLightMode, setDarkHeaderState] = useState(false);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
     const storedMode = localStorage.getItem(MODE_STORAGE_KEY);
+    const initialDarkHeader = localStorage.getItem(DARK_HEADER_STORAGE_KEY) === 'true';
     const initialTheme = isThemeId(storedTheme) ? storedTheme : 'linen-sage';
     const initialMode = storedMode === 'dark' ? 'dark' : 'light';
 
     setThemeState(initialTheme);
     setMode(initialMode);
+    setDarkHeaderState(initialDarkHeader);
     applyAppearance(initialTheme, initialMode);
+    applyHeaderStyle(initialDarkHeader);
+  }, []);
+
+  const setDarkHeaderInLightMode = useCallback((enabled: boolean) => {
+    setDarkHeaderState(enabled);
+    localStorage.setItem(DARK_HEADER_STORAGE_KEY, String(enabled));
+    applyHeaderStyle(enabled);
   }, []);
 
   const setTheme = useCallback(
@@ -76,8 +98,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [theme]);
 
   const value = useMemo(
-    () => ({ theme, mode, setTheme, toggleMode }),
-    [mode, setTheme, theme, toggleMode],
+    () => ({ theme, mode, darkHeaderInLightMode, setTheme, setDarkHeaderInLightMode, toggleMode }),
+    [darkHeaderInLightMode, mode, setDarkHeaderInLightMode, setTheme, theme, toggleMode],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

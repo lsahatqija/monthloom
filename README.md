@@ -20,7 +20,7 @@ right person, source, and category.
 - Edit or remove one occurrence, future occurrences, or an entire recurring series.
 - Maintain household-specific sources and copy selected sources between households.
 - Upload, download, and manage personal image files.
-- Personalize profiles and choose from five themes in light or dark mode.
+- Personalize profiles and choose from ten themes in light or dark mode.
 
 ## How Monthloom is used
 

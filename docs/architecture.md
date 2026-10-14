@@ -40,7 +40,7 @@ accepted design decisions behind it are recorded separately in [`docs/adr`](./ad
 ### Supporting features
 
 - Upload, list, download, and delete user-owned JPEG, PNG, and WebP files.
-- Select one of five visual themes and light or dark mode. Appearance is stored locally per browser
+- Select one of ten visual themes and light or dark mode. Appearance is stored locally per browser
   rather than in the user profile.
 - Expose liveness/readiness probes, an OpenAPI document, and development-only Swagger UI.
 
@@ -259,9 +259,10 @@ for the full month, independent of UI filters.
 
 ### Appearance
 
-Theme ID and light/dark mode are stored in browser `localStorage`. A small script in the root
-document head applies the stored data attributes before React hydration to limit a flash of the
-default theme. The preference is device/browser-local and is not synchronized through the API.
+Theme ID, light/dark mode, and the optional dark header for light mode are stored in browser
+`localStorage`. A small script in the root document head applies the stored data attributes before
+React hydration to limit a flash of the default theme. The preference is device/browser-local and
+is not synchronized through the API.
 
 ## 7. Shared contracts and validation
 

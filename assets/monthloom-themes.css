@@ -1,8 +1,9 @@
-/* Monthloom: five themes, each with light and dark appearances.
+/* Monthloom: ten themes, each with light and dark appearances.
  * Default: Linen & Sage, light mode.
  * Set attributes on <html>:
  *   <html data-theme="sea-glass" data-mode="dark">
- * Theme IDs: linen-sage | sea-glass | lavender-mist | apricot-cotton | blue-hour
+ * Theme IDs: linen-sage | sea-glass | lavender-mist | apricot-cotton | blue-hour |
+ *   rosewood-ember | golden-hour | terracotta-grove | high-contrast | monochrome
  * Mode IDs: light | dark
  * This file defines color tokens only; it does not change component layout.
  * Accent tokens are surface fills. Pair them with --ml-text.
@@ -12,124 +13,234 @@
 
 /* Linen & Sage — light */
 :root,
-:root[data-theme="linen-sage"] {
+:root[data-theme='linen-sage'] {
   color-scheme: light;
-  --ml-background: #F7F5EF;
-  --ml-surface: #FFFEFA;
-  --ml-accent-1: #C9DCCF;
-  --ml-accent-2: #F0D4BF;
-  --ml-accent-3: #DDD7E9;
-  --ml-primary: #35675B;
-  --ml-text: #293C36;
+  --ml-background: #f7f5ef;
+  --ml-surface: #fffefa;
+  --ml-accent-1: #c9dccf;
+  --ml-accent-2: #f0d4bf;
+  --ml-accent-3: #ddd7e9;
+  --ml-primary: #35675b;
+  --ml-text: #293c36;
 }
 
 /* Linen & Sage — dark */
-:root[data-mode="dark"],
-:root[data-theme="linen-sage"][data-mode="dark"] {
+:root[data-mode='dark'],
+:root[data-theme='linen-sage'][data-mode='dark'] {
   color-scheme: dark;
-  --ml-background: #181E1B;
-  --ml-surface: #222B25;
-  --ml-accent-1: #354B3D;
+  --ml-background: #181e1b;
+  --ml-surface: #222b25;
+  --ml-accent-1: #354b3d;
   --ml-accent-2: #574336;
   --ml-accent-3: #464054;
-  --ml-primary: #A8CCB4;
-  --ml-text: #E8EEE7;
+  --ml-primary: #a8ccb4;
+  --ml-text: #e8eee7;
 }
 
 /* Sea Glass — light */
-:root[data-theme="sea-glass"] {
+:root[data-theme='sea-glass'] {
   color-scheme: light;
-  --ml-background: #F1F7F6;
-  --ml-surface: #FCFEFD;
-  --ml-accent-1: #BFDED6;
-  --ml-accent-2: #CCDDEC;
-  --ml-accent-3: #F2D0C7;
-  --ml-primary: #286A68;
-  --ml-text: #263F43;
+  --ml-background: #f1f7f6;
+  --ml-surface: #fcfefd;
+  --ml-accent-1: #bfded6;
+  --ml-accent-2: #ccddec;
+  --ml-accent-3: #f2d0c7;
+  --ml-primary: #286a68;
+  --ml-text: #263f43;
 }
 
 /* Sea Glass — dark */
-:root[data-theme="sea-glass"][data-mode="dark"] {
+:root[data-theme='sea-glass'][data-mode='dark'] {
   color-scheme: dark;
-  --ml-background: #141F22;
-  --ml-surface: #1D2D30;
-  --ml-accent-1: #2D4C46;
-  --ml-accent-2: #34485C;
-  --ml-accent-3: #563E3A;
-  --ml-primary: #9ACFC4;
-  --ml-text: #E2EFED;
+  --ml-background: #141f22;
+  --ml-surface: #1d2d30;
+  --ml-accent-1: #2d4c46;
+  --ml-accent-2: #34485c;
+  --ml-accent-3: #563e3a;
+  --ml-primary: #9acfc4;
+  --ml-text: #e2efed;
 }
 
 /* Lavender Mist — light */
-:root[data-theme="lavender-mist"] {
+:root[data-theme='lavender-mist'] {
   color-scheme: light;
-  --ml-background: #F6F4FA;
-  --ml-surface: #FEFDFF;
-  --ml-accent-1: #D9D1EA;
-  --ml-accent-2: #C8DFD8;
-  --ml-accent-3: #EED4DC;
-  --ml-primary: #67558A;
+  --ml-background: #f6f4fa;
+  --ml-surface: #fefdff;
+  --ml-accent-1: #d9d1ea;
+  --ml-accent-2: #c8dfd8;
+  --ml-accent-3: #eed4dc;
+  --ml-primary: #67558a;
   --ml-text: #373247;
 }
 
 /* Lavender Mist — dark */
-:root[data-theme="lavender-mist"][data-mode="dark"] {
+:root[data-theme='lavender-mist'][data-mode='dark'] {
   color-scheme: dark;
-  --ml-background: #1D1A25;
-  --ml-surface: #2A2534;
-  --ml-accent-1: #453A59;
-  --ml-accent-2: #314A43;
-  --ml-accent-3: #513B47;
-  --ml-primary: #C5B1E4;
-  --ml-text: #EEE8F5;
+  --ml-background: #1d1a25;
+  --ml-surface: #2a2534;
+  --ml-accent-1: #453a59;
+  --ml-accent-2: #314a43;
+  --ml-accent-3: #513b47;
+  --ml-primary: #c5b1e4;
+  --ml-text: #eee8f5;
 }
 
 /* Apricot Cotton — light */
-:root[data-theme="apricot-cotton"] {
+:root[data-theme='apricot-cotton'] {
   color-scheme: light;
-  --ml-background: #FBF5EF;
-  --ml-surface: #FFFCF8;
-  --ml-accent-1: #F1CEB5;
-  --ml-accent-2: #EADCA9;
-  --ml-accent-3: #C9DCD8;
-  --ml-primary: #8A5542;
+  --ml-background: #fbf5ef;
+  --ml-surface: #fffcf8;
+  --ml-accent-1: #f1ceb5;
+  --ml-accent-2: #eadca9;
+  --ml-accent-3: #c9dcd8;
+  --ml-primary: #8a5542;
   --ml-text: #453931;
 }
 
 /* Apricot Cotton — dark */
-:root[data-theme="apricot-cotton"][data-mode="dark"] {
+:root[data-theme='apricot-cotton'][data-mode='dark'] {
   color-scheme: dark;
-  --ml-background: #241C18;
+  --ml-background: #241c18;
   --ml-surface: #322721;
-  --ml-accent-1: #5A4030;
-  --ml-accent-2: #50472D;
-  --ml-accent-3: #324B46;
-  --ml-primary: #E5B393;
-  --ml-text: #F3E8DF;
+  --ml-accent-1: #5a4030;
+  --ml-accent-2: #50472d;
+  --ml-accent-3: #324b46;
+  --ml-primary: #e5b393;
+  --ml-text: #f3e8df;
 }
 
 /* Blue Hour — light */
-:root[data-theme="blue-hour"] {
+:root[data-theme='blue-hour'] {
   color-scheme: light;
-  --ml-background: #F3F6FA;
-  --ml-surface: #FDFEFF;
-  --ml-accent-1: #C9D9EC;
-  --ml-accent-2: #D9D4E8;
-  --ml-accent-3: #EEDCC3;
-  --ml-primary: #45658B;
-  --ml-text: #2D394A;
+  --ml-background: #f3f6fa;
+  --ml-surface: #fdfeff;
+  --ml-accent-1: #c9d9ec;
+  --ml-accent-2: #d9d4e8;
+  --ml-accent-3: #eedcc3;
+  --ml-primary: #45658b;
+  --ml-text: #2d394a;
 }
 
 /* Blue Hour — dark */
-:root[data-theme="blue-hour"][data-mode="dark"] {
+:root[data-theme='blue-hour'][data-mode='dark'] {
   color-scheme: dark;
-  --ml-background: #18202C;
-  --ml-surface: #222D3D;
+  --ml-background: #18202c;
+  --ml-surface: #222d3d;
   --ml-accent-1: #344962;
-  --ml-accent-2: #443D57;
+  --ml-accent-2: #443d57;
   --ml-accent-3: #514635;
-  --ml-primary: #ABC5E8;
-  --ml-text: #E7EDF6;
+  --ml-primary: #abc5e8;
+  --ml-text: #e7edf6;
+}
+
+/* Rosewood Ember */
+:root[data-theme='rosewood-ember'] {
+  color-scheme: light;
+  --ml-background: #fbf3f0;
+  --ml-surface: #fffaf8;
+  --ml-accent-1: #e8b8ae;
+  --ml-accent-2: #efc99f;
+  --ml-accent-3: #d9b2a7;
+  --ml-primary: #873f3f;
+  --ml-text: #4a2928;
+}
+:root[data-theme='rosewood-ember'][data-mode='dark'] {
+  color-scheme: dark;
+  --ml-background: #211616;
+  --ml-surface: #301f1e;
+  --ml-accent-1: #633a37;
+  --ml-accent-2: #5d432b;
+  --ml-accent-3: #513331;
+  --ml-primary: #f0aaa0;
+  --ml-text: #f6e5e1;
+}
+
+/* Golden Hour */
+:root[data-theme='golden-hour'] {
+  color-scheme: light;
+  --ml-background: #fffbea;
+  --ml-surface: #fffef5;
+  --ml-accent-1: #f6dc72;
+  --ml-accent-2: #ffd24d;
+  --ml-accent-3: #e8bd55;
+  --ml-primary: #765400;
+  --ml-text: #453600;
+}
+:root[data-theme='golden-hour'][data-mode='dark'] {
+  color-scheme: dark;
+  --ml-background: #201c08;
+  --ml-surface: #2e280c;
+  --ml-accent-1: #5e5012;
+  --ml-accent-2: #6b5705;
+  --ml-accent-3: #554511;
+  --ml-primary: #ffe16c;
+  --ml-text: #fff5c9;
+}
+
+/* Terracotta Grove */
+:root[data-theme='terracotta-grove'] {
+  color-scheme: light;
+  --ml-background: #f8f0eb;
+  --ml-surface: #fffaf7;
+  --ml-accent-1: #c77755;
+  --ml-accent-2: #9fa36a;
+  --ml-accent-3: #b8836f;
+  --ml-primary: #763b2b;
+  --ml-text: #402e25;
+}
+:root[data-theme='terracotta-grove'][data-mode='dark'] {
+  color-scheme: dark;
+  --ml-background: #1f1814;
+  --ml-surface: #2d211b;
+  --ml-accent-1: #663a2b;
+  --ml-accent-2: #454a28;
+  --ml-accent-3: #55362c;
+  --ml-primary: #e79b78;
+  --ml-text: #f3e4da;
+}
+
+/* High Contrast */
+:root[data-theme='high-contrast'] {
+  color-scheme: light;
+  --ml-background: #ffffff;
+  --ml-surface: #ffffff;
+  --ml-accent-1: #ffd600;
+  --ml-accent-2: #ff8a00;
+  --ml-accent-3: #ff3d00;
+  --ml-primary: #000000;
+  --ml-text: #000000;
+}
+:root[data-theme='high-contrast'][data-mode='dark'] {
+  color-scheme: dark;
+  --ml-background: #000000;
+  --ml-surface: #0a0a0a;
+  --ml-accent-1: #ffe600;
+  --ml-accent-2: #ff9d00;
+  --ml-accent-3: #ff5c35;
+  --ml-primary: #ffffff;
+  --ml-text: #ffffff;
+}
+
+/* Monochrome */
+:root[data-theme='monochrome'] {
+  color-scheme: light;
+  --ml-background: #eeeeee;
+  --ml-surface: #ffffff;
+  --ml-accent-1: #d6d6d6;
+  --ml-accent-2: #b8b8b8;
+  --ml-accent-3: #8f8f8f;
+  --ml-primary: #333333;
+  --ml-text: #1c1c1c;
+}
+:root[data-theme='monochrome'][data-mode='dark'] {
+  color-scheme: dark;
+  --ml-background: #101010;
+  --ml-surface: #1c1c1c;
+  --ml-accent-1: #303030;
+  --ml-accent-2: #4b4b4b;
+  --ml-accent-3: #686868;
+  --ml-primary: #e8e8e8;
+  --ml-text: #f5f5f5;
 }
 
 /* Shared semantic tokens. Use these consistently across components.
