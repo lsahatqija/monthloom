@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Constants,
+  HOUSEHOLD_CURRENCIES,
   type CreateHouseholdRequest,
   type ManagedHousehold,
   type PublicUser,
@@ -47,6 +48,7 @@ const HOUSEHOLD_COLOR_OPTIONS = [
 ] as const;
 
 const defaultHousehold: CreateHouseholdRequest = {
+  currency: 'EUR',
   name: '',
   icon: 'small-house',
   color: HOUSEHOLD_COLOR_OPTIONS[0],
@@ -94,6 +96,20 @@ function HouseholdFields({
           onChange={(event) => onChange({ ...value, name: event.target.value })}
           required
         />
+      </label>
+      <label>
+        <span>Currency</span>
+        <select
+          id={`${prefix}-currency`}
+          value={value.currency}
+          onChange={(event) => onChange({ ...value, currency: event.target.value })}
+        >
+          {HOUSEHOLD_CURRENCIES.map(([code, name]) => (
+            <option key={code} value={code}>
+              {name} ({code})
+            </option>
+          ))}
+        </select>
       </label>
       <div className="householdField">
         <span id={`${prefix}-icon-label`}>Icon</span>
@@ -177,6 +193,7 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<CreateHouseholdRequest>({
+    currency: household.currency,
     name: household.name,
     icon: household.icon,
     color: household.color,
@@ -207,6 +224,7 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
 
   const save = () => {
     const input: UpdateHouseholdRequest = {
+      currency: draft.currency,
       name: draft.name,
       icon: draft.icon,
       color: draft.color,
@@ -284,6 +302,9 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
       {editing ? (
         <div className="householdEditPanel">
           <HouseholdFields value={draft} onChange={setDraft} prefix={`edit-${household.id}`} />
+          <small>
+            Changing currency applies to all amounts in this household. Amounts are not converted.
+          </small>
           <div className="householdActions">
             <Button onClick={save} disabled={mutation.isPending || !draft.name.trim()}>
               Save
@@ -295,7 +316,18 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
         </div>
       ) : (
         <div className="householdActions">
-          <Button variant="secondary" onClick={() => setEditing(true)}>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setDraft({
+                name: household.name,
+                icon: household.icon,
+                color: household.color,
+                currency: household.currency,
+              });
+              setEditing(true);
+            }}
+          >
             Edit
           </Button>
           {!household.isPrimary ? (

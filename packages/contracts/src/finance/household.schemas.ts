@@ -4,6 +4,8 @@ import { idSchema, isoDateTimeSchema } from '../common/identifiers.js';
 import { Constants } from '../constants.js';
 import { publicUserSchema } from '../users/user.schemas.js';
 
+import { householdCurrencySchema } from './currencies.js';
+
 export const financialIconSchema = z.enum(Constants.FINANCIAL_ICONS);
 export const householdIconSchema = z.enum(Constants.HOUSEHOLD_ICONS);
 export const expenseTypeSchema = z.enum(Constants.EXPENSE_TYPES);
@@ -30,6 +32,7 @@ export const householdSchema = z.object({
 });
 
 const householdDetailsSchema = z.object({
+  currency: householdCurrencySchema,
   name: z
     .string()
     .trim()
@@ -39,7 +42,9 @@ const householdDetailsSchema = z.object({
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Choose a valid color'),
 });
 
-export const createHouseholdRequestSchema = householdDetailsSchema;
+export const createHouseholdRequestSchema = householdDetailsSchema.extend({
+  currency: householdCurrencySchema.default('EUR'),
+});
 export const updateHouseholdRequestSchema = householdDetailsSchema
   .partial()
   .refine((input) => Object.keys(input).length > 0, 'Provide at least one household change');

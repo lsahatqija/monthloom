@@ -3,7 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { HouseholdTransaction, TransactionEditScope } from '@template/contracts';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { ProfileImage } from '../../components/profile-image';
 import { Alert, Button, LoadingIndicator } from '../../components/ui/index';
@@ -118,6 +119,99 @@ function EntryIcon({ entry }: { entry: HouseholdTransaction }) {
       <FinancialIcon name={entry.icon} size={18} />
       <span className="srOnly">{financialIconLabel(entry.icon)}</span>
     </span>
+  );
+}
+
+function TransactionMenu({
+  entry,
+  onEdit,
+  onRemove,
+}: {
+  entry: HouseholdTransaction;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
+  const menuRef = useRef<HTMLDetailsElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (!menuRef.current?.contains(target) && !popoverRef.current?.contains(target)) setOpen(false);
+    };
+
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    return () => document.removeEventListener('mousedown', closeOnOutsideClick);
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    const positionPopover = () => {
+      const trigger = menuRef.current?.querySelector('summary');
+      const popover = popoverRef.current;
+      if (!trigger || !popover) return;
+
+      const triggerRect = trigger.getBoundingClientRect();
+      const gap = 4;
+      const viewportMargin = 8;
+      const topBelow = triggerRect.bottom + gap;
+      const top =
+        topBelow + popover.offsetHeight <= window.innerHeight - viewportMargin
+          ? topBelow
+          : Math.max(viewportMargin, triggerRect.top - popover.offsetHeight - gap);
+      const left = Math.min(
+        Math.max(viewportMargin, window.innerWidth - popover.offsetWidth - viewportMargin),
+        Math.max(viewportMargin, triggerRect.right - popover.offsetWidth),
+      );
+
+      setPopoverPosition({ top, left });
+    };
+
+    positionPopover();
+    window.addEventListener('resize', positionPopover);
+    window.addEventListener('scroll', positionPopover, true);
+    return () => {
+      window.removeEventListener('resize', positionPopover);
+      window.removeEventListener('scroll', positionPopover, true);
+    };
+  }, [open]);
+
+  const selectAction = (action: () => void) => {
+    setOpen(false);
+    action();
+  };
+
+  return (
+    <details
+      ref={menuRef}
+      className="transactionMenu"
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <summary aria-label={`Actions for ${entry.source.displayName}`}>⋯</summary>
+      {open && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              ref={popoverRef}
+              className="transactionMenuPopover"
+              style={popoverPosition}
+            >
+              <button type="button" onClick={() => selectAction(onEdit)}>
+                Edit
+              </button>
+              <button type="button" onClick={() => selectAction(onRemove)}>
+                Remove
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
+    </details>
   );
 }
 
@@ -418,6 +512,7 @@ export function HouseholdDashboard() {
   const money = new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency: household.currency,
+    currencyDisplay: 'narrowSymbol',
   });
   const date = new Intl.DateTimeFormat(undefined, { day: '2-digit', month: 'short' });
   const expenseTypes = Array.from(
@@ -511,10 +606,9 @@ export function HouseholdDashboard() {
             <button
               type="button"
               className="addTransactionButton"
-              aria-label="Add transaction"
               onClick={() => setAddingTransaction(true)}
             >
-              <span aria-hidden="true">+</span>
+              Add transaction
             </button>
           </div>
         </div>
@@ -697,19 +791,11 @@ export function HouseholdDashboard() {
                     </td>
                     <td>
                       {entry.projected ? null : (
-                        <details className="transactionMenu">
-                          <summary aria-label={`Actions for ${entry.source.displayName}`}>
-                            ⋯
-                          </summary>
-                          <div className="transactionMenuPopover">
-                            <button type="button" onClick={() => setTransactionToEdit(entry)}>
-                              Edit
-                            </button>
-                            <button type="button" onClick={() => setTransactionToRemove(entry)}>
-                              Remove
-                            </button>
-                          </div>
-                        </details>
+                        <TransactionMenu
+                          entry={entry}
+                          onEdit={() => setTransactionToEdit(entry)}
+                          onRemove={() => setTransactionToRemove(entry)}
+                        />
                       )}
                     </td>
                   </tr>

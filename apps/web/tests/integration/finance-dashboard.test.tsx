@@ -45,13 +45,13 @@ const transactions = [
   },
 ];
 
-function mockDashboard() {
+function mockDashboard(currency = 'EUR') {
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input, options) => {
     const url = new URL(String(input));
     if (url.pathname === '/api/v1/households') return Response.json({ households: [household] });
     if (url.pathname === '/api/v1/households/home/month')
       return Response.json({
-        household,
+        household: { ...household, currency },
         month: url.searchParams.get('month'),
         summary: { income: '100.00', expenses: '20.00', leftover: '80.00' },
         members: [member],
@@ -66,6 +66,19 @@ function mockDashboard() {
 }
 
 describe('household dashboard', () => {
+  it.each([
+    ['EUR', '€'],
+    ['USD', '$'],
+    ['JPY', '¥'],
+    ['GBP', '£'],
+  ])('displays the household currency %s in transactions and totals', async (currency, symbol) => {
+    mockDashboard(currency);
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+    expect(screen.getByRole('table')).toHaveTextContent(symbol!);
+    expect(screen.getByText('Total income').nextElementSibling).toHaveTextContent(symbol!);
+  });
+
   it('shows an actionable empty state when no households exist', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ households: [] })));
     renderWithQuery(<HouseholdDashboard />);
@@ -104,8 +117,7 @@ describe('household dashboard', () => {
     renderWithQuery(<HouseholdDashboard />);
     await screen.findByRole('heading', { name: 'Our Home' });
     await userEvent.click(screen.getByLabelText('Actions for Employer'));
-    const incomeRow = screen.getByText('Employer', { selector: 'td' }).closest('tr')!;
-    await userEvent.click(within(incomeRow).getByRole('button', { name: 'Remove' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
     const dialog = screen.getByRole('alertdialog');
     expect(fetch.mock.calls.some(([, options]) => options?.method === 'DELETE')).toBe(false);
     await userEvent.click(within(dialog).getByRole('button', { name: 'Remove' }));
@@ -114,5 +126,26 @@ describe('household dashboard', () => {
       expect.stringContaining('/transactions/income?scope=current'),
       expect.objectContaining({ method: 'DELETE' }),
     );
+  });
+
+  it('closes a transaction menu after selecting Edit or clicking elsewhere', async () => {
+    mockDashboard();
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+
+    const actions = screen.getByLabelText('Actions for Employer');
+    const menu = actions.closest('details')!;
+    await userEvent.click(actions);
+    expect(menu).toHaveAttribute('open');
+    expect(document.querySelector('.transactionMenuPopover')?.parentElement).toBe(document.body);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(menu).not.toHaveAttribute('open');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await userEvent.click(actions);
+    expect(menu).toHaveAttribute('open');
+    await userEvent.click(screen.getByRole('heading', { name: 'Activity' }));
+    expect(menu).not.toHaveAttribute('open');
   });
 });

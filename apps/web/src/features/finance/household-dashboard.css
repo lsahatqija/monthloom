@@ -228,6 +228,8 @@
 }
 .transactionPanelHeading {
   display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
   align-items: baseline;
   justify-content: space-between;
   padding: var(--space-4) var(--space-6);
@@ -243,31 +245,28 @@
 }
 .transactionPanelActions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
 }
 .addTransactionButton {
   display: grid;
-  width: 2.5rem;
-  height: 2.5rem;
-  padding: 0;
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-4);
   place-items: center;
   border: 0;
-  border-radius: 50%;
+  border-radius: 10px;
   background: var(--ml-primary);
   color: var(--ml-on-primary);
   cursor: pointer;
   font: inherit;
-  font-size: 1.6rem;
-  line-height: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.4;
   box-shadow: 0 5px 14px var(--ml-shadow);
 }
 .addTransactionButton:hover {
   background: var(--ml-primary-hover);
-}
-.addTransactionButton span {
-  color: inherit;
-  font-size: inherit;
 }
 
 .transactionFilters {
@@ -500,8 +499,8 @@
   text-align: center;
 }
 .transactionKind label.isSelected {
-  background: var(--ml-surface);
-  color: var(--ml-primary);
+  background: var(--ml-primary);
+  color: var(--ml-on-primary);
   box-shadow: 0 2px 8px var(--ml-shadow);
 }
 .transactionKind input,
@@ -1110,10 +1109,8 @@
   color: var(--ml-text);
 }
 .transactionMenuPopover {
-  position: absolute;
-  z-index: 5;
-  top: calc(100% + 0.25rem);
-  right: 0;
+  position: fixed;
+  z-index: 100;
   display: grid;
   min-width: 8rem;
   overflow: hidden;

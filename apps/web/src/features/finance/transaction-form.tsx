@@ -78,6 +78,7 @@ export function TransactionForm({
     transaction?.user.id ?? currentUser.data?.user?.id ?? members[0]?.id ?? '',
   );
   const [recurring, setRecurring] = useState(transaction?.recurring ?? false);
+  const [expires, setExpires] = useState(Boolean(transaction?.expiresOn));
   const [expiresOn, setExpiresOn] = useState(transaction?.expiresOn ?? '');
   const [selection, setSelection] = useState<TransactionSeriesSelection>({
     past: false,
@@ -144,7 +145,7 @@ export function TransactionForm({
       amount,
       userId,
       recurring,
-      expiresOn: recurring && expiresOn ? expiresOn : null,
+      expiresOn: recurring && expires && expiresOn ? expiresOn : null,
     });
   };
 
@@ -444,12 +445,25 @@ export function TransactionForm({
               />
             </label>
             {recurring ? (
-              <label className="transactionField expirationField">
+              <label className="toggleRow">
                 <span>
-                  Expiration date <small>Optional</small>
+                  <strong>Expires</strong>
                 </span>
                 <input
+                  type="checkbox"
+                  role="switch"
+                  checked={expires}
+                  disabled={mutation.isPending}
+                  onChange={(event) => setExpires(event.target.checked)}
+                />
+              </label>
+            ) : null}
+            {recurring && expires ? (
+              <label className="transactionField expirationField">
+                <span>Expiration date</span>
+                <input
                   type="date"
+                  required
                   value={expiresOn}
                   min={date || todayDate()}
                   disabled={mutation.isPending}
