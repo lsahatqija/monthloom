@@ -20,10 +20,16 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  const appearanceScript = `(function(){try{var t=localStorage.getItem('monthloom-theme');var m=localStorage.getItem('monthloom-mode');var themes=['linen-sage','sea-glass','lavender-mist','apricot-cotton','blue-hour'];document.documentElement.dataset.theme=themes.includes(t)?t:'linen-sage';document.documentElement.dataset.mode=m==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='linen-sage';document.documentElement.dataset.mode='light'}})()`;
+  const appearanceScript = `(function(){try{var t=localStorage.getItem('monthloom-theme');var m=localStorage.getItem('monthloom-mode');var h=localStorage.getItem('monthloom-dark-header');var themes=['linen-sage','sea-glass','lavender-mist','apricot-cotton','blue-hour','rosewood-ember','golden-hour','terracotta-grove','high-contrast','monochrome'];document.documentElement.dataset.theme=themes.includes(t)?t:'linen-sage';document.documentElement.dataset.mode=m==='dark'?'dark':'light';document.documentElement.dataset.headerStyle=h==='true'?'dark':'theme'}catch(e){document.documentElement.dataset.theme='linen-sage';document.documentElement.dataset.mode='light';document.documentElement.dataset.headerStyle='theme'}})()`;
 
   return (
-    <html lang="en" data-theme="linen-sage" data-mode="light" suppressHydrationWarning>
+    <html
+      lang="en"
+      data-theme="linen-sage"
+      data-mode="light"
+      data-header-style="theme"
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: appearanceScript }} />
       </head>
