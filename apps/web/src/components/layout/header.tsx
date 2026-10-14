@@ -1,13 +1,14 @@
 'use client';
 
 import type { PublicUser } from '@template/contracts';
-import { CircleUserRound, Database, House, Palette } from 'lucide-react';
+import { CircleUserRound, Database, Download, House, Palette } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { LogoutButton } from '../../features/auth/logout-button';
+import { usePwaInstall } from '../pwa-registration';
 import { useTheme } from '../theme-provider';
 
 import { InfoModal } from './info-modal';
@@ -39,6 +40,7 @@ function MenuIcon() {
 
 export function Header({ user }: { user: PublicUser | null }) {
   const { mode, toggleMode } = useTheme();
+  const { canOfferInstall, openInstallPrompt } = usePwaInstall();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -162,7 +164,54 @@ export function Header({ user }: { user: PublicUser | null }) {
                     <Database aria-hidden="true" />
                     Sources
                   </Link>
+                  {canOfferInstall ? (
+                    <button
+                      type="button"
+                      className="accountMenuItem"
+                      onClick={() => {
+                        setIsOpen(false);
+                        openInstallPrompt();
+                      }}
+                    >
+                      <Download aria-hidden="true" />
+                      Install app
+                    </button>
+                  ) : null}
                   <LogoutButton className="accountMenuItem" />
+                </div>
+              ) : null}
+            </div>
+          ) : canOfferInstall ? (
+            <div className="accountMenu" ref={menuRef}>
+              <button
+                type="button"
+                className="iconButton"
+                aria-label="Open navigation menu"
+                aria-expanded={isOpen}
+                aria-controls="account-menu"
+                onClick={() => setIsOpen((open) => !open)}
+              >
+                <MenuIcon />
+              </button>
+              {isOpen ? (
+                <div id="account-menu" className="accountMenuPanel">
+                  <button
+                    type="button"
+                    className="accountMenuItem"
+                    onClick={() => {
+                      setIsOpen(false);
+                      openInstallPrompt();
+                    }}
+                  >
+                    <Download aria-hidden="true" />
+                    Install app
+                  </button>
+                  <Link href="/login" className="accountMenuItem">
+                    Log in
+                  </Link>
+                  <Link href="/register" className="accountMenuItem">
+                    Register
+                  </Link>
                 </div>
               ) : null}
             </div>
