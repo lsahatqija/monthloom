@@ -18,106 +18,38 @@
   padding: clamp(1.5rem, 4vw, 3rem) var(--space-4);
 }
 
-.dashboardHeading {
+.householdDashboard {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-4);
+  min-height: calc(100dvh - 4.5rem);
+  flex-direction: column;
+  padding-bottom: 20px;
+}
+
+.dashboardHeading {
   margin-bottom: var(--space-6);
 }
 
-.householdTitleRow {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.householdTitleRow h1 {
+.householdNameText {
   margin: 0;
   overflow: hidden;
+  font-size: clamp(1.45rem, 3vw, 2rem);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.editNameButton {
-  display: grid;
-  width: 2.25rem;
-  height: 2.25rem;
-  flex: 0 0 auto;
-  padding: 0;
-  place-items: center;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--ml-text-muted);
-  cursor: pointer;
-}
-
-.editNameButton:hover {
-  background: var(--ml-surface-hover);
-  color: var(--ml-text);
-}
-.editNameButton svg {
-  width: 1.1rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-}
-
-.householdNameForm {
+.householdControl {
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-}
-
-.householdNameInput {
-  min-width: min(22rem, 60vw);
-  min-height: 2.7rem;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--ml-primary);
-  border-radius: 10px;
-  background: var(--ml-surface);
-  color: var(--ml-text);
-  font: inherit;
-  font-size: 1.15rem;
-  font-weight: 700;
-}
-
-.nameAction {
-  min-height: 2.5rem;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--ml-border);
-  border-radius: 10px;
-  background: var(--ml-surface);
-  color: var(--ml-text);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.nameAction:first-of-type {
-  border-color: var(--ml-primary);
-  background: var(--ml-primary);
-  color: var(--ml-on-primary);
-}
-.nameAction:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-.nameError {
-  width: 100%;
-  color: var(--color-danger);
-  font-size: 0.82rem;
 }
 
 .dashboardSelectors {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .monthPicker,
@@ -154,26 +86,6 @@
 .householdPicker select {
   max-width: min(18rem, 42vw);
   text-overflow: ellipsis;
-}
-.defaultHouseholdButton {
-  min-height: 2.4rem;
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--ml-border);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--ml-text-muted);
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 650;
-  cursor: pointer;
-}
-.defaultHouseholdButton:hover:not(:disabled) {
-  border-color: var(--ml-primary);
-  color: var(--ml-primary);
-}
-.defaultHouseholdButton:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
 }
 .monthPicker option.futureMonthOption {
   font-style: italic;
@@ -220,6 +132,10 @@
 }
 
 .transactionPanel {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--ml-border);
   border-radius: 18px;
@@ -983,7 +899,8 @@
   }
 }
 .transactionScroll {
-  max-height: min(30rem, 52vh);
+  min-height: 0;
+  flex: 1;
   overflow: auto;
 }
 .transactionTable {
@@ -1037,11 +954,10 @@
   width: 3rem;
   padding-inline: 0;
 }
-.transactionTable th:nth-last-child(2),
-.transactionTable td:nth-last-child(2) {
+.transactionTable .transactionAmountColumn {
   text-align: right;
 }
-.transactionTable td:nth-last-child(2) {
+.transactionTable td.transactionAmountColumn {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -1154,33 +1070,28 @@
   color: var(--ml-text-muted);
   text-align: center;
 }
-.householdFooter {
-  min-height: 5rem;
-  margin-top: var(--space-6);
-  border-top: 1px solid var(--ml-divider);
-}
-
 @media (max-width: 620px) {
   .householdDashboard {
     padding-inline: var(--space-3);
   }
-  .dashboardHeading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  .householdTitleRow {
-    width: 100%;
-  }
   .dashboardSelectors {
     width: 100%;
-    justify-content: flex-start;
+    grid-template-columns: minmax(0, 1fr) minmax(8.5rem, auto);
   }
   .householdPicker {
-    flex: 1 1 12rem;
+    width: 100%;
   }
   .householdPicker select {
     width: 100%;
     max-width: none;
+  }
+  .householdNameText {
+    font-size: 1.4rem;
+  }
+  .monthPicker select {
+    width: min(11.5rem, 43vw);
+    max-width: 100%;
+    text-overflow: ellipsis;
   }
   .financeRecap {
     grid-template-columns: 1fr 1fr;
