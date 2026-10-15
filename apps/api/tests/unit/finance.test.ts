@@ -63,6 +63,23 @@ describe('finance service', () => {
     expect(repository.copySources).not.toHaveBeenCalled();
   });
 
+  it('requires a verified email address before sending email invitations', async () => {
+    repository.isMember.mockResolvedValue(true);
+    await expect(
+      service.createInvitation(
+        household.id,
+        {
+          ...user,
+          emailVerified: false,
+          createdAt: user.createdAt.toISOString(),
+          updatedAt: user.updatedAt.toISOString(),
+        },
+        { mode: 'email', emails: ['invitee@example.com'] },
+      ),
+    ).rejects.toMatchObject({ statusCode: 403 });
+    expect(repository.createInvitation).not.toHaveBeenCalled();
+  });
+
   it('prevents an owner from leaving the last household member behind as nobody', async () => {
     repository.isMember.mockResolvedValue(true);
     repository.findHousehold.mockResolvedValue(household);

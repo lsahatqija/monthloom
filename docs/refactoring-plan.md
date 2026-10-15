@@ -113,21 +113,67 @@ phase demonstrate that it has not altered behavior.
 
 ### Tasks
 
-- [ ] Run and record `pnpm lint`.
-- [ ] Run and record `pnpm typecheck` and `pnpm test:typecheck`.
-- [ ] Start the isolated test database and run all unit and integration tests.
-- [ ] Run both production application builds.
-- [ ] Record test duration, coverage, build duration, dependency count, and largest source files.
-- [ ] Add characterization tests where current behavior is not adequately protected:
-  - [ ] Creating, editing, and deleting one occurrence of a recurring transaction.
-  - [ ] Editing and deleting future occurrences and complete series.
-  - [ ] Projecting recurring transactions into a future month.
-  - [ ] Household ownership transfer when an owner leaves.
-  - [ ] Invitation expiry, single use, and registered-recipient restrictions.
-  - [ ] Source copying, name normalization, duplicate handling, and deletion while in use.
-  - [ ] Membership checks for all household reads and writes.
-- [ ] Add or configure an import-boundary check so application layers cannot import infrastructure
+- [x] Run and record `pnpm lint`.
+- [x] Run and record `pnpm typecheck` and `pnpm test:typecheck`.
+- [x] Start the isolated test database and run all unit and integration tests.
+- [x] Run both production application builds.
+- [x] Record test duration, coverage, build duration, dependency count, and largest source files.
+- [x] Add characterization tests where current behavior is not adequately protected:
+  - [x] Creating, editing, and deleting one occurrence of a recurring transaction.
+  - [x] Editing and deleting future occurrences and complete series.
+  - [x] Projecting recurring transactions into a future month.
+  - [x] Household ownership transfer when an owner leaves.
+  - [x] Invitation expiry, single use, and email-sender verification restrictions.
+  - [x] Source copying, name normalization, duplicate handling, and deletion while in use.
+  - [x] Membership checks for household reads and writes.
+- [x] Add or configure an import-boundary check so application layers cannot import infrastructure
       adapters directly, except from the composition root.
+
+### Recorded baseline (2026-10-15)
+
+The baseline was captured on Windows with Node 22 and pnpm 9.7.0. PostgreSQL 16 ran in the
+isolated `compose.test.yml` container. Production images were built in Linux containers, which is
+the deployed build environment.
+
+| Measurement | Result |
+|---|---:|
+| Lint | Passed in 7.64 s; 0 errors and 3 pre-existing web warnings |
+| Production type check | Passed in 4.31 s |
+| Test type check | Passed in 5.41 s |
+| Full test suite with coverage | 106 tests in 19 files passed; command completed in 7.30 s |
+| Statement coverage | 63.40% |
+| Branch coverage | 79.69% |
+| Function coverage | 74.38% |
+| Line coverage | 63.40% |
+| API production build | Passed locally in 3.41 s |
+| API and web Docker production builds | Passed together in 69.77 s from a cold dependency layer |
+| Unique direct dependencies | 61 total: 32 production and 29 development |
+
+The native Windows Next.js build compiled, type-checked, and generated all 17 routes, but its
+standalone-output copy failed because the host did not permit pnpm symlink creation (`EPERM`). The
+same web production build completed successfully in the Linux Docker image. This is recorded as a
+host-environment limitation rather than an application build failure.
+
+The ten largest TypeScript production files at baseline were:
+
+| Lines | File |
+|---:|---|
+| 1,021 | `apps/api/src/modules/finance/adapters/postgres-finance.repository.ts` |
+| 773 | `apps/web/src/features/finance/household-dashboard.tsx` |
+| 641 | `apps/api/src/infrastructure/openapi/document.ts` |
+| 584 | `apps/web/src/features/finance/transaction-form.tsx` |
+| 577 | `apps/web/src/features/finance/household-settings.tsx` |
+| 439 | `apps/web/src/components/onboarding/onboarding-tour.tsx` |
+| 432 | `apps/api/src/modules/finance/finance.service.ts` |
+| 393 | `apps/api/src/infrastructure/database/schema.ts` |
+| 373 | `apps/web/src/features/finance/source-settings.tsx` |
+| 296 | `packages/contracts/src/finance/household.schemas.ts` |
+
+Invitation tokens are intentionally bearer tokens in the current implementation: invitations do
+not persist an intended recipient, even when delivery uses email. Phase 0 therefore characterizes
+expiry, single use, existing-member rejection, and the requirement that an inviter verify their
+email before email delivery. Binding acceptance to a recipient would be a product and schema
+change, not a behavior-preserving test addition.
 
 ### Validation gate
 

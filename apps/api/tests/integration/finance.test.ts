@@ -96,6 +96,46 @@ describe('finance HTTP + PostgreSQL', () => {
       .expect(404);
   });
 
+  it('rejects outsider access across household write capabilities', async () => {
+    const { agent, base, transaction } = await fixture();
+    const outsider = await register();
+    const expense = await agent.post(`${base}/transactions`).send(transaction).expect(201);
+    const targetHouseholdId = await household(agent);
+    const sourceId = transaction.sourceId;
+    const transactionId = expense.body.transaction.id as string;
+
+    await outsider.agent.get(`${base}/sources`).expect(403);
+    await outsider.agent
+      .post(`${base}/sources`)
+      .send({ displayName: 'Outsider source', aliases: [] })
+      .expect(403);
+    await outsider.agent
+      .patch(`${base}/sources/${sourceId}`)
+      .send({ displayName: 'Changed', aliases: [] })
+      .expect(403);
+    await outsider.agent.delete(`${base}/sources/${sourceId}`).expect(403);
+    await outsider.agent
+      .post(`${base}/sources/copy`)
+      .send({ targetHouseholdId, sourceIds: [sourceId] })
+      .expect(403);
+    await outsider.agent
+      .patch(`${base}/transactions/${transactionId}`)
+      .send({
+        selection: { past: false, current: true, future: false },
+        transaction,
+      })
+      .expect(403);
+    await outsider.agent.delete(`${base}/transactions/${transactionId}?scope=current`).expect(403);
+    await outsider.agent
+      .patch(base)
+      .send({ name: 'Changed', icon: 'small-house', color: '#123456' })
+      .expect(403);
+    await outsider.agent.put(`${base}/primary`).expect(403);
+    await outsider.agent.post(`${base}/invitations`).send({ mode: 'link' }).expect(403);
+    await outsider.agent.delete(`${base}/members/${transaction.userId}`).expect(403);
+    await outsider.agent.post(`${base}/leave`).send({}).expect(403);
+  });
+
   async function recurringSeries() {
     const context = await fixture();
     const ids: string[] = [];
@@ -180,5 +220,19 @@ describe('finance HTTP + PostgreSQL', () => {
       invitee.user.id,
     );
     await invitee.agent.delete(base).expect(204);
+  });
+
+  it('rejects an expired invitation when reading or accepting it', async () => {
+    const { agent, base, id } = await fixture();
+    const invitee = await register();
+    const invitation = await agent.post(`${base}/invitations`).send({ mode: 'link' }).expect(201);
+    await pool.query(
+      "UPDATE household_invitations SET expires_at = NOW() - INTERVAL '1 minute' WHERE household_id = $1",
+      [id],
+    );
+
+    const invitationUrl = `${api}/households/invitations/${invitation.body.token}`;
+    await invitee.agent.get(invitationUrl).expect(404);
+    await invitee.agent.post(`${invitationUrl}/accept`).expect(404);
   });
 });
