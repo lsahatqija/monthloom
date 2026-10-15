@@ -538,6 +538,7 @@ export function HouseholdSettings({ user }: { user: PublicUser }) {
 
       <form
         className="createHouseholdForm"
+        data-onboarding="create-household"
         onSubmit={(event) => {
           event.preventDefault();
           createMutation.mutate(draft);

@@ -8,6 +8,7 @@ import { QueryProvider } from '../providers/query-provider';
 import '../styles/globals.css';
 import '../components/ui/ui.css';
 import '../components/layout/layout.css';
+import '../components/onboarding/onboarding.css';
 import '../features/finance/household-dashboard.css';
 import '../features/finance/household-settings.css';
 

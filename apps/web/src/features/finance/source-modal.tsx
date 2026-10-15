@@ -63,6 +63,7 @@ export function SourceModal({ householdId, source, onClose, onSaved }: SourceMod
     >
       <section
         className="transactionModal sourceModal"
+        data-onboarding="source-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="source-modal-title"

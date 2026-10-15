@@ -190,13 +190,23 @@ export function TransactionForm({
             </h2>
           </div>
 
-          <button type="button" className="modalCloseButton" onClick={onClose} aria-label="Close">
+          <button
+            type="button"
+            className="modalCloseButton"
+            data-onboarding="transaction-close"
+            onClick={onClose}
+            aria-label="Close"
+          >
             <span aria-hidden="true">×</span>
           </button>
         </div>
 
         <form className="transactionForm" onSubmit={submit}>
-          <fieldset className="transactionKind" disabled={mutation.isPending}>
+          <fieldset
+            className="transactionKind"
+            data-onboarding="transaction-kind"
+            disabled={mutation.isPending}
+          >
             <legend>Transaction kind</legend>
             <label className={kind === 'expense' ? 'isSelected' : undefined}>
               <input
@@ -226,7 +236,7 @@ export function TransactionForm({
             </label>
           </fieldset>
 
-          <div className="transactionFormGrid">
+          <div className="transactionFormGrid" data-onboarding="transaction-fields">
             <div className="transactionCompactRow">
               <div className="iconPicker">
                 <span className="iconPickerLabel">Icon</span>
@@ -344,7 +354,10 @@ export function TransactionForm({
                 </select>
               </label>
             </div>
-            <label className="transactionField transactionSourceField">
+            <label
+              className="transactionField transactionSourceField"
+              data-onboarding="transaction-source"
+            >
               <span>Source</span>
               <select
                 value={sourceId}
@@ -354,6 +367,9 @@ export function TransactionForm({
                 onChange={(event) => {
                   if (event.target.value === 'add-new-source') {
                     setIsAddingSource(true);
+                    window.dispatchEvent(
+                      new CustomEvent('monthloom:onboarding', { detail: 'add-source' }),
+                    );
                     return;
                   }
                   setSourceId(event.target.value);
@@ -424,7 +440,7 @@ export function TransactionForm({
             </label>
           </div>
 
-          <div className="recurringSection">
+          <div className="recurringSection" data-onboarding="recurring">
             <label className="toggleRow">
               <span>
                 <strong>Recurring transaction</strong>
@@ -438,6 +454,11 @@ export function TransactionForm({
                 onChange={(event) => {
                   const isRecurring = event.target.checked;
                   setRecurring(isRecurring);
+                  if (isRecurring) {
+                    window.dispatchEvent(
+                      new CustomEvent('monthloom:onboarding', { detail: 'recurring-enabled' }),
+                    );
+                  }
                   if (!isRecurring) {
                     setSelection((current) => ({ ...current, future: false }));
                   }
@@ -445,31 +466,33 @@ export function TransactionForm({
               />
             </label>
             {recurring ? (
-              <label className="toggleRow">
-                <span>
-                  <strong>Expires</strong>
-                </span>
-                <input
-                  type="checkbox"
-                  role="switch"
-                  checked={expires}
-                  disabled={mutation.isPending}
-                  onChange={(event) => setExpires(event.target.checked)}
-                />
-              </label>
-            ) : null}
-            {recurring && expires ? (
-              <label className="transactionField expirationField">
-                <span>Expiration date</span>
-                <input
-                  type="date"
-                  required
-                  value={expiresOn}
-                  min={date || todayDate()}
-                  disabled={mutation.isPending}
-                  onChange={(event) => setExpiresOn(event.target.value)}
-                />
-              </label>
+              <div className="expirationControls" data-onboarding="expiration">
+                <label className="toggleRow">
+                  <span>
+                    <strong>Expires</strong>
+                  </span>
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    checked={expires}
+                    disabled={mutation.isPending}
+                    onChange={(event) => setExpires(event.target.checked)}
+                  />
+                </label>
+                {expires ? (
+                  <label className="transactionField expirationField">
+                    <span>Expiration date</span>
+                    <input
+                      type="date"
+                      required
+                      value={expiresOn}
+                      min={date || todayDate()}
+                      disabled={mutation.isPending}
+                      onChange={(event) => setExpiresOn(event.target.value)}
+                    />
+                  </label>
+                ) : null}
+              </div>
             ) : null}
           </div>
 

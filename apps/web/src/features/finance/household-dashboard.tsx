@@ -445,7 +445,7 @@ export function HouseholdDashboard() {
   return (
     <section className="householdDashboard" aria-label="Household dashboard">
       <div className="dashboardHeading">
-        <div className="dashboardSelectors">
+        <div className="dashboardSelectors" data-onboarding="month-overview">
           <div className="householdControl">
             {(householdsQuery.data?.length ?? 0) > 1 ? (
               <label className="householdPicker">
@@ -508,6 +508,7 @@ export function HouseholdDashboard() {
             <button
               type="button"
               className="addTransactionButton"
+              data-onboarding="add-transaction"
               onClick={() => setAddingTransaction(true)}
             >
               Add transaction
