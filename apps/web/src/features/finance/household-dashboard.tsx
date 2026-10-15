@@ -18,6 +18,7 @@ import {
 } from './finance.api';
 import { FinancialIcon, financialIconLabel } from './financial-icon';
 import { TransactionForm } from './transaction-form';
+import { transactionTypeLabel as formatTransactionType } from './transaction-type';
 
 type TransactionSortKey = 'date' | 'amount' | 'user' | 'source' | 'type';
 type SortDirection = 'ascending' | 'descending';
@@ -52,12 +53,7 @@ const transactionCollator = new Intl.Collator(undefined, {
 
 function transactionTypeLabel(transaction: HouseholdTransaction): string {
   if (transaction.kind === 'income') return 'Income';
-  return transaction.type
-    ? transaction.type
-        .split('-')
-        .map((word) => word[0]!.toUpperCase() + word.slice(1))
-        .join(' ')
-    : 'Other';
+  return transaction.type ? formatTransactionType(transaction.type) : 'Other';
 }
 
 function compareTransactions(
