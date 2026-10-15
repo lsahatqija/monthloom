@@ -97,6 +97,7 @@ const content: Record<TourStep, StepContent> = {
     title: 'Find your settings',
     body: 'Open the account menu to reach your Profile, Appearance, Household, and Source settings. Household settings is where you manage members and invitations.',
     target: '[data-onboarding="settings-links"], [data-onboarding="settings-menu"]',
+    placement: 'side',
   },
   'household-invitations': {
     eyebrow: 'Step 10',
@@ -221,6 +222,9 @@ export function OnboardingTour({ user }: { user: PublicUser }) {
       if (action === 'add-source' && step === 'transaction-fields') {
         setStep('transaction-source');
       }
+      if (action === 'source-saved' && step === 'transaction-source') {
+        setStep('transaction-fields');
+      }
       if (action === 'recurring-enabled' && step === 'recurring') {
         setStep('expiration');
       }
@@ -279,6 +283,9 @@ export function OnboardingTour({ user }: { user: PublicUser }) {
         setStep('transaction-source');
         break;
       case 'transaction-source':
+        document
+          .querySelector<HTMLButtonElement>('[data-onboarding="source-modal-close"]')
+          ?.click();
         setStep('transaction-fields');
         break;
       case 'transaction-fields':
@@ -398,7 +405,7 @@ export function OnboardingTour({ user }: { user: PublicUser }) {
             onClick={next}
             disabled={waitingForTarget || (step === 'household' && !hasHousehold)}
           >
-            {step === 'overview' ? 'Show me around' : step === 'months' ? 'Finish' : 'Next'}
+            {step === 'overview' ? 'Show me around' : step === 'home' ? 'Finish' : 'Next'}
           </button>
         </div>
       </section>
