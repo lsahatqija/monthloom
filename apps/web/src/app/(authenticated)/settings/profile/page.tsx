@@ -26,7 +26,8 @@ export default async function ProfileSettingsPage() {
         <p className="settingsRole">{user.role} account</p>
       </div>
       <ProfileForm user={user} />
-      <div className="settingsSecurityPanel">
+      <ChangePassword email={user.email} />
+      <div className="settingsPanel settingsSecurityPanel">
         <div>
           <h3>Onboarding tutorial</h3>
           <p>
@@ -37,7 +38,6 @@ export default async function ProfileSettingsPage() {
           <RestartOnboardingButton userId={user.id} />
         </div>
       </div>
-      <ChangePassword email={user.email} />
     </section>
   );
 }

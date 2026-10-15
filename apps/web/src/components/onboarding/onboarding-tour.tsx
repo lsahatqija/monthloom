@@ -20,7 +20,10 @@ type TourStep =
   | 'transaction-fields'
   | 'recurring'
   | 'expiration'
-  | 'months';
+  | 'months'
+  | 'settings-menu'
+  | 'household-invitations'
+  | 'home';
 
 type StepContent = {
   eyebrow: string;
@@ -39,7 +42,7 @@ const content: Record<TourStep, StepContent> = {
   household: {
     eyebrow: 'Step 1',
     title: 'Create your household',
-    body: 'Give your shared space a name, icon, color, and currency, then select Create household. If you received an invitation, accept it instead and this step is skipped automatically.',
+    body: 'Give your shared space a name, icon, color, and currency, then select Create household. You can edit these details later in Household settings. If you received an invitation, accept it instead and this step is skipped automatically.',
     target: '[data-onboarding="create-household"]',
   },
   'add-transaction': {
@@ -65,7 +68,7 @@ const content: Record<TourStep, StepContent> = {
   'transaction-fields': {
     eyebrow: 'Step 5',
     title: 'Describe the transaction',
-    body: 'Choose income or expense, then add a source, category, amount, and date. The icon and color make entries easy to scan, while the user field records who the transaction belongs to.',
+    body: 'Choose income or expense, then add a source, category, amount, and date. The icon and color make entries easy to scan, while the user field records who the transaction belongs to. You can edit a saved transaction later from its actions menu.',
     target: '[data-onboarding="transaction-fields"]',
     placement: 'side',
   },
@@ -88,6 +91,25 @@ const content: Record<TourStep, StepContent> = {
     title: 'Look backward and plan forward',
     body: 'Use the month selector to move through past and future months. The income, expenses, and balance cards update for each month, including projected recurring transactions.',
     target: '[data-onboarding="month-overview"]',
+  },
+  'settings-menu': {
+    eyebrow: 'Step 9',
+    title: 'Find your settings',
+    body: 'Open the account menu to reach your Profile, Appearance, Household, and Source settings. Household settings is where you manage members and invitations.',
+    target: '[data-onboarding="settings-links"], [data-onboarding="settings-menu"]',
+  },
+  'household-invitations': {
+    eyebrow: 'Step 10',
+    title: 'Invite your household',
+    body: 'Invite others from Household settings. Share a single-use invitation link, or switch to Email to send invitations directly to one or more people.',
+    target: '[data-onboarding="household-invitations"]',
+    placement: 'side',
+  },
+  home: {
+    eyebrow: 'Step 11',
+    title: 'Return to your main view',
+    body: 'Use the Home button at any time to return to your monthly household overview.',
+    target: '[data-onboarding="home-button"]',
   },
 };
 
@@ -129,7 +151,15 @@ export function OnboardingTour({ user }: { user: PublicUser }) {
     if (step === 'household' && pathname !== '/settings/households') {
       router.push('/settings/households');
     }
-    if ((step === 'add-transaction' || step === 'months') && pathname !== '/') router.push('/');
+    if (
+      (step === 'add-transaction' || step === 'months' || step === 'settings-menu') &&
+      pathname !== '/'
+    ) {
+      router.push('/');
+    }
+    if (step === 'household-invitations' && pathname !== '/settings/households') {
+      router.push('/settings/households');
+    }
   }, [pathname, router, step]);
 
   const updateTarget = useCallback(() => {
@@ -168,6 +198,22 @@ export function OnboardingTour({ user }: { user: PublicUser }) {
     document.addEventListener('click', progressWhenOpened);
     return () => document.removeEventListener('click', progressWhenOpened);
   }, [step]);
+
+  useEffect(() => {
+    if (step !== 'settings-menu' && step !== 'home') return;
+    const respondToNavigation = (event: MouseEvent) => {
+      const target = event.target as Element | null;
+      if (
+        step === 'settings-menu' &&
+        target?.closest('[data-onboarding="household-settings-link"]')
+      ) {
+        setStep('household-invitations');
+      }
+      if (step === 'home' && target?.closest('[data-onboarding="home-button"]')) finish();
+    };
+    document.addEventListener('click', respondToNavigation);
+    return () => document.removeEventListener('click', respondToNavigation);
+  });
 
   useEffect(() => {
     const respondToFormActions = (event: Event) => {
@@ -251,13 +297,24 @@ export function OnboardingTour({ user }: { user: PublicUser }) {
         setStep('months');
         break;
       case 'months':
+        setStep('settings-menu');
+        break;
+      case 'settings-menu':
+        setStep('household-invitations');
+        router.push('/settings/households');
+        break;
+      case 'household-invitations':
+        setStep('home');
+        break;
+      case 'home':
+        router.push('/');
         finish();
         break;
     }
   };
 
   if (!step || !current || typeof document === 'undefined') return null;
-  const total = hasHousehold ? 8 : 9;
+  const total = hasHousehold ? 11 : 12;
   const index = hasHousehold
     ? [
         'overview',
@@ -268,6 +325,9 @@ export function OnboardingTour({ user }: { user: PublicUser }) {
         'recurring',
         'expiration',
         'months',
+        'settings-menu',
+        'household-invitations',
+        'home',
       ].indexOf(step) + 1
     : [
         'overview',
@@ -279,6 +339,9 @@ export function OnboardingTour({ user }: { user: PublicUser }) {
         'recurring',
         'expiration',
         'months',
+        'settings-menu',
+        'household-invitations',
+        'home',
       ].indexOf(step) + 1;
   const waitingForTarget = Boolean(current.target && !targetRect);
 

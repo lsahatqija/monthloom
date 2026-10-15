@@ -342,7 +342,7 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
         </div>
       )}
 
-      <div className="householdMembers">
+      <div className="householdMembers" data-onboarding="household-invitations">
         <div className="householdMembersHeading">
           <h4>Members</h4>
         </div>
