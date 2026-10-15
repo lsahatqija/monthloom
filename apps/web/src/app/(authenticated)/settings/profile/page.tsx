@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { ChangePassword } from '@/features/users/change-password';
+import { RestartOnboardingButton } from '@/components/onboarding/restart-onboarding-button';
 import { ProfileForm } from '@/features/users/profile-form';
 import { getServerUser } from '@/lib/auth/get-server-user';
 
@@ -26,6 +27,17 @@ export default async function ProfileSettingsPage() {
       </div>
       <ProfileForm user={user} />
       <ChangePassword email={user.email} />
+      <div className="settingsPanel settingsSecurityPanel">
+        <div>
+          <h3>Onboarding tutorial</h3>
+          <p>
+            Take the guided tour again to revisit households, transactions, and monthly planning.
+          </p>
+        </div>
+        <div className="settingsSecurityActions">
+          <RestartOnboardingButton userId={user.id} />
+        </div>
+      </div>
     </section>
   );
 }

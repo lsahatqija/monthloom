@@ -34,6 +34,7 @@ export function SourceModal({ householdId, source, onClose, onSaved }: SourceMod
         : createHouseholdSource(householdId, input),
     onSuccess: async ({ source: savedSource }) => {
       await queryClient.invalidateQueries({ queryKey: financeKeys.all });
+      window.dispatchEvent(new CustomEvent('monthloom:onboarding', { detail: 'source-saved' }));
       onSaved(savedSource);
     },
   });
@@ -63,6 +64,7 @@ export function SourceModal({ householdId, source, onClose, onSaved }: SourceMod
     >
       <section
         className="transactionModal sourceModal"
+        data-onboarding="source-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="source-modal-title"
@@ -77,6 +79,7 @@ export function SourceModal({ householdId, source, onClose, onSaved }: SourceMod
           <button
             type="button"
             className="modalCloseButton"
+            data-onboarding="source-modal-close"
             disabled={mutation.isPending}
             onClick={onClose}
             aria-label="Close source modal"

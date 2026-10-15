@@ -346,7 +346,12 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
         <div className="householdMembersHeading">
           <h4>Members</h4>
         </div>
-        <div className="invitationModeSwitch" role="group" aria-label="Invitation method">
+        <div
+          className="invitationModeSwitch"
+          data-onboarding="household-invitations"
+          role="group"
+          aria-label="Invitation method"
+        >
           <button
             type="button"
             aria-pressed={invitationMode === 'link'}
@@ -524,6 +529,9 @@ export function HouseholdSettings({ user }: { user: PublicUser }) {
     onSuccess: async () => {
       setDraft(defaultHousehold);
       await queryClient.invalidateQueries({ queryKey: financeKeys.all });
+      window.dispatchEvent(
+        new CustomEvent('monthloom:onboarding', { detail: 'household-created' }),
+      );
     },
   });
 
@@ -538,6 +546,7 @@ export function HouseholdSettings({ user }: { user: PublicUser }) {
 
       <form
         className="createHouseholdForm"
+        data-onboarding="create-household"
         onSubmit={(event) => {
           event.preventDefault();
           createMutation.mutate(draft);

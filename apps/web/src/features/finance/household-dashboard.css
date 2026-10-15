@@ -716,6 +716,10 @@
   border-radius: 14px;
   background: var(--ml-background);
 }
+.expirationControls {
+  display: grid;
+  gap: var(--space-4);
+}
 .transactionScope {
   display: grid;
   gap: var(--space-3);

@@ -1,0 +1,166 @@
+.onboardingTour {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  pointer-events: none;
+}
+
+.onboardingShade,
+.onboardingSpotlight {
+  position: fixed;
+  inset: 0;
+  background: rgb(17 28 25 / 62%);
+}
+
+.onboardingSpotlight {
+  inset: auto;
+  border: 2px solid var(--ml-primary);
+  border-radius: 18px;
+  background: transparent;
+  box-shadow:
+    0 0 0 9999px rgb(17 28 25 / 62%),
+    0 0 0 5px color-mix(in srgb, var(--ml-primary) 25%, transparent);
+  transition:
+    inset 180ms ease,
+    width 180ms ease,
+    height 180ms ease;
+}
+
+.onboardingWindow {
+  position: fixed;
+  z-index: 1;
+  width: min(25rem, calc(100vw - 2rem));
+  padding: var(--space-6);
+  border: 1px solid var(--ml-border);
+  border-radius: 20px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  box-shadow: 0 24px 70px rgb(0 0 0 / 32%);
+  pointer-events: auto;
+}
+
+.onboardingWindow.isCentered {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.onboardingWindow h2,
+.onboardingWindow p {
+  margin: 0;
+}
+.onboardingWindow h2 {
+  margin-bottom: var(--space-3);
+  font-size: 1.45rem;
+  line-height: 1.15;
+}
+.onboardingWindow > p:not(.onboardingEyebrow, .onboardingHint) {
+  color: var(--ml-text-muted);
+  line-height: 1.55;
+}
+.onboardingEyebrow {
+  margin-bottom: var(--space-2) !important;
+  color: var(--ml-primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.onboardingHint {
+  margin-top: var(--space-3) !important;
+  color: var(--ml-primary);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+.onboardingProgress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  color: var(--ml-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.onboardingProgressTrack {
+  height: 4px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--ml-divider);
+}
+.onboardingProgressTrack > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ml-primary);
+  transition: width 180ms ease;
+}
+.onboardingActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+.onboardingSkip {
+  padding: var(--space-2);
+  border: 0;
+  background: transparent;
+  color: var(--ml-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+}
+.onboardingSkip:hover {
+  color: var(--ml-text);
+  text-decoration: underline;
+}
+
+@media (orientation: portrait) and (max-width: 800px) {
+  .onboardingWindow.isAnchored {
+    max-height: min(42dvh, 20rem);
+    overflow-y: auto;
+  }
+
+  .onboardingWindow {
+    padding: var(--space-4);
+    border-radius: 16px;
+  }
+
+  .onboardingWindow h2 {
+    margin-bottom: var(--space-2);
+    font-size: 1.15rem;
+  }
+
+  .onboardingWindow > p:not(.onboardingEyebrow, .onboardingHint) {
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+
+  .onboardingEyebrow {
+    margin-bottom: var(--space-1) !important;
+    font-size: 0.68rem;
+  }
+
+  .onboardingProgress {
+    margin-bottom: var(--space-3);
+  }
+
+  .onboardingActions {
+    margin-top: var(--space-3);
+  }
+
+  .onboardingActions .button,
+  .onboardingSkip {
+    min-height: 2.5rem;
+    padding-block: var(--space-2);
+    font-size: 0.86rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboardingSpotlight,
+  .onboardingProgressTrack > span {
+    transition: none;
+  }
+}

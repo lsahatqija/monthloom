@@ -105,6 +105,7 @@ export function Header({ user }: { user: PublicUser | null }) {
           <Link
             href="/"
             className="iconButton"
+            data-onboarding="home-button"
             aria-label="Home"
             title="Home"
             aria-current={pathname === '/' ? 'page' : undefined}
@@ -130,6 +131,7 @@ export function Header({ user }: { user: PublicUser | null }) {
               <button
                 type="button"
                 className="iconButton"
+                data-onboarding="settings-menu"
                 aria-label="Open account menu"
                 aria-expanded={isOpen}
                 aria-controls="account-menu"
@@ -138,7 +140,11 @@ export function Header({ user }: { user: PublicUser | null }) {
                 <MenuIcon />
               </button>
               {isOpen ? (
-                <div id="account-menu" className="accountMenuPanel">
+                <div
+                  id="account-menu"
+                  className="accountMenuPanel"
+                  data-onboarding="settings-links"
+                >
                   <p className="accountMenuName">{user.displayName}</p>
                   {isMobile && pathname === '/' ? (
                     <InfoModal triggerVariant="menuItem" onClose={() => setIsOpen(false)} />
@@ -184,6 +190,7 @@ export function Header({ user }: { user: PublicUser | null }) {
                   <Link
                     href="/settings/households"
                     className="accountMenuItem"
+                    data-onboarding="household-settings-link"
                     aria-current={pathname === '/settings/households' ? 'page' : undefined}
                   >
                     <House aria-hidden="true" />
