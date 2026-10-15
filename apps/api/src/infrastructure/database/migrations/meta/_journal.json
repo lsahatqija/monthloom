@@ -113,6 +113,13 @@
       "when": 1791456490075,
       "tag": "0015_remarkable_night_thrasher",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792070169255,
+      "tag": "0016_add-expense-types",
+      "breakpoints": true
     }
   ]
 }

@@ -17,6 +17,7 @@ import { useCurrentUser } from '../auth/use-current-user';
 import { createHouseholdTransaction, financeKeys, updateHouseholdTransaction } from './finance.api';
 import { FinancialIcon, financialIconLabel } from './financial-icon';
 import { SourceModal } from './source-modal';
+import { transactionTypeLabel } from './transaction-type';
 
 const COLOR_OPTIONS = [
   '#35675B',
@@ -403,10 +404,7 @@ export function TransactionForm({
                 {kind === 'expense'
                   ? Constants.EXPENSE_TYPES.map((option) => (
                       <option key={option} value={option}>
-                        {option
-                          .split('-')
-                          .map((word) => word[0]!.toUpperCase() + word.slice(1))
-                          .join(' ')}
+                        {transactionTypeLabel(option)}
                       </option>
                     ))
                   : null}
