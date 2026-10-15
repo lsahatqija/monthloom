@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { PublicUser } from '@template/contracts';
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { financeKeys, getHouseholds } from '../../features/finance/finance.api';
@@ -133,6 +133,7 @@ export function OnboardingTour({ user }: { user: PublicUser }) {
   const router = useRouter();
   const [step, setStep] = useState<TourStep | null>(null);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const scrolledInvitationIntoView = useRef(false);
   const households = useQuery({ queryKey: financeKeys.households(), queryFn: getHouseholds });
   const hasHousehold = Boolean(households.data?.length);
   const current = step ? content[step] : null;
@@ -204,17 +205,16 @@ export function OnboardingTour({ user }: { user: PublicUser }) {
     if (step !== 'settings-menu' && step !== 'home') return;
     const respondToNavigation = (event: MouseEvent) => {
       const target = event.target as Element | null;
-      if (
-        step === 'settings-menu' &&
-        target?.closest('[data-onboarding="household-settings-link"]')
-      ) {
+      if (step === 'settings-menu' && target?.closest('a[href^="/settings/"]')) {
+        event.preventDefault();
         setStep('household-invitations');
+        router.push('/settings/households');
       }
       if (step === 'home' && target?.closest('[data-onboarding="home-button"]')) finish();
     };
-    document.addEventListener('click', respondToNavigation);
-    return () => document.removeEventListener('click', respondToNavigation);
-  });
+    document.addEventListener('click', respondToNavigation, true);
+    return () => document.removeEventListener('click', respondToNavigation, true);
+  }, [router, step]);
 
   useEffect(() => {
     const respondToFormActions = (event: Event) => {
@@ -228,14 +228,38 @@ export function OnboardingTour({ user }: { user: PublicUser }) {
       if (action === 'recurring-enabled' && step === 'recurring') {
         setStep('expiration');
       }
+      if (action === 'household-created' && step === 'household') {
+        setStep('add-transaction');
+      }
     };
     window.addEventListener('monthloom:onboarding', respondToFormActions);
     return () => window.removeEventListener('monthloom:onboarding', respondToFormActions);
   }, [step]);
 
+  useEffect(() => {
+    if (step !== 'household-invitations') {
+      scrolledInvitationIntoView.current = false;
+      return;
+    }
+    const isMobilePortrait = window.innerWidth <= 800 && window.innerHeight > window.innerWidth;
+    if (!isMobilePortrait || !targetRect || scrolledInvitationIntoView.current) return;
+    const target = document.querySelector(content['household-invitations'].target!);
+    if (!target) return;
+    scrolledInvitationIntoView.current = true;
+    target.scrollIntoView({ block: 'center', inline: 'nearest' });
+  }, [step, targetRect]);
+
   const position = useMemo(() => {
     if (!targetRect || typeof window === 'undefined') return undefined;
-    const width = Math.min(360, window.innerWidth - 32);
+    const isMobilePortrait = window.innerWidth <= 800 && window.innerHeight > window.innerWidth;
+    const width = Math.min(360, window.innerWidth - (isMobilePortrait ? 24 : 32));
+    if (isMobilePortrait) {
+      const targetCenter = targetRect.top + targetRect.height / 2;
+      const horizontalPosition = { left: 12, width };
+      return targetCenter >= window.innerHeight / 2
+        ? { ...horizontalPosition, top: 12 }
+        : { ...horizontalPosition, bottom: 12 };
+    }
     if (current?.placement === 'side' && window.innerWidth >= 900) {
       const roomRight = window.innerWidth - targetRect.right;
       const left =
