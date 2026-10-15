@@ -1,7 +1,7 @@
 'use client';
 
+import type { HouseholdTransaction, TransactionEditScope } from '@monthloom/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { HouseholdTransaction, TransactionEditScope } from '@template/contracts';
 import Link from 'next/link';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';

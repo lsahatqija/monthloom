@@ -10,9 +10,9 @@ COPY tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/api ./apps/api
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @template/contracts run build
-RUN pnpm --filter @template/api run build
-RUN pnpm --filter @template/api deploy --prod /prod/api
+RUN pnpm --filter @monthloom/contracts run build
+RUN pnpm --filter @monthloom/api run build
+RUN pnpm --filter @monthloom/api deploy --prod /prod/api
 
 FROM node:22-alpine AS runtime
 ARG VCS_REF=development

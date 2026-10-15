@@ -1,4 +1,4 @@
-import type { ChangePasswordRequest, PublicUser, UpdateProfileRequest } from '@template/contracts';
+import type { ChangePasswordRequest, PublicUser, UpdateProfileRequest } from '@monthloom/contracts';
 
 import { apiClient } from '../../lib/api/client';
 

@@ -1,7 +1,7 @@
 'use client';
 
+import type { PublicUser } from '@monthloom/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { PublicUser } from '@template/contracts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 

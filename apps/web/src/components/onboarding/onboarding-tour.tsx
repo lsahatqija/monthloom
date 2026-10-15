@@ -1,7 +1,7 @@
 'use client';
 
+import type { PublicUser } from '@monthloom/contracts';
 import { useQuery } from '@tanstack/react-query';
-import type { PublicUser } from '@template/contracts';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';

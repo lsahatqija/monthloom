@@ -1,4 +1,4 @@
-import type { ChangePasswordRequest, PublicUser, UpdateProfileRequest } from '@template/contracts';
+import type { ChangePasswordRequest, PublicUser, UpdateProfileRequest } from '@monthloom/contracts';
 
 import { hashPassword, verifyPassword } from '../../infrastructure/security/password.js';
 import { NotFoundError, ValidationError } from '../../shared/errors/index.js';

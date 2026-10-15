@@ -31,7 +31,7 @@ const envSchema = z.object({
     .int()
     .min(1)
     .default(24 * 7),
-  SESSION_COOKIE_NAME: z.string().min(1).default('template_session'),
+  SESSION_COOKIE_NAME: z.string().min(1).default('monthloom_session'),
   SESSION_COOKIE_SECURE: boolFromString.default('false'),
 
   JSON_BODY_LIMIT: z.string().min(1).default('1mb'),

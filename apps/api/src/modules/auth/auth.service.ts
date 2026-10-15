@@ -6,7 +6,7 @@ import {
   type RegisterRequest,
   type ResetPasswordRequest,
   type VerifyEmailRequest,
-} from '@template/contracts';
+} from '@monthloom/contracts';
 
 import { config } from '../../config/index.js';
 import type { Logger } from '../../infrastructure/logging/logger.js';

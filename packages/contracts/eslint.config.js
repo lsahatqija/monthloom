@@ -1,3 +1,3 @@
-import config from '@template/eslint-config';
+import config from '@monthloom/eslint-config';
 
 export default config;

@@ -37,7 +37,7 @@ import {
   updateHouseholdRequestSchema,
   updateHouseholdSourceRequestSchema,
   updateHouseholdTransactionRequestSchema,
-} from '@template/contracts';
+} from '@monthloom/contracts';
 import { z } from 'zod';
 
 extendZodWithOpenApi(z);
@@ -47,7 +47,7 @@ const registry = new OpenAPIRegistry();
 const bearerCookieSecurity = registry.registerComponent('securitySchemes', 'sessionCookie', {
   type: 'apiKey',
   in: 'cookie',
-  name: 'template_session',
+  name: 'monthloom_session',
 });
 
 const ErrorResponse = registry.register('ApiErrorResponse', apiErrorResponseSchema);
@@ -634,7 +634,7 @@ export function generateOpenApiDocument() {
     info: {
       title: 'Fullstack TS Template API',
       version: '0.1.0',
-      description: 'API documentation for the reusable fullstack template.',
+      description: 'API documentation for Monthloom.',
     },
     servers: [{ url: '/' }],
   });

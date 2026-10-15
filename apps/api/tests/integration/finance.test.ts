@@ -1,4 +1,4 @@
-import { householdMonthResponseSchema } from '@template/contracts';
+import { householdMonthResponseSchema } from '@monthloom/contracts';
 import { describe, expect, it, vi } from 'vitest';
 
 import { pool } from '../../src/infrastructure/database/client.js';

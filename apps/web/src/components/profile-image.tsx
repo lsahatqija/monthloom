@@ -10,7 +10,7 @@ import mosaicGrid from '@assets/profile-images/mosaic-grid.png';
 import starRosette from '@assets/profile-images/star-rosette.png';
 import steppedMedallion from '@assets/profile-images/stepped-medallion.png';
 import waveStripe from '@assets/profile-images/wave-stripe.png';
-import { Constants, type DesiredColor, type ProfileImage } from '@template/contracts';
+import { Constants, type DesiredColor, type ProfileImage } from '@monthloom/contracts';
 import type { CSSProperties } from 'react';
 
 const PROFILE_IMAGE_ASSETS = {

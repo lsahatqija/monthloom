@@ -11,7 +11,7 @@ import {
   type UpdateHouseholdRequest,
   type UpdateHouseholdSourceRequest,
   type UpdateHouseholdTransactionRequest,
-} from '@template/contracts';
+} from '@monthloom/contracts';
 
 import { config } from '../../config/index.js';
 import type { Logger } from '../../infrastructure/logging/logger.js';

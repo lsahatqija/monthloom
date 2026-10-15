@@ -8,7 +8,7 @@ import type {
   RegisterRequest,
   ResetPasswordRequest,
   VerifyEmailRequest,
-} from '@template/contracts';
+} from '@monthloom/contracts';
 
 import { apiClient } from '../../lib/api/client';
 

@@ -1,5 +1,5 @@
 {
-  "name": "@template/web",
+  "name": "@monthloom/web",
   "version": "0.1.0",
   "private": true,
   "description": "Next.js App Router frontend.",
@@ -17,7 +17,7 @@
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
     "@tanstack/react-query": "^5.51.23",
-    "@template/contracts": "workspace:*",
+    "@monthloom/contracts": "workspace:*",
     "lucide-react": "^1.51.0",
     "next": "^14.2.5",
     "react": "^18.3.1",
@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^2.1.4",
-    "@template/eslint-config": "workspace:*",
+    "@monthloom/eslint-config": "workspace:*",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.5.0",

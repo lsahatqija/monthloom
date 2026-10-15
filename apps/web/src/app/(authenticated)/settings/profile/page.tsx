@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
-import { ChangePassword } from '@/features/users/change-password';
 import { RestartOnboardingButton } from '@/components/onboarding/restart-onboarding-button';
+import { ChangePassword } from '@/features/users/change-password';
 import { ProfileForm } from '@/features/users/profile-form';
 import { getServerUser } from '@/lib/auth/get-server-user';
 

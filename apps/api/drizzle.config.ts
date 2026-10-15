@@ -6,6 +6,6 @@ export default defineConfig({
   out: './src/infrastructure/database/migrations',
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/template_dev',
+    url: process.env.DATABASE_URL ?? 'postgres://monthloom:monthloom@localhost:5432/monthloom_dev',
   },
 });

@@ -1,8 +1,8 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { forgotPasswordRequestSchema, type ForgotPasswordRequest } from '@monthloom/contracts';
 import { useMutation } from '@tanstack/react-query';
-import { forgotPasswordRequestSchema, type ForgotPasswordRequest } from '@template/contracts';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 

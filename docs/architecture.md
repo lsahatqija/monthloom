@@ -266,7 +266,7 @@ is not synchronized through the API.
 
 ## 7. Shared contracts and validation
 
-`@template/contracts` is the transport boundary between frontend and backend. It contains Zod
+`@monthloom/contracts` is the transport boundary between frontend and backend. It contains Zod
 schemas and inferred TypeScript types for requests, responses, public entities, pagination,
 errors, health checks, and shared enum-like constants. It intentionally excludes ORM rows,
 password hashes, session tokens, repositories, and services.

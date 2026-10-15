@@ -1,6 +1,5 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Constants,
   HOUSEHOLD_CURRENCIES,
@@ -8,7 +7,8 @@ import {
   type ManagedHousehold,
   type PublicUser,
   type UpdateHouseholdRequest,
-} from '@template/contracts';
+} from '@monthloom/contracts';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
 import { ProfileImage } from '../../components/profile-image';

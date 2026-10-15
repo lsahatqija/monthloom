@@ -202,35 +202,54 @@ package behavior before any domain code is changed.
 
 ### Tasks
 
-- [ ] Rename `@template/api`, `@template/web`, `@template/contracts`, and
-      `@template/eslint-config` to `@monthloom/*` throughout package manifests, imports, scripts,
-      Dockerfiles, and test aliases.
-- [ ] Replace remaining template-named default database values where backward compatibility does
+- [x] Rename legacy template-scoped packages to `@monthloom/*` throughout package manifests,
+      imports, scripts, Dockerfiles, documentation, and test aliases.
+- [x] Replace remaining template-named default database values where backward compatibility does
       not require retaining them.
-- [ ] Delete `package-lock.json`; `pnpm-lock.yaml` is the workspace lockfile.
-- [ ] Confirm that `packages/config` has no consumers, then delete it and remove it from workspace
+- [x] Delete `package-lock.json`; `pnpm-lock.yaml` is the workspace lockfile.
+- [x] Confirm that `packages/config` has no consumers, then delete it and remove it from workspace
       concerns.
-- [ ] Remove the root `postinstall` contract build. Make contract compilation an explicit part of
+- [x] Remove the root `postinstall` contract build. Make contract compilation an explicit part of
       build scripts, or expose workspace source/types in a way supported by both applications.
-- [ ] Ensure `.pnpm-store`, `.next`, `coverage`, and `test-results` are ignored and not tracked.
-- [ ] Stop tracking `apps/api/cookies.txt`. Before deletion, inspect it locally for active session
+- [x] Ensure `.pnpm-store`, `.next`, `coverage`, and `test-results` are ignored and not tracked.
+- [x] Stop tracking `apps/api/cookies.txt`. Before deletion, inspect it locally for active session
       material and revoke or rotate affected credentials if necessary.
-- [ ] Stop tracking files below `apps/api/uploads`; retain only `.gitkeep` if the directory is
+- [x] Stop tracking files below `apps/api/uploads`; retain only `.gitkeep` if the directory is
       useful for local setup.
-- [ ] Audit dependencies with a dependency-analysis tool and manual verification. Remove only
+- [x] Audit dependencies with a dependency-analysis tool and manual verification. Remove only
       dependencies confirmed unused in application, test, build, migration, and maintenance paths.
-- [ ] Decide how source design assets are managed:
-  - [ ] Keep only assets shipped by the app or used by documentation in the main repository.
-  - [ ] Move design masters and generated size variants to Git LFS or a separate design-artifact
-        location.
-  - [ ] Prefer a reproducible icon-generation script over tracking every derived size.
-  - [ ] Keep only font weights and formats actually consumed by the application.
+- [x] Decide how source design assets are managed:
+  - [x] Keep only assets shipped by the app, editable SVG logo sources, or documentation assets in
+        the main repository.
+  - [x] Remove generated size variants from the main repository; no separate artifact store is
+        currently needed because the retained SVG files are the editable masters.
+  - [x] Document that runtime icon variants should be regenerated from SVG sources instead of
+        tracking a complete derived asset pack.
+  - [x] Remove the unused font family; the application did not consume any of its weights.
 
 ### Notes
 
 At the time this plan was written, tracked `assets` occupied about 23.86 MB across 143 files, while
 all tracked application files occupied about 2.51 MB. Asset cleanup therefore has substantially
 more repository-size impact than source-code micro-optimizations.
+
+### Phase 1 result (2026-10-15)
+
+- Workspace packages now use the `@monthloom/*` scope, including imports, scripts, Dockerfiles,
+  documentation, Vitest aliases, and the pnpm lockfile.
+- Default local database and session names now use `monthloom`; an existing ignored `.env` keeps
+  its explicit values and is not rewritten.
+- Contract compilation is explicit in development, typecheck, and production build paths. A clean
+  `pnpm install --frozen-lockfile` no longer performs a workspace build.
+- The unused `uuid` package was removed after confirming all UUID generation uses `node:crypto` and
+  database UUID helpers. All other direct runtime packages have active imports or configuration
+  paths, so no speculative dependency removals were made.
+- Tracked assets fell from 143 files / 23.86 MB to 19 files / 7.53 MB. The retained files are the
+  twelve runtime profile masks, editable SVG logo sources, the README screenshot, and asset notes.
+- The tracked pnpm store, npm lockfile, empty config package, cookie jar, and example uploaded image
+  were removed. The cookie jar contained no cookie data rows, so no session revocation was needed.
+- The public About page and API service/OpenAPI labels now describe Monthloom rather than the
+  starter template.
 
 ### Validation gate
 

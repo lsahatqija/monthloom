@@ -1,3 +1,3 @@
-import { changePasswordRequestSchema, updateProfileRequestSchema } from '@template/contracts';
+import { changePasswordRequestSchema, updateProfileRequestSchema } from '@monthloom/contracts';
 
 export { changePasswordRequestSchema, updateProfileRequestSchema };

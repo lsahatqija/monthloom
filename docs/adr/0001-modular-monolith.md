@@ -6,7 +6,7 @@ Accepted.
 
 ## Context
 
-This template is meant to bootstrap many future projects that typically start with a small team,
+Monthloom is expected to be maintained by a small team,
 a single deployable surface, and modest scale requirements. Microservices introduce network
 boundaries, independent deployments, service discovery and distributed-failure handling — costs
 that are rarely justified before a product has proven traction and a team large enough to own

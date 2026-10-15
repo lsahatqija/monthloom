@@ -1,13 +1,13 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Constants,
   type CreateHouseholdTransactionRequest,
   type HouseholdMonthResponse,
   type HouseholdTransaction,
   type TransactionSeriesSelection,
-} from '@template/contracts';
+} from '@monthloom/contracts';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import { Alert, Button } from '../../components/ui/index';

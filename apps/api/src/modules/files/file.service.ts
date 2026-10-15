@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
-import type { FileMetadata } from '@template/contracts';
+import type { FileMetadata } from '@monthloom/contracts';
 import { fileTypeFromBuffer } from 'file-type';
 
 import { config } from '../../config/index.js';

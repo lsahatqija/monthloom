@@ -1,4 +1,4 @@
-import type { HouseholdTransaction } from '@template/contracts';
+import type { HouseholdTransaction } from '@monthloom/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 

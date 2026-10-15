@@ -1,11 +1,11 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Constants,
   type CreateHouseholdSourceRequest,
   type HouseholdSource,
-} from '@template/contracts';
+} from '@monthloom/contracts';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type FormEvent } from 'react';
 
 import { Alert, Button } from '../../components/ui/index';

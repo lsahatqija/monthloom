@@ -16,7 +16,7 @@ import type {
   UpdateHouseholdRequest,
   UpdateHouseholdSourceRequest,
   UpdateHouseholdTransactionRequest,
-} from '@template/contracts';
+} from '@monthloom/contracts';
 
 import { apiClient } from '../../lib/api/client';
 

@@ -12,7 +12,7 @@ import type {
   UpdateHouseholdRequest,
   UpdateHouseholdSourceRequest,
   UpdateHouseholdTransactionRequest,
-} from '@template/contracts';
+} from '@monthloom/contracts';
 import { and, asc, eq, gte, inArray, lt, ne } from 'drizzle-orm';
 
 import type { Database } from '../../../infrastructure/database/client.js';

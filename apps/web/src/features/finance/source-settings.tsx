@@ -1,7 +1,7 @@
 'use client';
 
+import type { HouseholdSource, ManagedHousehold } from '@monthloom/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { HouseholdSource, ManagedHousehold } from '@template/contracts';
 import { useEffect, useState } from 'react';
 
 import { Alert, Button, LoadingIndicator } from '../../components/ui/index';

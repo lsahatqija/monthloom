@@ -1,5 +1,5 @@
+import type { HouseholdTransaction } from '@monthloom/contracts';
 import { QueryClient } from '@tanstack/react-query';
-import type { HouseholdTransaction } from '@template/contracts';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';

@@ -1,4 +1,4 @@
-import { apiErrorResponseSchema } from '@template/contracts';
+import { apiErrorResponseSchema } from '@monthloom/contracts';
 
 import { webConfig } from '../config/env';
 

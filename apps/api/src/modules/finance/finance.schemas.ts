@@ -11,7 +11,7 @@ import {
   updateHouseholdRequestSchema,
   updateHouseholdSourceRequestSchema,
   updateHouseholdTransactionRequestSchema,
-} from '@template/contracts';
+} from '@monthloom/contracts';
 import { z } from 'zod';
 
 export {

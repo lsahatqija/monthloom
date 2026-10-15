@@ -1,4 +1,4 @@
-import type { ManagedHousehold, PublicUser } from '@template/contracts';
+import type { ManagedHousehold, PublicUser } from '@monthloom/contracts';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';

@@ -1,5 +1,5 @@
 import { FlatCompat } from '@eslint/eslintrc';
-import baseConfig from '@template/eslint-config';
+import baseConfig from '@monthloom/eslint-config';
 
 const compat = new FlatCompat({ baseDirectory: import.meta.dirname });
 

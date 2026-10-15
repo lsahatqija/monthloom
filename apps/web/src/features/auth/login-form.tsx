@@ -1,8 +1,8 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { loginRequestSchema, type LoginRequest } from '@monthloom/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { loginRequestSchema, type LoginRequest } from '@template/contracts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';

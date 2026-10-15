@@ -1,12 +1,12 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   updateProfileRequestSchema,
   type PublicUser,
   type UpdateProfileRequest,
-} from '@template/contracts';
+} from '@monthloom/contracts';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 
 import { ProfileAppearanceFields } from '../../components/profile-appearance-fields';
