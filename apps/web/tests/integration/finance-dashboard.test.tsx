@@ -161,6 +161,19 @@ describe('household dashboard', () => {
     expect(within(table).getAllByRole('row')).toHaveLength(2);
     expect(within(table).queryByText('Employer')).not.toBeInTheDocument();
     expect(screen.getByText('Total income').nextElementSibling).toHaveTextContent('100.00');
+    const filteredRecap = screen.getByRole('group', { name: 'Filtered recap' });
+    expect(within(filteredRecap).getByText('Filtered income').nextElementSibling).toHaveTextContent(
+      '0.00',
+    );
+    expect(
+      within(filteredRecap).getByText('Filtered expenses').nextElementSibling,
+    ).toHaveTextContent('20.00');
+    expect(
+      within(filteredRecap).getByText('Filtered balance').nextElementSibling,
+    ).toHaveTextContent(/-.*20\.00/);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(screen.queryByRole('group', { name: 'Filtered recap' })).not.toBeInTheDocument();
   });
 
   it('confirms transaction removal before making the DELETE request', async () => {

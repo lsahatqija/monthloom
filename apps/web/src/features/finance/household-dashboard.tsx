@@ -401,6 +401,16 @@ export function HouseholdDashboard() {
     if (filters.amountUnder !== '' && amount >= Number(filters.amountUnder)) return false;
     return true;
   });
+  const filteredSummary = filteredTransactions.reduce(
+    (totals, transaction) => {
+      const amount = Number(transaction.amount);
+      if (transaction.kind === 'income') totals.income += amount;
+      else totals.expenses += amount;
+      totals.balance = totals.income - totals.expenses;
+      return totals;
+    },
+    { income: 0, expenses: 0, balance: 0 },
+  );
   const sortedTransactions = [...filteredTransactions].sort((first, second) => {
     const comparison = compareTransactions(first, second, sortKey);
     if (comparison !== 0) return sortDirection === 'ascending' ? comparison : -comparison;
@@ -499,6 +509,22 @@ export function HouseholdDashboard() {
           <strong>{money.format(Number(summary.leftover))}</strong>
         </div>
       </div>
+      {activeFilterCount ? (
+        <div className="financeRecap" role="group" aria-label="Filtered recap">
+          <div>
+            <span>Filtered income</span>
+            <strong className="incomeAmount">{money.format(filteredSummary.income)}</strong>
+          </div>
+          <div>
+            <span>Filtered expenses</span>
+            <strong className="expenseAmount">{money.format(filteredSummary.expenses)}</strong>
+          </div>
+          <div className="leftoverRecap">
+            <span>Filtered balance</span>
+            <strong>{money.format(filteredSummary.balance)}</strong>
+          </div>
+        </div>
+      ) : null}
 
       <div className="transactionPanel">
         <div className="transactionPanelHeading">
