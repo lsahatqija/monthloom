@@ -19,15 +19,7 @@ import type {
 } from '@monthloom/contracts';
 
 import { apiClient } from '../../lib/api/client';
-
-export const financeKeys = {
-  all: ['finance'] as const,
-  households: () => [...financeKeys.all, 'households'] as const,
-  primaryMonth: (month: string) => [...financeKeys.all, 'primary', month] as const,
-  householdMonth: (householdId: string, month: string) =>
-    [...financeKeys.all, 'household', householdId, month] as const,
-  sources: (householdId: string) => [...financeKeys.all, 'sources', householdId] as const,
-};
+export { financeKeys } from './api/keys';
 
 export async function getHouseholds(): Promise<ManagedHousehold[]> {
   const data = await apiClient.get<{ households: ManagedHousehold[] }>('households');

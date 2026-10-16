@@ -460,14 +460,14 @@ features/finance/
 
 ### Tasks
 
-- [ ] Centralize finance query keys and cache invalidation rules.
-- [ ] Add `useHouseholds`, `useHouseholdMonth`, `useTransactionMutations`,
+- [x] Centralize finance query keys and cache invalidation rules.
+- [x] Add `useHouseholds`, `useHouseholdMonth`, `useTransactionMutations`,
       `useHouseholdMutations`, and `useSourceMutations` hooks, or equivalent cohesive hooks.
-- [ ] Extract filtering and sorting into a pure function plus a `useTransactionView` hook.
+- [x] Extract filtering and sorting into a pure function plus a `useTransactionView` hook.
 - [ ] Extract dashboard summary, filters, table, row menu, and removal dialog.
-- [ ] Put selected household and month in URL search parameters so navigation is linkable and state
+- [x] Put selected household and month in URL search parameters so navigation is linkable and state
       survives refreshes.
-- [ ] Convert the transaction form to React Hook Form consistently instead of coordinating many
+- [x] Convert the transaction form to React Hook Form consistently instead of coordinating many
       independent `useState` values.
 - [ ] Extract recurrence fields and their conditional validation.
 - [ ] Extract household form, invitation management, member list, and ownership controls from the
