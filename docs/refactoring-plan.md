@@ -378,15 +378,26 @@ after Phase 2 produces meaningful vertical capabilities.
 
 ### Tasks
 
-- [ ] Extract a small household-access policy/helper for repeated membership and ownership checks.
-- [ ] Keep authorization calls visible in each service method rather than hiding them in generic
+- [x] Extract a small household-access policy/helper for repeated membership and ownership checks.
+- [x] Keep authorization calls visible in each service method rather than hiding them in generic
       middleware or persistence code.
-- [ ] Move methods capability by capability, preserving signatures initially.
-- [ ] Depend on narrow interfaces such as an email notification port rather than the concrete
+- [x] Move methods capability by capability, preserving signatures initially.
+- [x] Depend on narrow interfaces such as an email notification port rather than the concrete
       `AutomatedEmailService` class where this reduces coupling.
-- [ ] Keep controllers thin and route-compatible while services are moved.
-- [ ] Update unit tests to mock only the dependencies each service actually needs.
-- [ ] Remove the old `FinanceService` after the controller has migrated to the new services.
+- [x] Keep controllers thin and route-compatible while services are moved.
+- [x] Update unit tests to mock only the dependencies each service actually needs.
+- [x] Remove the old `FinanceService` after the controller has migrated to the new services.
+
+### Phase 3 result (2026-10-16)
+
+- Finance application logic is split into household, invitation, source, transaction, and month-view
+  services. The controller receives those capabilities explicitly and retains the existing routes,
+  request validation, response bodies, and status codes.
+- Repeated membership enforcement uses a focused household-access helper, while ownership and
+  capability-specific authorization decisions remain visible in their service methods.
+- Invitation delivery depends on a narrow notification port implemented structurally by the
+  existing automated email service. Each service is tested with only its required repositories.
+- The original `FinanceService` has been removed.
 
 ### Validation gate
 

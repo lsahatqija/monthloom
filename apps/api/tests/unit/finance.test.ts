@@ -10,23 +10,28 @@ import type {
   SourceRepository,
   TransactionRepository,
 } from '../../src/modules/finance/finance.repository.js';
-import { FinanceService } from '../../src/modules/finance/finance.service.js';
+import { HouseholdService } from '../../src/modules/finance/household.service.js';
+import { InvitationService } from '../../src/modules/finance/invitation.service.js';
+import { MonthViewService } from '../../src/modules/finance/month-view.service.js';
+import { SourceService } from '../../src/modules/finance/source.service.js';
+import { TransactionService } from '../../src/modules/finance/transaction.service.js';
 import { user } from '../fixtures.js';
 
 describe('finance service', () => {
-  const repository = mock<
-    HouseholdRepository & InvitationRepository & SourceRepository & TransactionRepository
-  >();
-  const service = new FinanceService(
-    {
-      households: repository,
-      invitations: repository,
-      sources: repository,
-      transactions: repository,
-    },
+  const households = mock<HouseholdRepository>();
+  const invitations = mock<InvitationRepository>();
+  const sources = mock<SourceRepository>();
+  const transactions = mock<TransactionRepository>();
+  const householdService = new HouseholdService(households);
+  const invitationService = new InvitationService(
+    households,
+    invitations,
     mock<AutomatedEmailService>(),
     mock<Logger>(),
   );
+  const monthViewService = new MonthViewService(households, sources, transactions);
+  const sourceService = new SourceService(households, sources);
+  const transactionService = new TransactionService(households, sources, transactions);
   const household = {
     id: 'household',
     name: 'Home',
@@ -41,48 +46,59 @@ describe('finance service', () => {
   beforeEach(() => vi.resetAllMocks());
 
   it('rejects non-members before reading private financial data', async () => {
-    repository.isMember.mockResolvedValue(false);
-    await expect(service.getHouseholdMonth(household.id, user.id, '2026-01')).rejects.toMatchObject(
-      { statusCode: 403 },
-    );
-    expect(repository.getMonth).not.toHaveBeenCalled();
+    households.isMember.mockResolvedValue(false);
+    await expect(
+      monthViewService.getHouseholdMonth(household.id, user.id, '2026-01'),
+    ).rejects.toMatchObject({ statusCode: 403 });
+    expect(transactions.getMonth).not.toHaveBeenCalled();
   });
 
   it('calculates decimal totals exactly and puts the current user first', async () => {
-    repository.isMember.mockResolvedValue(true);
-    repository.findHousehold.mockResolvedValue(household);
-    repository.getMembers.mockResolvedValue([{ ...user, id: 'other' }, user]);
-    repository.getSources.mockResolvedValue([]);
-    repository.getMonth.mockResolvedValue([
+    households.isMember.mockResolvedValue(true);
+    households.findHousehold.mockResolvedValue(household);
+    households.getMembers.mockResolvedValue([{ ...user, id: 'other' }, user]);
+    sources.getSources.mockResolvedValue([]);
+    transactions.getMonth.mockResolvedValue([
       mock<HouseholdTransaction>({ kind: 'income', amount: '0.10' }),
       mock<HouseholdTransaction>({ kind: 'income', amount: '0.20' }),
       mock<HouseholdTransaction>({ kind: 'expense', amount: '0.40' }),
     ]);
-    const result = await service.getHouseholdMonth(household.id, user.id, '2026-01');
+    const result = await monthViewService.getHouseholdMonth(household.id, user.id, '2026-01');
     expect(result.summary).toEqual({ income: '0.30', expenses: '0.40', leftover: '-0.10' });
     expect(result.members[0]!.id).toBe(user.id);
   });
 
   it('does not allow deletion of sources in use', async () => {
-    repository.isMember.mockResolvedValue(true);
-    repository.deleteSource.mockResolvedValue('in_use');
-    await expect(service.deleteSource(household.id, 'source', user.id)).rejects.toMatchObject({
+    households.isMember.mockResolvedValue(true);
+    sources.deleteSource.mockResolvedValue('in_use');
+    await expect(sourceService.deleteSource(household.id, 'source', user.id)).rejects.toMatchObject({
       statusCode: 409,
     });
   });
 
-  it('requires membership in both households before copying sources', async () => {
-    repository.isMember.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+  it('rejects transaction writes from non-members', async () => {
+    households.isMember.mockResolvedValue(false);
     await expect(
-      service.copySources('from', user.id, { targetHouseholdId: 'to', sourceIds: ['source'] }),
+      transactionService.removeTransaction(household.id, 'transaction', user.id, 'current'),
     ).rejects.toMatchObject({ statusCode: 403 });
-    expect(repository.copySources).not.toHaveBeenCalled();
+    expect(transactions.removeTransaction).not.toHaveBeenCalled();
+  });
+
+  it('requires membership in both households before copying sources', async () => {
+    households.isMember.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+    await expect(
+      sourceService.copySources('from', user.id, {
+        targetHouseholdId: 'to',
+        sourceIds: ['source'],
+      }),
+    ).rejects.toMatchObject({ statusCode: 403 });
+    expect(sources.copySources).not.toHaveBeenCalled();
   });
 
   it('requires a verified email address before sending email invitations', async () => {
-    repository.isMember.mockResolvedValue(true);
+    households.isMember.mockResolvedValue(true);
     await expect(
-      service.createInvitation(
+      invitationService.createInvitation(
         household.id,
         {
           ...user,
@@ -93,24 +109,24 @@ describe('finance service', () => {
         { mode: 'email', emails: ['invitee@example.com'] },
       ),
     ).rejects.toMatchObject({ statusCode: 403 });
-    expect(repository.createInvitation).not.toHaveBeenCalled();
+    expect(invitations.createInvitation).not.toHaveBeenCalled();
   });
 
   it('prevents an owner from leaving the last household member behind as nobody', async () => {
-    repository.isMember.mockResolvedValue(true);
-    repository.findHousehold.mockResolvedValue(household);
-    repository.getMembers.mockResolvedValue([user]);
-    await expect(service.leaveHousehold(household.id, user.id)).rejects.toMatchObject({
+    households.isMember.mockResolvedValue(true);
+    households.findHousehold.mockResolvedValue(household);
+    households.getMembers.mockResolvedValue([user]);
+    await expect(householdService.leaveHousehold(household.id, user.id)).rejects.toMatchObject({
       statusCode: 409,
     });
-    expect(repository.leaveHousehold).not.toHaveBeenCalled();
+    expect(households.leaveHousehold).not.toHaveBeenCalled();
   });
 
   it('restricts household deletion to the owner', async () => {
-    repository.findHousehold.mockResolvedValue(household);
-    await expect(service.deleteHousehold(household.id, 'other')).rejects.toMatchObject({
+    households.findHousehold.mockResolvedValue(household);
+    await expect(householdService.deleteHousehold(household.id, 'other')).rejects.toMatchObject({
       statusCode: 403,
     });
-    expect(repository.deleteHousehold).not.toHaveBeenCalled();
+    expect(households.deleteHousehold).not.toHaveBeenCalled();
   });
 });
