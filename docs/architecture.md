@@ -392,7 +392,10 @@ created or updated with `pnpm email:templates:sync`. Registration sends the welc
 single-use email verification link. Unverified users can request another verification email from
 profile settings; password recovery and email invitations remain unavailable until verification.
 Welcome delivery remains a non-critical side effect; a failure is logged but never invalidates the
-newly created account. Monthly-report composition is ready for its scheduler.
+newly created account. The monthly-balance template is intentionally retained but dormant:
+`AutomatedEmailService.sendMonthlyReport` is ready for a future scheduled monthly-report job. See
+the [runtime configuration guide](runtime-configuration.md) for the audited invocation status of
+all five templates.
 
 Template synchronization prefers the optional full-access `RESEND_ADMIN_KEY` and falls back to
 `RESEND_API_KEY`. The admin key is a provisioning credential and should not be configured in the

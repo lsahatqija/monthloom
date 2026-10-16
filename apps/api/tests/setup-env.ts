@@ -6,7 +6,6 @@ Object.assign(process.env, {
   SESSION_COOKIE_NAME: 'monthloom_test_session',
   SESSION_COOKIE_SECURE: 'false',
   SESSION_DURATION_HOURS: '168',
-  API_PUBLIC_URL: 'http://localhost:4000',
   WEB_PUBLIC_URL: 'http://localhost:3000',
   CORS_ALLOWED_ORIGINS: 'http://localhost:3000',
   EMAIL_TRANSPORT: 'log',

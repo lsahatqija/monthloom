@@ -1,18 +1,10 @@
-import { z } from 'zod';
+import { webEnvSchema } from './env.schema';
 
 /**
  * Validated frontend configuration. Only variables intentionally meant for the browser use
  * the `NEXT_PUBLIC_` prefix; everything else stays server-only.
  */
-const envSchema = z.object({
-  NEXT_PUBLIC_API_URL: z.preprocess(
-    (value) => (value === '' ? undefined : value),
-    z.string().url().optional(),
-  ),
-  API_INTERNAL_URL: z.string().url().optional(),
-});
-
-const env = envSchema.parse({
+const env = webEnvSchema.parse({
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   API_INTERNAL_URL: process.env.API_INTERNAL_URL,
 });

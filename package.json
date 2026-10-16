@@ -18,6 +18,7 @@
     "lint:fix": "pnpm --recursive run lint:fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "config:check": "node scripts/check-env-example.mjs",
     "docker:up": "docker compose -f compose.yml up -d",
     "docker:down": "docker compose -f compose.yml down",
     "docker:logs": "docker compose -f compose.yml logs -f",
@@ -33,7 +34,7 @@
     "test:contracts": "vitest run --project=contracts-unit",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:ci": "pnpm typecheck && pnpm test:typecheck && vitest run --coverage --reporter=default --reporter=junit --outputFile.junit=test-results/junit.xml",
+    "test:ci": "pnpm config:check && pnpm typecheck && pnpm test:typecheck && vitest run --coverage --reporter=default --reporter=junit --outputFile.junit=test-results/junit.xml",
     "test:typecheck": "pnpm --filter @monthloom/api exec tsc -p tsconfig.test.json && pnpm --filter @monthloom/contracts exec tsc -p tsconfig.test.json",
     "test:db:up": "docker compose -f compose.test.yml up -d --wait",
     "test:db:down": "docker compose -f compose.test.yml down"

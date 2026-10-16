@@ -582,18 +582,18 @@ declarations make configuration changes easy to miss and hard to validate.
 
 ### Tasks
 
-- [ ] Document one canonical command and Compose file for each workflow: local development,
+- [x] Document one canonical command and Compose file for each workflow: local development,
       integration tests, image publishing, and production deployment.
-- [ ] Move shared non-secret environment values into an appropriate `env_file` or Compose anchor,
+- [x] Move shared non-secret environment values into an appropriate `env_file` or Compose anchor,
       retaining explicit per-environment overrides.
-- [ ] Keep secrets out of committed defaults and fail fast when production secrets are absent.
-- [ ] Add a script or test that checks `.env.example` against the API and web Zod environment
+- [x] Keep secrets out of committed defaults and fail fast when production secrets are absent.
+- [x] Add a script or test that checks `.env.example` against the API and web Zod environment
       schemas.
-- [ ] Review every environment option and remove options no runtime path reads.
-- [ ] Verify that every email template has an invocation path. Remove dormant templates and sync
+- [x] Review every environment option and remove options no runtime path reads.
+- [x] Verify that every email template has an invocation path. Remove dormant templates and sync
       configuration, or document the scheduled process that uses them.
-- [ ] Confirm that liveness and readiness probes test the intended dependencies in each environment.
-- [ ] Keep production database and uploads durability concerns explicit in deployment documentation.
+- [x] Confirm that liveness and readiness probes test the intended dependencies in each environment.
+- [x] Keep production database and uploads durability concerns explicit in deployment documentation.
 
 ### Validation gate
 
