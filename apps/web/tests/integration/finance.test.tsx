@@ -20,7 +20,7 @@ const source = {
   aliases: ['Shop'],
 };
 
-function renderForm(transaction?: HouseholdTransaction) {
+function renderForm(transaction?: HouseholdTransaction, transactions: HouseholdTransaction[] = []) {
   const client = new QueryClient({
     defaultOptions: {
       queries: { retry: false, staleTime: Infinity, gcTime: 0 },
@@ -34,6 +34,7 @@ function renderForm(transaction?: HouseholdTransaction) {
       householdId="home"
       members={[member]}
       sources={[source]}
+      transactions={transactions}
       transaction={transaction}
       onClose={onClose}
     />,
@@ -103,6 +104,43 @@ describe('transaction form + query + HTTP client', () => {
       expiresOn: null,
     });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['finance'] });
+  });
+
+  it('prefills editable fields from the most recent transaction for a selected source', async () => {
+    const older: HouseholdTransaction = {
+      id: '33333333-3333-4333-8333-333333333333',
+      kind: 'expense',
+      type: 'groceries',
+      date: '2026-01-02',
+      icon: 'receipt',
+      color: '#123456',
+      amount: '12.34',
+      recurring: false,
+      expiresOn: null,
+      projected: false,
+      user: member,
+      source,
+    };
+    const newest: HouseholdTransaction = {
+      ...older,
+      id: '44444444-4444-4444-8444-444444444444',
+      kind: 'income',
+      type: null,
+      date: '2026-01-20',
+      icon: 'banknote',
+      color: '#ABCDEF',
+    };
+    renderForm(undefined, [newest, older]);
+
+    await userEvent.selectOptions(screen.getByLabelText('Source'), source.id);
+
+    expect(screen.getByRole('radio', { name: 'Income' })).toBeChecked();
+    expect(screen.getByLabelText('Type')).toHaveValue('income');
+    expect(screen.getByRole('radio', { name: 'Banknote' })).toBeChecked();
+    expect(screen.getByText('#ABCDEF')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Expense' }));
+    expect(screen.getByRole('radio', { name: 'Expense' })).toBeChecked();
   });
 
   it('disables recurring edits when no occurrences are selected', async () => {
