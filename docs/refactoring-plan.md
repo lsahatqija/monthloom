@@ -513,6 +513,16 @@ This creates drift risk and significant maintenance cost.
 
 Choose one of the following based on actual product requirements.
 
+### Selected approach (2026-10-16)
+
+Monthloom uses a lightweight form of Option B. The web application is currently the only API
+consumer, so this is not a promise of third-party compatibility or long-term version support.
+However, a complete, human-readable OpenAPI contract is valuable for maintainers and is the intended
+starting point for possible native or standalone clients. Module-local metadata therefore reuses the
+shared Zod schemas, the JSON document remains available at `/api/v1/openapi.json`, and Swagger UI is
+development-only. A route/document comparison test prevents the documentation from silently drifting
+from the Express surface.
+
 #### Option A: private application API
 
 Use this if only the Monthloom web application is expected to call the API.
@@ -527,11 +537,23 @@ Use this if only the Monthloom web application is expected to call the API.
 
 Use this if third parties, generated clients, or operational tooling consume the API definition.
 
-- [ ] Colocate compact OpenAPI route metadata with each module.
-- [ ] Reuse the shared Zod schemas rather than restating payload shapes.
-- [ ] Generate one document from module registrations.
-- [ ] Add a CI check or snapshot that detects route/document drift.
-- [ ] Keep Swagger UI development-only unless production access is explicitly required.
+- [x] Colocate compact OpenAPI route metadata with each module.
+- [x] Reuse the shared Zod schemas rather than restating payload shapes.
+- [x] Generate one document from module registrations.
+- [x] Add a CI check or snapshot that detects route/document drift.
+- [x] Keep Swagger UI development-only unless production access is explicitly required.
+
+### Phase 5 result (2026-10-16)
+
+- The 641-line centralized document was replaced by module-local registrations for auth, users,
+  files, households/finance, and system health routes.
+- The generated contract covers every runtime application route, including invitation, profile
+  update, and file-metadata endpoints omitted by the previous document.
+- A unit test extracts method/path pairs from the Express routers and requires an exact match with
+  the generated OpenAPI paths. It also verifies that every operation retains a summary and response
+  documentation.
+- Swagger UI remains available at `/api/docs` only in development. The OpenAPI JSON endpoint remains
+  available as the machine-readable contract for maintainers and future clients.
 
 ### Validation gate
 
