@@ -4,13 +4,29 @@ import { mock } from 'vitest-mock-extended';
 
 import type { Logger } from '../../src/infrastructure/logging/logger.js';
 import type { AutomatedEmailService } from '../../src/modules/email/automated-email.service.js';
-import type { FinanceRepository } from '../../src/modules/finance/finance.repository.js';
+import type {
+  HouseholdRepository,
+  InvitationRepository,
+  SourceRepository,
+  TransactionRepository,
+} from '../../src/modules/finance/finance.repository.js';
 import { FinanceService } from '../../src/modules/finance/finance.service.js';
 import { user } from '../fixtures.js';
 
 describe('finance service', () => {
-  const repository = mock<FinanceRepository>();
-  const service = new FinanceService(repository, mock<AutomatedEmailService>(), mock<Logger>());
+  const repository = mock<
+    HouseholdRepository & InvitationRepository & SourceRepository & TransactionRepository
+  >();
+  const service = new FinanceService(
+    {
+      households: repository,
+      invitations: repository,
+      sources: repository,
+      transactions: repository,
+    },
+    mock<AutomatedEmailService>(),
+    mock<Logger>(),
+  );
   const household = {
     id: 'household',
     name: 'Home',

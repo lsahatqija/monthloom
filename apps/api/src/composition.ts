@@ -13,7 +13,10 @@ import { AutomatedEmailService } from './modules/email/automated-email.service.j
 import { PostgresFileRepository } from './modules/files/adapters/postgres-file.repository.js';
 import { FileController } from './modules/files/file.controller.js';
 import { FileService } from './modules/files/file.service.js';
-import { PostgresFinanceRepository } from './modules/finance/adapters/postgres-finance.repository.js';
+import { PostgresHouseholdRepository } from './modules/finance/adapters/postgres-household.repository.js';
+import { PostgresInvitationRepository } from './modules/finance/adapters/postgres-invitation.repository.js';
+import { PostgresSourceRepository } from './modules/finance/adapters/postgres-source.repository.js';
+import { PostgresTransactionRepository } from './modules/finance/adapters/postgres-transaction.repository.js';
 import { FinanceController } from './modules/finance/finance.controller.js';
 import { FinanceService } from './modules/finance/finance.service.js';
 import { SystemController } from './modules/system/system.controller.js';
@@ -30,7 +33,12 @@ export function buildAppDependencies() {
   const userRepository = new PostgresUserRepository(db);
   const sessionRepository = new PostgresSessionRepository(db);
   const fileRepository = new PostgresFileRepository(db);
-  const financeRepository = new PostgresFinanceRepository(db);
+  const financeRepositories = {
+    households: new PostgresHouseholdRepository(db),
+    invitations: new PostgresInvitationRepository(db),
+    sources: new PostgresSourceRepository(db),
+    transactions: new PostgresTransactionRepository(db),
+  };
   const fileStorage = new LocalFileStorage(path.resolve(config.upload.directory));
   const emailSender =
     config.email.transport === 'resend'
@@ -39,7 +47,7 @@ export function buildAppDependencies() {
   const emailService = new AutomatedEmailService(emailSender);
 
   const userService = new UserService(userRepository);
-  const financeService = new FinanceService(financeRepository, emailService, logger);
+  const financeService = new FinanceService(financeRepositories, emailService, logger);
   const authService = new AuthService(userRepository, sessionRepository, emailService, logger);
   const fileService = new FileService(fileRepository, fileStorage);
   const systemService = new SystemService();

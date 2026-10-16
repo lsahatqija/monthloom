@@ -4,7 +4,7 @@ import { logger } from '../logging/logger.js';
 import { hashPassword } from '../security/password.js';
 
 import { closeDatabaseConnection, db } from './client.js';
-import { users } from './schema.js';
+import { users } from './schema/index.js';
 
 /**
  * Seed data is strictly for local development. It is never created in production and

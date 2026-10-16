@@ -19,13 +19,21 @@ import type {
   ManagedHouseholdRecord,
 } from './finance.types.js';
 
-export interface FinanceRepository {
+export interface HouseholdRepository {
   createHousehold(userId: string, input: CreateHouseholdRequest): Promise<HouseholdRecord>;
   listHouseholds(userId: string): Promise<ManagedHouseholdRecord[]>;
   findHousehold(householdId: string): Promise<HouseholdRecord | null>;
   findPrimaryHousehold(userId: string): Promise<HouseholdRecord | null>;
-  getMonth(householdId: string, month: string): Promise<HouseholdMonthResponse['transactions']>;
   getMembers(householdId: string): Promise<HouseholdMonthResponse['members']>;
+  isMember(householdId: string, userId: string): Promise<boolean>;
+  updateHousehold(householdId: string, input: UpdateHouseholdRequest): Promise<HouseholdRecord>;
+  setPrimaryHousehold(householdId: string, userId: string): Promise<void>;
+  removeMember(householdId: string, userId: string): Promise<boolean>;
+  leaveHousehold(householdId: string, userId: string, newOwnerId?: string): Promise<boolean>;
+  deleteHousehold(householdId: string): Promise<boolean>;
+}
+
+export interface SourceRepository {
   getSources(householdId: string): Promise<HouseholdMonthResponse['sources']>;
   getSource(householdId: string, sourceId: string): Promise<HouseholdSource | null>;
   createSource(
@@ -43,6 +51,10 @@ export interface FinanceRepository {
     targetHouseholdId: string,
     sourceIds: string[],
   ): Promise<CopyHouseholdSourcesResponse | null>;
+}
+
+export interface TransactionRepository {
+  getMonth(householdId: string, month: string): Promise<HouseholdMonthResponse['transactions']>;
   createTransaction(
     householdId: string,
     input: CreateHouseholdTransactionRequest,
@@ -57,12 +69,9 @@ export interface FinanceRepository {
     transactionId: string,
     scope: TransactionEditScope,
   ): Promise<boolean>;
-  isMember(householdId: string, userId: string): Promise<boolean>;
-  updateHousehold(householdId: string, input: UpdateHouseholdRequest): Promise<HouseholdRecord>;
-  setPrimaryHousehold(householdId: string, userId: string): Promise<void>;
-  removeMember(householdId: string, userId: string): Promise<boolean>;
-  leaveHousehold(householdId: string, userId: string, newOwnerId?: string): Promise<boolean>;
-  deleteHousehold(householdId: string): Promise<boolean>;
+}
+
+export interface InvitationRepository {
   createInvitation(
     householdId: string,
     createdById: string,

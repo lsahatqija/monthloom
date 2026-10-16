@@ -304,21 +304,33 @@ number of files.
 
 ### Tasks
 
-- [ ] Extract source normalization, amount conversion, date calculation, recurrence, and projection
+- [x] Extract source normalization, amount conversion, date calculation, recurrence, and projection
       rules into pure functions where possible.
-- [ ] Add focused unit tests for those pure functions.
-- [ ] Define narrow repository interfaces for households/membership, invitations, sources, and
+- [x] Add focused unit tests for those pure functions.
+- [x] Define narrow repository interfaces for households/membership, invitations, sources, and
       transactions/month views.
-- [ ] Extract transaction queries and recurrence operations first, as they are the most complex.
-- [ ] Extract source operations.
-- [ ] Extract invitation operations.
-- [ ] Extract household and membership operations.
-- [ ] Update the composition root to construct and inject the new adapters explicitly.
-- [ ] Preserve shared database transactions for multi-step operations. Use a transaction-scoped
+- [x] Extract transaction queries and recurrence operations first, as they are the most complex.
+- [x] Extract source operations.
+- [x] Extract invitation operations.
+- [x] Extract household and membership operations.
+- [x] Update the composition root to construct and inject the new adapters explicitly.
+- [x] Preserve shared database transactions for multi-step operations. Use a transaction-scoped
       unit-of-work or pass a Drizzle transaction explicitly where atomicity crosses repositories.
-- [ ] Remove the original broad repository only after all consumers have moved.
-- [ ] Split `infrastructure/database/schema.ts` into identity, files, households, and transactions
+- [x] Remove the original broad repository only after all consumers have moved.
+- [x] Split `infrastructure/database/schema.ts` into identity, files, households, and transactions
       modules, re-exporting them through one `schema/index.ts` for Drizzle configuration.
+
+### Phase 2 result (2026-10-16)
+
+- Finance persistence is split into household/membership, invitation, source, and transaction
+  adapters with matching narrow interfaces. `FinanceService` receives the four capabilities
+  explicitly, while its public behavior and HTTP contracts remain unchanged.
+- Source normalization, integer-cent conversion, recurrence-date alignment, projection averaging,
+  and month calculations are pure functions with focused unit coverage.
+- Multi-step writes retain explicit Drizzle transaction boundaries. An integration test forces the
+  invitation update to fail after membership insertion and verifies that both changes roll back.
+- Database declarations are split into identity, files, households, and transactions modules and
+  re-exported from one index. Drizzle generation reports no schema changes or new migration.
 
 ### Constraints
 

@@ -19,8 +19,14 @@ import { generateSessionToken, hashSessionToken } from '../../infrastructure/sec
 import { AuthorizationError, ConflictError, NotFoundError } from '../../shared/errors/index.js';
 import type { AutomatedEmailService } from '../email/automated-email.service.js';
 
-import type { FinanceRepository } from './finance.repository.js';
+import type {
+  HouseholdRepository,
+  InvitationRepository,
+  SourceRepository,
+  TransactionRepository,
+} from './finance.repository.js';
 import type { HouseholdRecord } from './finance.types.js';
+import { fromCents, toCents } from './rules/money.js';
 
 function serializeHousehold(household: HouseholdRecord | null) {
   if (!household) throw new NotFoundError('No household was found.');
@@ -31,28 +37,24 @@ function serializeHousehold(household: HouseholdRecord | null) {
   };
 }
 
-function toCents(amount: string): number {
-  const [whole, fraction = ''] = amount.split('.');
-  return Number(whole) * 100 + Number(fraction.padEnd(2, '0').slice(0, 2));
-}
-
-function fromCents(amount: number): string {
-  return (amount / 100).toFixed(2);
-}
-
 export class FinanceService {
   constructor(
-    private readonly financeRepository: FinanceRepository,
+    private readonly repositories: {
+      households: HouseholdRepository;
+      invitations: InvitationRepository;
+      sources: SourceRepository;
+      transactions: TransactionRepository;
+    },
     private readonly emailService: AutomatedEmailService,
     private readonly logger: Logger,
   ) {}
 
   async createHousehold(userId: string, input: CreateHouseholdRequest) {
-    return serializeHousehold(await this.financeRepository.createHousehold(userId, input));
+    return serializeHousehold(await this.repositories.households.createHousehold(userId, input));
   }
 
   async listHouseholds(userId: string) {
-    const households = await this.financeRepository.listHouseholds(userId);
+    const households = await this.repositories.households.listHouseholds(userId);
     return households.map((household) => ({
       ...serializeHousehold(household),
       isPrimary: household.isPrimary,
@@ -64,7 +66,7 @@ export class FinanceService {
   }
 
   async getPrimaryMonth(userId: string, month: string): Promise<HouseholdMonthResponse> {
-    const household = await this.financeRepository.findPrimaryHousehold(userId);
+    const household = await this.repositories.households.findPrimaryHousehold(userId);
     if (!household) throw new NotFoundError('You do not have an active household yet.');
     return this.getHouseholdMonth(household.id, userId, month);
   }
@@ -74,16 +76,16 @@ export class FinanceService {
     userId: string,
     month: string,
   ): Promise<HouseholdMonthResponse> {
-    if (!(await this.financeRepository.isMember(householdId, userId))) {
+    if (!(await this.repositories.households.isMember(householdId, userId))) {
       throw new AuthorizationError('You are not a member of this household.');
     }
-    const household = await this.financeRepository.findHousehold(householdId);
+    const household = await this.repositories.households.findHousehold(householdId);
     if (!household) throw new NotFoundError('Household was not found.');
 
     const [transactions, members, sources] = await Promise.all([
-      this.financeRepository.getMonth(householdId, month),
-      this.financeRepository.getMembers(householdId),
-      this.financeRepository.getSources(householdId),
+      this.repositories.transactions.getMonth(householdId, month),
+      this.repositories.households.getMembers(householdId),
+      this.repositories.sources.getSources(householdId),
     ]);
     const currentMember = members.find((member) => member.id === userId);
     const orderedMembers = currentMember
@@ -115,16 +117,16 @@ export class FinanceService {
     requestingUserId: string,
     input: CreateHouseholdTransactionRequest,
   ) {
-    if (!(await this.financeRepository.isMember(householdId, requestingUserId))) {
+    if (!(await this.repositories.households.isMember(householdId, requestingUserId))) {
       throw new AuthorizationError('You are not a member of this household.');
     }
-    if (!(await this.financeRepository.isMember(householdId, input.userId))) {
+    if (!(await this.repositories.households.isMember(householdId, input.userId))) {
       throw new AuthorizationError('The selected user is not a member of this household.');
     }
-    if (!(await this.financeRepository.getSource(householdId, input.sourceId))) {
+    if (!(await this.repositories.sources.getSource(householdId, input.sourceId))) {
       throw new NotFoundError('The selected source was not found in this household.');
     }
-    return this.financeRepository.createTransaction(householdId, input);
+    return this.repositories.transactions.createTransaction(householdId, input);
   }
 
   async createSource(
@@ -132,19 +134,19 @@ export class FinanceService {
     requestingUserId: string,
     input: CreateHouseholdSourceRequest,
   ) {
-    if (!(await this.financeRepository.isMember(householdId, requestingUserId))) {
+    if (!(await this.repositories.households.isMember(householdId, requestingUserId))) {
       throw new AuthorizationError('You are not a member of this household.');
     }
-    const source = await this.financeRepository.createSource(householdId, input);
+    const source = await this.repositories.sources.createSource(householdId, input);
     if (!source) throw new ConflictError('A source with this display name already exists.');
     return source;
   }
 
   async listSources(householdId: string, requestingUserId: string) {
-    if (!(await this.financeRepository.isMember(householdId, requestingUserId))) {
+    if (!(await this.repositories.households.isMember(householdId, requestingUserId))) {
       throw new AuthorizationError('You are not a member of this household.');
     }
-    return this.financeRepository.getSources(householdId);
+    return this.repositories.sources.getSources(householdId);
   }
 
   async updateSource(
@@ -153,10 +155,10 @@ export class FinanceService {
     requestingUserId: string,
     input: UpdateHouseholdSourceRequest,
   ) {
-    if (!(await this.financeRepository.isMember(householdId, requestingUserId))) {
+    if (!(await this.repositories.households.isMember(householdId, requestingUserId))) {
       throw new AuthorizationError('You are not a member of this household.');
     }
-    const source = await this.financeRepository.updateSource(householdId, sourceId, input);
+    const source = await this.repositories.sources.updateSource(householdId, sourceId, input);
     if (source === 'not_found') throw new NotFoundError('Source was not found.');
     if (source === 'conflict') {
       throw new ConflictError('A source with this display name already exists.');
@@ -169,10 +171,10 @@ export class FinanceService {
     sourceId: string,
     requestingUserId: string,
   ): Promise<void> {
-    if (!(await this.financeRepository.isMember(householdId, requestingUserId))) {
+    if (!(await this.repositories.households.isMember(householdId, requestingUserId))) {
       throw new AuthorizationError('You are not a member of this household.');
     }
-    const result = await this.financeRepository.deleteSource(householdId, sourceId);
+    const result = await this.repositories.sources.deleteSource(householdId, sourceId);
     if (result === 'not_found') throw new NotFoundError('Source was not found.');
     if (result === 'in_use') {
       throw new ConflictError('Sources used by transactions cannot be deleted.');
@@ -188,13 +190,13 @@ export class FinanceService {
       throw new ConflictError('Choose two different households.');
     }
     const [canReadSource, canWriteTarget] = await Promise.all([
-      this.financeRepository.isMember(sourceHouseholdId, requestingUserId),
-      this.financeRepository.isMember(input.targetHouseholdId, requestingUserId),
+      this.repositories.households.isMember(sourceHouseholdId, requestingUserId),
+      this.repositories.households.isMember(input.targetHouseholdId, requestingUserId),
     ]);
     if (!canReadSource || !canWriteTarget) {
       throw new AuthorizationError('You must be a member of both households.');
     }
-    const result = await this.financeRepository.copySources(
+    const result = await this.repositories.sources.copySources(
       sourceHouseholdId,
       input.targetHouseholdId,
       input.sourceIds,
@@ -209,16 +211,16 @@ export class FinanceService {
     requestingUserId: string,
     input: UpdateHouseholdTransactionRequest,
   ) {
-    if (!(await this.financeRepository.isMember(householdId, requestingUserId))) {
+    if (!(await this.repositories.households.isMember(householdId, requestingUserId))) {
       throw new AuthorizationError('You are not a member of this household.');
     }
-    if (!(await this.financeRepository.isMember(householdId, input.transaction.userId))) {
+    if (!(await this.repositories.households.isMember(householdId, input.transaction.userId))) {
       throw new AuthorizationError('The selected user is not a member of this household.');
     }
-    if (!(await this.financeRepository.getSource(householdId, input.transaction.sourceId))) {
+    if (!(await this.repositories.sources.getSource(householdId, input.transaction.sourceId))) {
       throw new NotFoundError('The selected source was not found in this household.');
     }
-    const transaction = await this.financeRepository.updateTransaction(
+    const transaction = await this.repositories.transactions.updateTransaction(
       householdId,
       transactionId,
       input,
@@ -233,26 +235,26 @@ export class FinanceService {
     requestingUserId: string,
     scope: TransactionEditScope,
   ): Promise<void> {
-    if (!(await this.financeRepository.isMember(householdId, requestingUserId))) {
+    if (!(await this.repositories.households.isMember(householdId, requestingUserId))) {
       throw new AuthorizationError('You are not a member of this household.');
     }
-    if (!(await this.financeRepository.removeTransaction(householdId, transactionId, scope))) {
+    if (!(await this.repositories.transactions.removeTransaction(householdId, transactionId, scope))) {
       throw new NotFoundError('Transaction was not found.');
     }
   }
 
   async updateHousehold(householdId: string, userId: string, input: UpdateHouseholdRequest) {
-    if (!(await this.financeRepository.isMember(householdId, userId))) {
+    if (!(await this.repositories.households.isMember(householdId, userId))) {
       throw new AuthorizationError('You are not a member of this household.');
     }
-    return serializeHousehold(await this.financeRepository.updateHousehold(householdId, input));
+    return serializeHousehold(await this.repositories.households.updateHousehold(householdId, input));
   }
 
   async setPrimaryHousehold(householdId: string, userId: string): Promise<void> {
-    if (!(await this.financeRepository.isMember(householdId, userId))) {
+    if (!(await this.repositories.households.isMember(householdId, userId))) {
       throw new AuthorizationError('You are not a member of this household.');
     }
-    await this.financeRepository.setPrimaryHousehold(householdId, userId);
+    await this.repositories.households.setPrimaryHousehold(householdId, userId);
   }
 
   async removeMember(
@@ -260,7 +262,7 @@ export class FinanceService {
     memberId: string,
     requestingUserId: string,
   ): Promise<void> {
-    const household = await this.financeRepository.findHousehold(householdId);
+    const household = await this.repositories.households.findHousehold(householdId);
     if (!household) throw new NotFoundError('Household was not found.');
     if (household.ownerId !== requestingUserId) {
       throw new AuthorizationError('Only the household owner can remove members.');
@@ -268,20 +270,20 @@ export class FinanceService {
     if (memberId === household.ownerId) {
       throw new ConflictError('The owner must leave the household and transfer ownership.');
     }
-    if (!(await this.financeRepository.removeMember(householdId, memberId))) {
+    if (!(await this.repositories.households.removeMember(householdId, memberId))) {
       throw new NotFoundError('Household member was not found.');
     }
   }
 
   async leaveHousehold(householdId: string, userId: string, newOwnerId?: string): Promise<void> {
-    if (!(await this.financeRepository.isMember(householdId, userId))) {
+    if (!(await this.repositories.households.isMember(householdId, userId))) {
       throw new AuthorizationError('You are not a member of this household.');
     }
-    const household = await this.financeRepository.findHousehold(householdId);
+    const household = await this.repositories.households.findHousehold(householdId);
     if (!household) throw new NotFoundError('Household was not found.');
 
     if (household.ownerId === userId) {
-      const members = await this.financeRepository.getMembers(householdId);
+      const members = await this.repositories.households.getMembers(householdId);
       if (members.length === 1) {
         throw new ConflictError('You cannot leave a household with no other members.');
       }
@@ -290,7 +292,7 @@ export class FinanceService {
       }
       if (
         newOwnerId === userId ||
-        !(await this.financeRepository.isMember(householdId, newOwnerId))
+        !(await this.repositories.households.isMember(householdId, newOwnerId))
       ) {
         throw new ConflictError('The new owner must be another household member.');
       }
@@ -298,18 +300,18 @@ export class FinanceService {
       throw new ConflictError('Only the current owner can transfer ownership.');
     }
 
-    if (!(await this.financeRepository.leaveHousehold(householdId, userId, newOwnerId))) {
+    if (!(await this.repositories.households.leaveHousehold(householdId, userId, newOwnerId))) {
       throw new NotFoundError('Household member was not found.');
     }
   }
 
   async deleteHousehold(householdId: string, userId: string): Promise<void> {
-    const household = await this.financeRepository.findHousehold(householdId);
+    const household = await this.repositories.households.findHousehold(householdId);
     if (!household) throw new NotFoundError('Household was not found.');
     if (household.ownerId !== userId) {
       throw new AuthorizationError('Only the household owner can delete it.');
     }
-    if (!(await this.financeRepository.deleteHousehold(householdId))) {
+    if (!(await this.repositories.households.deleteHousehold(householdId))) {
       throw new NotFoundError('Household was not found.');
     }
   }
@@ -319,13 +321,13 @@ export class FinanceService {
     invitingUser: PublicUser,
     input: CreateHouseholdInvitationRequest,
   ) {
-    if (!(await this.financeRepository.isMember(householdId, invitingUser.id))) {
+    if (!(await this.repositories.households.isMember(householdId, invitingUser.id))) {
       throw new AuthorizationError('You are not a member of this household.');
     }
     if (input.mode === 'email' && !invitingUser.emailVerified) {
       throw new AuthorizationError('Verify your email address before sending invitations.');
     }
-    const household = await this.financeRepository.findHousehold(householdId);
+    const household = await this.repositories.households.findHousehold(householdId);
     if (!household) throw new NotFoundError('Household was not found.');
 
     const expiresAt = new Date(Date.now() + Constants.HOUSEHOLD_INVITATION_TTL_MS);
@@ -338,7 +340,7 @@ export class FinanceService {
 
     if (input.mode === 'link') {
       const token = generateSessionToken();
-      await this.financeRepository.createInvitation(
+      await this.repositories.invitations.createInvitation(
         householdId,
         invitingUser.id,
         hashSessionToken(token),
@@ -359,7 +361,7 @@ export class FinanceService {
         const tokenHash = hashSessionToken(token);
 
         try {
-          await this.financeRepository.createInvitation(
+          await this.repositories.invitations.createInvitation(
             householdId,
             invitingUser.id,
             tokenHash,
@@ -374,7 +376,7 @@ export class FinanceService {
           });
           return { recipient, sent: true } as const;
         } catch (error) {
-          await this.financeRepository.deleteInvitation(tokenHash).catch(() => undefined);
+          await this.repositories.invitations.deleteInvitation(tokenHash).catch(() => undefined);
           this.logger.error(
             { err: error, householdId },
             'Failed to send a household invitation email',
@@ -394,7 +396,7 @@ export class FinanceService {
   }
 
   async getInvitation(token: string) {
-    const invitation = await this.financeRepository.findInvitation(hashSessionToken(token));
+    const invitation = await this.repositories.invitations.findInvitation(hashSessionToken(token));
     if (!invitation || invitation.acceptedAt) {
       throw new NotFoundError('This household invitation is invalid or has already been used.');
     }
@@ -413,7 +415,7 @@ export class FinanceService {
   }
 
   async acceptInvitation(token: string, userId: string) {
-    const result = await this.financeRepository.acceptInvitation(
+    const result = await this.repositories.invitations.acceptInvitation(
       hashSessionToken(token),
       userId,
       new Date(),

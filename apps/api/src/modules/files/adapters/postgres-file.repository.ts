@@ -1,7 +1,7 @@
 import { desc, eq } from 'drizzle-orm';
 
 import type { Database } from '../../../infrastructure/database/client.js';
-import { files } from '../../../infrastructure/database/schema.js';
+import { files } from '../../../infrastructure/database/schema/index.js';
 import type { FileRepository } from '../file.repository.js';
 import type { CreateFileData, FileRecord } from '../file.types.js';
 
