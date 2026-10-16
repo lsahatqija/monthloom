@@ -6,7 +6,8 @@ traffic share one origin: Caddy sends `/api/*` and `/health/*` to the API and al
 Next.js. PostgreSQL, the API, and Next.js have no published host ports.
 
 This is a sound small-production topology, but the server remains a single point of failure.
-Database and upload backups must be copied to separate, encrypted storage.
+PostgreSQL is required to live on a dm-crypt/LUKS-backed filesystem. Database and upload backups
+are encrypted independently and should be copied to separate off-server storage.
 
 ## 1. Decide the production values
 
@@ -21,6 +22,8 @@ Before changing DNS, choose:
   outbound email. Account verification and password-reset messages are not delivered in `log`
   mode.
 - An off-server backup destination and retention policy.
+- A dedicated block device or encrypted root filesystem for PostgreSQL, plus an age backup identity
+  whose private key can be kept away from the application server.
 
 ## 2. Secure the server
 
@@ -49,7 +52,52 @@ access; otherwise run Docker commands with `sudo`. Docker-published ports can by
 the external [Hetzner Cloud Firewall](https://docs.hetzner.com/cloud/firewalls/overview/) is the
 primary allowlist for this topology.
 
-## 3. Point GoDaddy DNS at Hetzner
+Install the host-side encryption and backup tools:
+
+```bash
+sudo apt-get update
+sudo apt-get install age cryptsetup rclone
+```
+
+## 3. Provision encrypted PostgreSQL storage
+
+`compose.prod.yml` refuses to start PostgreSQL unless `ENCRYPTED_STORAGE_ROOT` is backed by a block
+device chain containing a dm-crypt `crypt` layer. This protects data on powered-off disks and
+storage snapshots. It does not protect data while the filesystem is unlocked or the host is
+compromised.
+
+The exact device name and remote-unlock design depend on the server. Identify the intended empty
+data device by its stable `/dev/disk/by-id/...` path. Do not guess: `luksFormat` permanently erases
+the selected device. Have a server snapshot and confirm the device is not the root/boot device,
+mounted, or holding any needed data.
+
+The following is an operator-reviewed example, not a copy/paste instruction. Replace
+`/dev/disk/by-id/DEVICE` only after verifying it with `lsblk`, `findmnt`, and the hosting console:
+
+```bash
+sudo cryptsetup luksFormat --type luks2 /dev/disk/by-id/DEVICE
+sudo cryptsetup open /dev/disk/by-id/DEVICE monthloom-data
+sudo mkfs.ext4 /dev/mapper/monthloom-data
+sudo install -d -m 0750 /srv/monthloom-encrypted
+sudo mount /dev/mapper/monthloom-data /srv/monthloom-encrypted
+sudo install -d -m 0700 /srv/monthloom-encrypted/postgres
+```
+
+Configure `/etc/crypttab` and `/etc/fstab` according to the chosen unlock model, then test a reboot
+before launch. Manual console unlock keeps the LUKS secret off the server but requires an operator
+after reboot. Storing an unlock key on an unencrypted root disk weakens protection against a full
+server snapshot. Escrow the LUKS recovery material outside the server and document who can unlock
+it. If the root filesystem is already LUKS encrypted, `ENCRYPTED_STORAGE_ROOT` may be a directory on
+that filesystem; the preflight follows parent block devices when verifying encryption.
+
+After `.env.production` exists, verify the mount explicitly:
+
+```bash
+sudo ENV_FILE=/opt/monthloom/.env.production \
+  bash /opt/monthloom/infrastructure/production/verify-encrypted-storage.sh
+```
+
+## 4. Point GoDaddy DNS at Hetzner
 
 Create a [GoDaddy `A` record](https://www.godaddy.com/help/add-or-edit-an-a-record-42546) for the
 chosen host pointing to the server's public IPv4 address. If the server has working public IPv6,
@@ -67,7 +115,7 @@ dig +short AAAA app.example.com
 Ports 80 and 443 must reach this server before
 [Caddy can issue the certificate](https://caddyserver.com/docs/quick-starts/https).
 
-## 4. Put the deployment files on the server
+## 5. Put the deployment files on the server
 
 Docker Hub contains the built API and web application images only. It does **not** contain the
 Compose file, Caddy configuration, `.env.production`, backup script, update script, or systemd
@@ -78,7 +126,8 @@ units. Those files must exist on the Ubuntu server.
 | GitHub                         | Source code and deployment files                                    | Updated by normal Git pushes                                  |
 | Docker Hub                     | Built `api-*` and `web-*` images                                    | Updated by GitHub Actions                                     |
 | `/opt/monthloom` on the server | Compose, Caddy, scripts, systemd source units and `.env.production` | Initially cloned; deployment-file changes are pulled manually |
-| Docker volumes on the server   | PostgreSQL data, uploads and Caddy certificates                     | Changed by the running application                            |
+| Encrypted host filesystem      | PostgreSQL data                                                     | Changed by PostgreSQL; must be unlocked before deployment     |
+| Docker volumes on the server   | Uploads and Caddy certificates                                      | Changed by the running application                            |
 
 The recommended approach is to keep a Git checkout at `/opt/monthloom`. Run the following commands
 **on the Ubuntu server**, not on the development computer:
@@ -111,6 +160,25 @@ systemd units are deliberately applied manually.
 Generate a session secret with the `openssl` command above, then edit `.env.production` and put its
 output in `SESSION_SECRET`.
 
+Generate the age identity on a separate trusted administrator machine, not on the application
+server:
+
+```bash
+umask 077
+age-keygen -o monthloom-backup.agekey
+age-keygen -y monthloom-backup.agekey
+```
+
+Put only the printed `age1...` public recipient in `BACKUP_AGE_RECIPIENT`. Store the private
+identity in two controlled recovery locations and test both copies. Do not put it in the repository,
+`.env.production`, routine backup directory, or application-host secret store. During a recovery it
+can be placed temporarily on `/run`, which is normally memory-backed.
+
+Configure an rclone remote backed by a private, versioned/immutable off-server bucket and put its
+path in `BACKUP_REMOTE`, for example `monthloom-backups:production`. Give routine backup credentials
+write-only or append-only access where the provider supports it; use separate recovery credentials
+for reads. Protect rclone configuration with mode `0600`.
+
 Edit `.env.production`, replacing every placeholder. `POSTGRES_PASSWORD` and the password inside
 `DATABASE_URL` must represent the same value. URL-encode reserved characters in `DATABASE_URL`.
 Never commit or copy this file into logs or tickets.
@@ -118,9 +186,23 @@ Never commit or copy this file into logs or tickets.
 If Docker Hub images are private, run `sudo docker login` using a read-only access token because
 the automatic update service runs as root. Confirm the selected images exist before proceeding.
 
-## 5. First deployment
+## 6. First deployment
 
-Run:
+For an existing deployment that still uses the legacy `monthloom-prod_postgres_data` Docker volume,
+do not run the normal deploy first. With the encrypted mount and backup recipient/remote configured,
+run the one-time migration:
+
+```bash
+cd /opt/monthloom
+sudo bash ./infrastructure/production/migrate-postgres-to-encrypted-storage.sh
+```
+
+The migration creates an encrypted logical backup, stops API/web/PostgreSQL, copies the physical
+PostgreSQL directory without a plaintext intermediate, starts the new bind-mounted configuration,
+and retains the legacy volume for manual rollback. Remove that old volume only after a successful
+backup restore drill and an explicit retention decision.
+
+For a new installation, run:
 
 ```bash
 cd /opt/monthloom
@@ -169,31 +251,62 @@ docker compose --env-file .env.production -f compose.prod.yml exec api \
 Both values must correspond exactly to the browser origin, including `https` and excluding a
 trailing slash.
 
-## 6. Backups before launch
+## 7. Encrypted backups and recovery
 
-The included helper creates a compressed logical PostgreSQL dump, a compressed upload archive,
-and checksums:
-
-```bash
-sudo BACKUP_DIR=/var/backups/monthloom ./infrastructure/production/backup.sh
-```
-
-Schedule it with a systemd timer or cron, then copy each completed directory to encrypted storage
-outside this server. Restrict backup directory permissions. Define retention, alert on failures,
-and perform a restore drill before considering backups operational. Back up `.env.production`
-securely as a separate secret; do not place it in the data archive.
-
-Example restore drill on an isolated host:
+The helper streams a logical PostgreSQL dump and upload archive directly into authenticated age
+encryption. It writes into a private partial directory, generates a manifest and checksums, then
+atomically marks the backup complete. No plaintext archive is written. If `BACKUP_REMOTE` is set,
+the completed encrypted backup is copied off-server with rclone:
 
 ```bash
-gunzip -c postgres.sql.gz | docker compose --env-file .env.production -f compose.prod.yml exec -T postgres \
-  sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" "$POSTGRES_DB"'
+sudo BACKUP_DIR=/var/backups/monthloom bash ./infrastructure/production/backup.sh
 ```
 
-Uploads can be restored by extracting `uploads.tar.gz` into the `monthloom-prod_uploads_data`
-volume while the API is stopped. Never test a restore over the live volumes.
+Install the daily systemd timer and immediately test one run:
 
-## 7. Automatic releases and rollback
+```bash
+cd /opt/monthloom
+sudo bash ./infrastructure/production/install-backup-timer.sh
+sudo systemctl start monthloom-backup.service
+systemctl status monthloom-backup.service --no-pager
+journalctl -u monthloom-backup.service --since today
+```
+
+Configure remote retention/object locking separately, alert on timer failures and disk capacity,
+and back up `.env.production` securely as a separate secret. It is deliberately not included in the
+data archive. A local encrypted backup alone is insufficient if the server is lost.
+
+The restore command accepts a local backup directory or a timestamp ID. If the ID is not local, it
+fetches it from `BACKUP_REMOTE`. It verifies checksums, authenticates/decompresses both ciphertexts,
+imports PostgreSQL into a temporary database, swaps it into service, and waits for application
+health. If health checks fail, it swaps the previous database back. It does not automatically
+replace uploads; that separate destructive recovery remains an operator-reviewed action.
+
+Use `--verify-only` to fetch and fully authenticate/decompress a recovery point without changing
+PostgreSQL. This is useful for frequent automated integrity checks, but it is not a substitute for
+a real restore drill.
+
+Copy the recovery identity temporarily to the memory-backed `/run` filesystem and restore:
+
+```bash
+sudo install -m 0600 /secure/removable-media/monthloom-backup.agekey \
+  /run/monthloom-backup.agekey
+sudo BACKUP_AGE_IDENTITY_FILE=/run/monthloom-backup.agekey bash \
+  ./infrastructure/production/restore.sh 20261016T020000Z
+sudo rm -f /run/monthloom-backup.agekey
+```
+
+For total loss of the live database directory, provision/unlock the encrypted mount and start with
+an empty `postgres` directory; Compose initializes PostgreSQL and the same restore command loads the
+selected backup. If the old directory is corrupt rather than absent, stop the stack and move it to
+a separately named directory on the encrypted filesystem for forensic/rollback purposes before
+creating the empty directory. Never delete or overwrite the only copy.
+
+Perform the first restore drill on an isolated replacement host, verify record counts and recent
+transactions, test authentication and household isolation, and record recovery time and backup age.
+Repeat at least quarterly and after changing PostgreSQL, backup, encryption, or storage tooling.
+
+## 8. Automatic releases and rollback
 
 Set `IMAGE_TAG=latest` in `.env.production`. Once the first deployment is healthy, install the
 systemd timer:
@@ -257,9 +370,10 @@ docker system df
 Do not run `docker compose down -v`: `-v` deletes the named database, upload, and certificate
 volumes. Do not prune volumes on the production host.
 
-## 8. Production follow-ups
+## 9. Production follow-ups
 
 Before storing irreplaceable data, add external uptime checks for `/health/ready`, centralized log
 shipping or at least disk/journal monitoring, disk-space alerts, and tested off-server backups.
 For higher availability, move PostgreSQL and uploaded files to managed services/object storage;
-the current local volumes tie recovery and uptime to this single CX23.
+the current local storage ties recovery and uptime to this single CX23. LUKS and age encryption
+protect data at rest; they do not protect an unlocked server from an application or root compromise.

@@ -12,6 +12,8 @@ if [[ ! -f "$env_file" ]]; then
   exit 1
 fi
 
+ENV_FILE="$env_file" bash "$PWD/infrastructure/production/verify-encrypted-storage.sh"
+
 exec 9>"$lock_file"
 flock 9
 

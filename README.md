@@ -173,7 +173,7 @@ The default Compose configuration is intended for local use. A hardened single-s
 stack and step-by-step runbook for Ubuntu on Hetzner are provided in
 [`docs/deployment-hetzner.md`](docs/deployment-hetzner.md). Also review
 [`docs/production-concerns.md`](docs/production-concerns.md), especially the remaining work around
-off-server backups, durable object storage, observability, and upload scanning.
+backup retention and recovery drills, durable object storage, observability, and upload scanning.
 
 ## License
 

@@ -16,6 +16,8 @@ if [[ ! -f "$env_file" ]]; then
   exit 1
 fi
 
+ENV_FILE="$env_file" bash "$repo_root/infrastructure/production/verify-encrypted-storage.sh"
+
 exec 9>"$lock_file"
 if ! flock -n 9; then
   echo "Another Monthloom deployment or update is already running; skipping this poll."
@@ -83,7 +85,7 @@ if [[ -n "$running_api_id" && -n "$running_web_id" ]]; then
   docker image tag "$running_web_id" lsahatqija/monthloom:web-rollback
 
   ENV_FILE="$env_file" COMPOSE_FILE="$compose_file" BACKUP_DIR="$backup_root" \
-    "$repo_root/infrastructure/production/backup.sh"
+    bash "$repo_root/infrastructure/production/backup.sh"
 else
   echo "No complete running application pair found; skipping the pre-deployment backup."
 fi

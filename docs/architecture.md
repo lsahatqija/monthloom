@@ -473,8 +473,9 @@ dependents. `API_INTERNAL_URL` lets the Next.js server address the API by its co
 while `NEXT_PUBLIC_API_URL` must be reachable by the visitor's browser.
 
 Structured application and request logs go through Pino. Request IDs connect HTTP responses with
-warning/error records. Metrics, distributed traces, hosted error reporting, and backup automation
-are not currently included.
+warning/error records. The production tooling includes encrypted scheduled backups and staged
+database recovery. Metrics, distributed traces, and hosted error reporting are not currently
+included.
 
 ## 14. Testing and production boundaries
 
@@ -487,7 +488,8 @@ areas for future automated coverage.
 Before production deployment, the implementation still requires environment-specific work:
 
 - terminate HTTPS and enable secure session cookies;
-- use managed PostgreSQL with backup and recovery procedures;
+- use the encrypted local PostgreSQL and recovery procedure, or managed PostgreSQL when availability
+  and key-management requirements justify it;
 - replace local file storage with durable object storage for horizontal API scaling;
 - provide production secret management;
 - authenticate the sending domain (SPF, DKIM, and DMARC), configure Resend delivery, and monitor

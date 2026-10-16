@@ -63,10 +63,11 @@ secret. Keep it out of `.env.production`; production delivery only receives `RES
 
 ## Production durability
 
-`postgres_data`, `uploads_data`, `caddy_data`, and `caddy_config` are named Docker volumes. The
-first two contain irreplaceable application state and must be backed up off-host together: database
-records can reference uploaded files, so restoring only one can leave inconsistent state. Never run
-`docker compose down -v` or prune volumes on the production host. The single-server layout is not
-highly available; before storing irreplaceable data, configure tested off-host backups, restore
-drills, disk alerts, and external `/health/ready` monitoring. See the deployment runbook for the
-backup commands and migration rollback constraints.
+Production PostgreSQL is bind-mounted from `ENCRYPTED_STORAGE_ROOT/postgres`; deployment fails if
+its block-device chain has no dm-crypt layer. `uploads_data`, `caddy_data`, and `caddy_config` remain
+named Docker volumes. Database records can reference uploaded files, so encrypted backups capture
+PostgreSQL and uploads together. Never run `docker compose down -v` or prune volumes on the
+production host. The single-server layout is not highly available; before storing irreplaceable
+data, configure and test the encrypted off-host backup/restore system, disk alerts, and external
+`/health/ready` monitoring. See the deployment runbook for encryption provisioning, backup recovery,
+and legacy-volume migration.

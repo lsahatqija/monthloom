@@ -24,11 +24,28 @@ Severity reflects likely impact and exploitability for an internet-facing servic
 
 ### SEC-01 — High — Backups contain plaintext sensitive data
 
-**Evidence:** `infrastructure/production/backup.sh` writes a gzip-compressed PostgreSQL dump and uploads archive to `$BACKUP_DIR`. It creates restrictive local directory permissions and a checksum, but provides no encryption, retention policy, or automatic protected off-site transfer. The final message merely tells the operator to copy it to encrypted storage.
+**Status:** Remediation implemented in the repository; production provisioning, off-site storage,
+and a successful restore drill are still required before closure.
+
+**Original evidence:** before remediation, `infrastructure/production/backup.sh` wrote a
+gzip-compressed PostgreSQL dump and uploads archive directly to `$BACKUP_DIR`. It created
+restrictive local directory permissions and a checksum, but provided no encryption or protected
+off-site transfer.
 
 **Impact:** compromise of the host, backup volume, snapshot, or copied archive exposes all financial and identity data. A checksum detects accidental corruption but provides neither confidentiality nor authenticity against an attacker who can replace both archive and checksum.
 
-**Remediation:** stream backups through authenticated encryption before writing them (for example age with a recovery recipient whose private key is not on the host), upload directly to a private versioned bucket with server-side encryption and narrowly scoped credentials, define retention and deletion, and regularly test restoration. Avoid retaining an unencrypted intermediate. Document key recovery and rotation.
+**Implemented:** production PostgreSQL now binds only to a dm-crypt/LUKS-backed path that is checked
+before deploy/update/backup/restore. Backups stream PostgreSQL and upload data directly through
+authenticated `age` encryption without a plaintext archive, can be copied to an rclone remote,
+and have atomic completion markers and checksums. A daily systemd timer and database restore tool
+are included. Restore authenticates and decompresses the complete archive, imports into a temporary
+database, swaps it into service, health-checks the application, and rolls back on failure.
+
+**Remaining operational work:** provision and unlock the encrypted filesystem, generate and
+escrow the age identity away from the application host, configure a private versioned/immutable
+off-site remote with narrowly scoped credentials, set and enforce retention, install the timer,
+monitor failures/capacity, and pass a documented restore drill. Neither LUKS nor backup encryption
+protects an unlocked compromised host.
 
 ### SEC-02 — High — Security and financial actions lack an audit trail
 

@@ -1,0 +1,15 @@
+[Unit]
+Description=Create an encrypted Monthloom database and upload backup
+Documentation=file:/opt/monthloom/docs/deployment-hetzner.md
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+ConditionPathExists=/opt/monthloom/.env.production
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/monthloom
+Environment=BACKUP_DIR=/var/backups/monthloom
+ExecStart=/opt/monthloom/infrastructure/production/backup.sh
+TimeoutStartSec=2h
+Nice=10

@@ -123,7 +123,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
       POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env.production}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # Production PostgreSQL data must live on a dm-crypt/LUKS-backed filesystem.
+      # deploy.sh verifies the backing block-device chain before Compose starts.
+      - type: bind
+        source: ${ENCRYPTED_STORAGE_ROOT:?Set ENCRYPTED_STORAGE_ROOT in .env.production}/postgres
+        target: /var/lib/postgresql/data
     networks:
       - backend
     logging: *default-logging
@@ -140,7 +144,6 @@ networks:
     internal: true
 
 volumes:
-  postgres_data:
   uploads_data:
   caddy_data:
   caddy_config:

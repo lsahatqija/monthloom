@@ -20,6 +20,7 @@ fi
 
 chmod 0755 "$repo_root/infrastructure/production/update.sh"
 chmod 0755 "$repo_root/infrastructure/production/backup.sh"
+chmod 0755 "$repo_root/infrastructure/production/verify-encrypted-storage.sh"
 install -m 0644 "$repo_root/infrastructure/production/systemd/monthloom-update.service" \
   /etc/systemd/system/monthloom-update.service
 install -m 0644 "$repo_root/infrastructure/production/systemd/monthloom-update.timer" \
