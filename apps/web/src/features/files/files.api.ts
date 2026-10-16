@@ -1,4 +1,4 @@
-import type { FileListResponse, FileMetadata } from '@template/contracts';
+import type { FileListResponse, FileMetadata } from '@monthloom/contracts';
 
 import { apiClient } from '../../lib/api/client';
 

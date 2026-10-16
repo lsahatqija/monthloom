@@ -6,7 +6,7 @@ import {
   passwordResetTokens,
   sessions,
   users,
-} from '../../../infrastructure/database/schema.js';
+} from '../../../infrastructure/database/schema/index.js';
 import type { SessionRepository } from '../auth.repository.js';
 import type {
   CreateEmailVerificationTokenData,

@@ -266,7 +266,7 @@ is not synchronized through the API.
 
 ## 7. Shared contracts and validation
 
-`@template/contracts` is the transport boundary between frontend and backend. It contains Zod
+`@monthloom/contracts` is the transport boundary between frontend and backend. It contains Zod
 schemas and inferred TypeScript types for requests, responses, public entities, pagination,
 errors, health checks, and shared enum-like constants. It intentionally excludes ORM rows,
 password hashes, session tokens, repositories, and services.
@@ -392,7 +392,10 @@ created or updated with `pnpm email:templates:sync`. Registration sends the welc
 single-use email verification link. Unverified users can request another verification email from
 profile settings; password recovery and email invitations remain unavailable until verification.
 Welcome delivery remains a non-critical side effect; a failure is logged but never invalidates the
-newly created account. Monthly-report composition is ready for its scheduler.
+newly created account. The monthly-balance template is intentionally retained but dormant:
+`AutomatedEmailService.sendMonthlyReport` is ready for a future scheduled monthly-report job. See
+the [runtime configuration guide](runtime-configuration.md) for the audited invocation status of
+all five templates.
 
 Template synchronization prefers the optional full-access `RESEND_ADMIN_KEY` and falls back to
 `RESEND_API_KEY`. The admin key is a provisioning credential and should not be configured in the
@@ -418,8 +421,11 @@ The major route groups are:
 | `/health`            | Liveness and readiness                                                                       |
 
 The generated OpenAPI 3.0 document is served at `/api/v1/openapi.json`. In development, Swagger
-UI is mounted at `/api/docs`. Route handlers and shared Zod schemas remain the authoritative
-implementation if the generated description and code ever differ.
+UI is mounted at `/api/docs`; the interactive UI is not exposed in production. Compact registrations
+live beside each API module and reuse the shared Zod transport schemas. A test compares every Express
+method/path declaration with the generated document, making undocumented or stale routes a CI failure.
+The contract is maintained for Monthloom clients, including possible future native or standalone
+frontends, but is not currently a third-party compatibility promise.
 
 ## 12. Security model
 

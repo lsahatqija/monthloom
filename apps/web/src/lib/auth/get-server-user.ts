@@ -1,4 +1,4 @@
-import type { PublicUser, MeResponse } from '@template/contracts';
+import type { PublicUser, MeResponse } from '@monthloom/contracts';
 import { cookies } from 'next/headers';
 
 

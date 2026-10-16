@@ -1,4 +1,4 @@
-import { Constants } from '@template/contracts';
+import { Constants } from '@monthloom/contracts';
 import {
   Apple,
   Baby,

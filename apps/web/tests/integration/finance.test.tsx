@@ -1,5 +1,5 @@
+import type { HouseholdTransaction } from '@monthloom/contracts';
 import { QueryClient } from '@tanstack/react-query';
-import type { HouseholdTransaction } from '@template/contracts';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -8,12 +8,17 @@ import { TransactionForm } from '../../src/features/finance/transaction-form';
 import { renderWithQuery } from '../render';
 
 const member = {
-  id: 'user',
+  id: '11111111-1111-4111-8111-111111111111',
   displayName: 'Person',
   profileImage: 'diamond-kilim' as const,
   desiredColor: 'indigo' as const,
 };
-const source = { id: 'source', displayName: 'Shop', key: 'shop', aliases: ['Shop'] };
+const source = {
+  id: '22222222-2222-4222-8222-222222222222',
+  displayName: 'Shop',
+  key: 'shop',
+  aliases: ['Shop'],
+};
 
 function renderForm(transaction?: HouseholdTransaction) {
   const client = new QueryClient({
@@ -83,7 +88,7 @@ describe('transaction form + query + HTTP client', () => {
     const { onClose, client } = renderForm();
     const invalidate = vi.spyOn(client, 'invalidateQueries');
     expect(screen.getByRole('button', { name: 'Add transaction' })).toBeDisabled();
-    await userEvent.selectOptions(screen.getByLabelText('Source'), 'source');
+    await userEvent.selectOptions(screen.getByLabelText('Source'), source.id);
     await userEvent.click(screen.getByRole('radio', { name: 'Income' }));
     await userEvent.type(screen.getByLabelText('Amount'), '12,34');
     await userEvent.click(screen.getByRole('button', { name: 'Add transaction' }));

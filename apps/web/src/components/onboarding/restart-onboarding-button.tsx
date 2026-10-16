@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '../ui';
+
 import { restartOnboarding } from './onboarding-tour';
 
 export function RestartOnboardingButton({ userId }: { userId: string }) {

@@ -1,4 +1,4 @@
-import type { ApiErrorCode } from '@template/contracts';
+import type { ApiErrorCode } from '@monthloom/contracts';
 
 /** Base class for all typed application errors, carrying an HTTP-mappable error code. */
 export abstract class AppError extends Error {

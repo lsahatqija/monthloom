@@ -1,4 +1,4 @@
-import { idSchema } from '@template/contracts';
+import { idSchema } from '@monthloom/contracts';
 import { z } from 'zod';
 
 

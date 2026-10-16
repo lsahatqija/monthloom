@@ -1,4 +1,4 @@
-import type { PublicUser } from '@template/contracts';
+import type { PublicUser } from '@monthloom/contracts';
 
 /** Augments Express's Request with fields attached by cross-cutting middleware. */
 declare global {

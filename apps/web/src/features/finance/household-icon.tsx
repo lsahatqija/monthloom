@@ -1,4 +1,4 @@
-import { Constants } from '@template/contracts';
+import { Constants } from '@monthloom/contracts';
 import {
   Building2,
   Caravan,

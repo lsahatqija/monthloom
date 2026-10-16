@@ -41,8 +41,8 @@ skips integration tests.
 | `pnpm test:coverage`                                    | Full suite and coverage checks/reports                                     |
 | `pnpm test:ci`                                          | Application/test type checks, full suite, coverage checks and JUnit report |
 
-Package commands also work: `pnpm --filter @template/api test auth`,
-`pnpm --filter @template/web test`, and `pnpm --filter @template/contracts test`.
+Package commands also work: `pnpm --filter @monthloom/api test auth`,
+`pnpm --filter @monthloom/web test`, and `pnpm --filter @monthloom/contracts test`.
 Append `-t "test name"` to select individual cases. Use `pnpm test:watch` for the entire suite
 (keep the test database running), or select a project to narrow the watch loop. No matching
 test files is an error, helping catch misspelled filters in automation.

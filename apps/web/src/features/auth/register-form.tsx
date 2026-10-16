@@ -1,8 +1,8 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Constants, registerRequestSchema, type RegisterRequest } from '@monthloom/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Constants, registerRequestSchema, type RegisterRequest } from '@template/contracts';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 

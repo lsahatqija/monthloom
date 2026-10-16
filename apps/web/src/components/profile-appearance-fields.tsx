@@ -4,7 +4,7 @@ import {
   Constants,
   type DesiredColor,
   type ProfileImage as ProfileImageValue,
-} from '@template/contracts';
+} from '@monthloom/contracts';
 import { type FocusEvent, useRef } from 'react';
 
 import { ProfileImage } from './profile-image';

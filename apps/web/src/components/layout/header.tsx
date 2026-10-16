@@ -1,6 +1,6 @@
 'use client';
 
-import type { PublicUser } from '@template/contracts';
+import type { PublicUser } from '@monthloom/contracts';
 import { CircleUserRound, Database, Download, House, Palette } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';

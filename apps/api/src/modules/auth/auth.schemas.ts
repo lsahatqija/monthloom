@@ -4,7 +4,7 @@ import {
   registerRequestSchema,
   resetPasswordRequestSchema,
   verifyEmailRequestSchema,
-} from '@template/contracts';
+} from '@monthloom/contracts';
 
 export {
   forgotPasswordRequestSchema,

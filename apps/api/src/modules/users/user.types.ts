@@ -1,4 +1,4 @@
-import type { DesiredColor, ProfileImage, UserRole } from '@template/contracts';
+import type { DesiredColor, ProfileImage, UserRole } from '@monthloom/contracts';
 
 /** Backend-internal user entity. Includes the password hash; never exposed to transport layer. */
 export interface User {

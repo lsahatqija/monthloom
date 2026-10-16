@@ -13,8 +13,8 @@ COPY apps/web ./apps/web
 ARG NEXT_PUBLIC_API_URL=
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @template/contracts run build
-RUN pnpm --filter @template/web run build
+RUN pnpm --filter @monthloom/contracts run build
+RUN pnpm --filter @monthloom/web run build
 
 FROM node:22-alpine AS runtime
 ARG VCS_REF=development

@@ -1,19 +1,22 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Constants,
+  createHouseholdTransactionRequestSchema,
   type CreateHouseholdTransactionRequest,
   type HouseholdMonthResponse,
   type HouseholdTransaction,
   type TransactionSeriesSelection,
-} from '@template/contracts';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+} from '@monthloom/contracts';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
 
 import { Alert, Button } from '../../components/ui/index';
-import { isApiClientError } from '../../lib/api/errors';
 import { useCurrentUser } from '../auth/use-current-user';
 
+import { financeErrorMessage } from './api/errors';
 import { createHouseholdTransaction, financeKeys, updateHouseholdTransaction } from './finance.api';
 import { FinancialIcon, financialIconLabel } from './financial-icon';
 import { SourceModal } from './source-modal';
@@ -60,38 +63,50 @@ export function TransactionForm({
   const colorPickerRef = useRef<HTMLDetailsElement>(null);
   const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
-  const [kind, setKind] = useState<CreateHouseholdTransactionRequest['kind']>(
-    transaction?.kind ?? 'expense',
-  );
-  const [type, setType] = useState<NonNullable<CreateHouseholdTransactionRequest['type']>>(
-    transaction?.type ?? 'other',
-  );
   const [availableSources, setAvailableSources] = useState(sources);
-  const [sourceId, setSourceId] = useState(transaction?.source.id ?? '');
   const [isAddingSource, setIsAddingSource] = useState(false);
-  const [icon, setIcon] = useState<CreateHouseholdTransactionRequest['icon']>(
-    transaction?.icon ?? 'receipt',
-  );
-  const [color, setColor] = useState(transaction?.color ?? COLOR_OPTIONS[0]!);
-  const [amount, setAmount] = useState(transaction?.amount ?? '');
-  const [date, setDate] = useState(transaction?.date ?? todayDate);
-  const [userId, setUserId] = useState(
-    transaction?.user.id ?? currentUser.data?.user?.id ?? members[0]?.id ?? '',
-  );
-  const [recurring, setRecurring] = useState(transaction?.recurring ?? false);
   const [expires, setExpires] = useState(Boolean(transaction?.expiresOn));
-  const [expiresOn, setExpiresOn] = useState(transaction?.expiresOn ?? '');
   const [selection, setSelection] = useState<TransactionSeriesSelection>({
     past: false,
     current: true,
     future: false,
   });
+  const {
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<CreateHouseholdTransactionRequest>({
+    resolver: zodResolver(createHouseholdTransactionRequestSchema),
+    defaultValues: {
+      kind: transaction?.kind ?? 'expense',
+      type: transaction?.type ?? 'other',
+      sourceId: transaction?.source.id ?? '',
+      icon: transaction?.icon ?? 'receipt',
+      color: transaction?.color ?? COLOR_OPTIONS[0]!,
+      amount: transaction?.amount ?? '',
+      date: transaction?.date ?? todayDate(),
+      userId: transaction?.user.id ?? currentUser.data?.user?.id ?? members[0]?.id ?? '',
+      recurring: transaction?.recurring ?? false,
+      expiresOn: transaction?.expiresOn ?? null,
+    },
+  });
+  const kind = watch('kind');
+  const type = watch('type') ?? 'other';
+  const sourceId = watch('sourceId');
+  const icon = watch('icon');
+  const color = watch('color');
+  const amount = watch('amount');
+  const date = watch('date');
+  const userId = watch('userId');
+  const recurring = watch('recurring');
+  const expiresOn = watch('expiresOn') ?? '';
 
   useEffect(() => {
     const currentUserId = currentUser.data?.user?.id;
     if (!transaction && currentUserId && members.some((member) => member.id === currentUserId))
-      setUserId(currentUserId);
-  }, [currentUser.data, members, transaction]);
+      setValue('userId', currentUserId);
+  }, [currentUser.data, members, setValue, transaction]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -134,21 +149,14 @@ export function TransactionForm({
     },
   });
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const submit = handleSubmit((input) =>
     mutation.mutate({
-      kind,
-      type: kind === 'expense' ? type : null,
-      date: date || todayDate(),
-      sourceId,
-      icon,
-      color,
-      amount,
-      userId,
-      recurring,
-      expiresOn: recurring && expires && expiresOn ? expiresOn : null,
-    });
-  };
+      ...input,
+      type: input.kind === 'expense' ? input.type : null,
+      date: input.date || todayDate(),
+      expiresOn: input.recurring && expires && input.expiresOn ? input.expiresOn : null,
+    }),
+  );
 
   if (isAddingSource) {
     return (
@@ -163,7 +171,7 @@ export function TransactionForm({
                 left.id.localeCompare(right.id),
             ),
           );
-          setSourceId(source.id);
+          setValue('sourceId', source.id);
           setIsAddingSource(false);
         }}
       />
@@ -216,8 +224,9 @@ export function TransactionForm({
                 value="expense"
                 checked={kind === 'expense'}
                 onChange={() => {
-                  setKind('expense');
-                  if (icon === 'banknote') setIcon('receipt');
+                  setValue('kind', 'expense');
+                  if (!type) setValue('type', 'other');
+                  if (icon === 'banknote') setValue('icon', 'receipt');
                 }}
               />
               Expense
@@ -229,8 +238,9 @@ export function TransactionForm({
                 value="income"
                 checked={kind === 'income'}
                 onChange={() => {
-                  setKind('income');
-                  if (icon === 'receipt') setIcon('banknote');
+                  setValue('kind', 'income');
+                  setValue('type', null);
+                  if (icon === 'receipt') setValue('icon', 'banknote');
                 }}
               />
               Income
@@ -273,7 +283,7 @@ export function TransactionForm({
                               checked={icon === option}
                               disabled={mutation.isPending}
                               onChange={() => {
-                                setIcon(option);
+                                setValue('icon', option);
                                 if (iconPickerRef.current) iconPickerRef.current.open = false;
                               }}
                             />
@@ -313,7 +323,7 @@ export function TransactionForm({
                             checked={color === option}
                             disabled={mutation.isPending}
                             onChange={() => {
-                              setColor(option);
+                              setValue('color', option);
                               if (colorPickerRef.current) colorPickerRef.current.open = false;
                             }}
                           />
@@ -326,7 +336,7 @@ export function TransactionForm({
                           value={color}
                           disabled={mutation.isPending}
                           onChange={(event) => {
-                            setColor(event.target.value);
+                            setValue('color', event.target.value);
                             if (colorPickerRef.current) colorPickerRef.current.open = false;
                           }}
                         />
@@ -344,7 +354,7 @@ export function TransactionForm({
                   value={userId}
                   required
                   disabled={mutation.isPending}
-                  onChange={(event) => setUserId(event.target.value)}
+                  onChange={(event) => setValue('userId', event.target.value)}
                 >
                   {members.map((member) => (
                     <option key={member.id} value={member.id}>
@@ -373,7 +383,7 @@ export function TransactionForm({
                     );
                     return;
                   }
-                  setSourceId(event.target.value);
+                  setValue('sourceId', event.target.value);
                 }}
               >
                 <option value="add-new-source">Add new source</option>
@@ -395,7 +405,8 @@ export function TransactionForm({
                 required
                 disabled={mutation.isPending || kind === 'income'}
                 onChange={(event) =>
-                  setType(
+                  setValue(
+                    'type',
                     event.target.value as NonNullable<CreateHouseholdTransactionRequest['type']>,
                   )
                 }
@@ -421,7 +432,7 @@ export function TransactionForm({
                 placeholder="0.00"
                 required
                 disabled={mutation.isPending}
-                onChange={(event) => setAmount(event.target.value.replace(',', '.'))}
+                onChange={(event) => setValue('amount', event.target.value.replace(',', '.'))}
               />
             </label>
 
@@ -433,7 +444,7 @@ export function TransactionForm({
                 type="date"
                 value={date}
                 disabled={mutation.isPending}
-                onChange={(event) => setDate(event.target.value)}
+                onChange={(event) => setValue('date', event.target.value)}
               />
             </label>
           </div>
@@ -451,7 +462,7 @@ export function TransactionForm({
                 disabled={mutation.isPending}
                 onChange={(event) => {
                   const isRecurring = event.target.checked;
-                  setRecurring(isRecurring);
+                  setValue('recurring', isRecurring);
                   if (isRecurring) {
                     window.dispatchEvent(
                       new CustomEvent('monthloom:onboarding', { detail: 'recurring-enabled' }),
@@ -486,7 +497,7 @@ export function TransactionForm({
                       value={expiresOn}
                       min={date || todayDate()}
                       disabled={mutation.isPending}
-                      onChange={(event) => setExpiresOn(event.target.value)}
+                      onChange={(event) => setValue('expiresOn', event.target.value)}
                     />
                   </label>
                 ) : null}
@@ -537,11 +548,13 @@ export function TransactionForm({
             </fieldset>
           ) : null}
 
+          {Object.keys(errors).length ? (
+            <Alert variant="error">Check the highlighted transaction fields and try again.</Alert>
+          ) : null}
+
           {mutation.isError ? (
             <Alert variant="error">
-              {isApiClientError(mutation.error)
-                ? mutation.error.message
-                : 'We could not save this transaction.'}
+              {financeErrorMessage(mutation.error, 'We could not save this transaction.')}
             </Alert>
           ) : null}
 

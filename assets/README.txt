@@ -1,10 +1,10 @@
-Monthloom asset pack — humanist option 4
+Monthloom source assets
 
-Transparent PNGs: icon-only, wordmark-only, horizontal and stacked logos.
-Light and dark/negative color variants; square, rounded-square and circular app icons.
-Icon sizes: 16, 24, 32, 48, 64, 96, 128, 180, 192, 256, 512, 1024 px.
-Wordmark and lockup widths: 256, 512, 1024, 2048 px. Multi-size ICO favicons included.
-App icons include safe padding; use square-192 and square-512 for PWA icons.
+The logos directory contains the editable SVG sources for the mark and horizontal/stacked
+lockups. Runtime-ready icons and logos live in apps/web/public. Generated size variants are not
+kept here; regenerate them from the SVG sources when the public assets need to change.
+
+Preview.png is the application screenshot displayed by the repository README.
 
 Profile images
 --------------
@@ -12,5 +12,4 @@ The profile-images directory contains twelve generated monochrome carpet-pattern
 transparent backgrounds. The web app uses their alpha channels as CSS masks, applying the
 user's selected color at render time rather than storing separate colored variants.
 
-These are raster assets based on generated custom humanist lettering, not a font file or vector artwork. Larger exports are resampled from the master. The detailed weave loses detail at favicon sizes.
-Light background: #FAF7F0. Dark background: #142D32.
+The masks are runtime application dependencies and must remain available to the web build.

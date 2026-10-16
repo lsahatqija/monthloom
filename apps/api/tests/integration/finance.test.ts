@@ -1,4 +1,4 @@
-import { householdMonthResponseSchema } from '@template/contracts';
+import { householdMonthResponseSchema } from '@monthloom/contracts';
 import { describe, expect, it, vi } from 'vitest';
 
 import { pool } from '../../src/infrastructure/database/client.js';
@@ -96,6 +96,46 @@ describe('finance HTTP + PostgreSQL', () => {
       .expect(404);
   });
 
+  it('rejects outsider access across household write capabilities', async () => {
+    const { agent, base, transaction } = await fixture();
+    const outsider = await register();
+    const expense = await agent.post(`${base}/transactions`).send(transaction).expect(201);
+    const targetHouseholdId = await household(agent);
+    const sourceId = transaction.sourceId;
+    const transactionId = expense.body.transaction.id as string;
+
+    await outsider.agent.get(`${base}/sources`).expect(403);
+    await outsider.agent
+      .post(`${base}/sources`)
+      .send({ displayName: 'Outsider source', aliases: [] })
+      .expect(403);
+    await outsider.agent
+      .patch(`${base}/sources/${sourceId}`)
+      .send({ displayName: 'Changed', aliases: [] })
+      .expect(403);
+    await outsider.agent.delete(`${base}/sources/${sourceId}`).expect(403);
+    await outsider.agent
+      .post(`${base}/sources/copy`)
+      .send({ targetHouseholdId, sourceIds: [sourceId] })
+      .expect(403);
+    await outsider.agent
+      .patch(`${base}/transactions/${transactionId}`)
+      .send({
+        selection: { past: false, current: true, future: false },
+        transaction,
+      })
+      .expect(403);
+    await outsider.agent.delete(`${base}/transactions/${transactionId}?scope=current`).expect(403);
+    await outsider.agent
+      .patch(base)
+      .send({ name: 'Changed', icon: 'small-house', color: '#123456' })
+      .expect(403);
+    await outsider.agent.put(`${base}/primary`).expect(403);
+    await outsider.agent.post(`${base}/invitations`).send({ mode: 'link' }).expect(403);
+    await outsider.agent.delete(`${base}/members/${transaction.userId}`).expect(403);
+    await outsider.agent.post(`${base}/leave`).send({}).expect(403);
+  });
+
   async function recurringSeries() {
     const context = await fixture();
     const ids: string[] = [];
@@ -180,5 +220,54 @@ describe('finance HTTP + PostgreSQL', () => {
       invitee.user.id,
     );
     await invitee.agent.delete(base).expect(204);
+  });
+
+  it('rejects an expired invitation when reading or accepting it', async () => {
+    const { agent, base, id } = await fixture();
+    const invitee = await register();
+    const invitation = await agent.post(`${base}/invitations`).send({ mode: 'link' }).expect(201);
+    await pool.query(
+      "UPDATE household_invitations SET expires_at = NOW() - INTERVAL '1 minute' WHERE household_id = $1",
+      [id],
+    );
+
+    const invitationUrl = `${api}/households/invitations/${invitation.body.token}`;
+    await invitee.agent.get(invitationUrl).expect(404);
+    await invitee.agent.post(`${invitationUrl}/accept`).expect(404);
+  });
+
+  it('rolls back membership when invitation acceptance cannot be completed', async () => {
+    const { agent, base, id } = await fixture();
+    const invitee = await register();
+    const invitation = await agent.post(`${base}/invitations`).send({ mode: 'link' }).expect(201);
+
+    await pool.query(`
+      CREATE FUNCTION fail_invitation_acceptance() RETURNS trigger AS $$
+      BEGIN
+        IF NEW.accepted_at IS NOT NULL THEN
+          RAISE EXCEPTION 'forced acceptance failure';
+        END IF;
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+      CREATE TRIGGER fail_invitation_acceptance
+        BEFORE UPDATE ON household_invitations
+        FOR EACH ROW EXECUTE FUNCTION fail_invitation_acceptance();
+    `);
+
+    await invitee.agent
+      .post(`${api}/households/invitations/${invitation.body.token}/accept`)
+      .expect(500);
+
+    const membership = await pool.query(
+      'SELECT 1 FROM household_members WHERE household_id = $1 AND user_id = $2',
+      [id, invitee.user.id],
+    );
+    expect(membership.rowCount).toBe(0);
+    const storedInvitation = await pool.query(
+      'SELECT accepted_at FROM household_invitations WHERE household_id = $1',
+      [id],
+    );
+    expect(storedInvitation.rows[0].accepted_at).toBeNull();
   });
 });

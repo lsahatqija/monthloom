@@ -13,9 +13,16 @@ import { AutomatedEmailService } from './modules/email/automated-email.service.j
 import { PostgresFileRepository } from './modules/files/adapters/postgres-file.repository.js';
 import { FileController } from './modules/files/file.controller.js';
 import { FileService } from './modules/files/file.service.js';
-import { PostgresFinanceRepository } from './modules/finance/adapters/postgres-finance.repository.js';
+import { PostgresHouseholdRepository } from './modules/finance/adapters/postgres-household.repository.js';
+import { PostgresInvitationRepository } from './modules/finance/adapters/postgres-invitation.repository.js';
+import { PostgresSourceRepository } from './modules/finance/adapters/postgres-source.repository.js';
+import { PostgresTransactionRepository } from './modules/finance/adapters/postgres-transaction.repository.js';
 import { FinanceController } from './modules/finance/finance.controller.js';
-import { FinanceService } from './modules/finance/finance.service.js';
+import { HouseholdService } from './modules/finance/household.service.js';
+import { InvitationService } from './modules/finance/invitation.service.js';
+import { MonthViewService } from './modules/finance/month-view.service.js';
+import { SourceService } from './modules/finance/source.service.js';
+import { TransactionService } from './modules/finance/transaction.service.js';
 import { SystemController } from './modules/system/system.controller.js';
 import { SystemService } from './modules/system/system.service.js';
 import { PostgresUserRepository } from './modules/users/adapters/postgres-user.repository.js';
@@ -30,7 +37,12 @@ export function buildAppDependencies() {
   const userRepository = new PostgresUserRepository(db);
   const sessionRepository = new PostgresSessionRepository(db);
   const fileRepository = new PostgresFileRepository(db);
-  const financeRepository = new PostgresFinanceRepository(db);
+  const financeRepositories = {
+    households: new PostgresHouseholdRepository(db),
+    invitations: new PostgresInvitationRepository(db),
+    sources: new PostgresSourceRepository(db),
+    transactions: new PostgresTransactionRepository(db),
+  };
   const fileStorage = new LocalFileStorage(path.resolve(config.upload.directory));
   const emailSender =
     config.email.transport === 'resend'
@@ -39,7 +51,26 @@ export function buildAppDependencies() {
   const emailService = new AutomatedEmailService(emailSender);
 
   const userService = new UserService(userRepository);
-  const financeService = new FinanceService(financeRepository, emailService, logger);
+  const financeServices = {
+    households: new HouseholdService(financeRepositories.households),
+    invitations: new InvitationService(
+      financeRepositories.households,
+      financeRepositories.invitations,
+      emailService,
+      logger,
+    ),
+    monthView: new MonthViewService(
+      financeRepositories.households,
+      financeRepositories.sources,
+      financeRepositories.transactions,
+    ),
+    sources: new SourceService(financeRepositories.households, financeRepositories.sources),
+    transactions: new TransactionService(
+      financeRepositories.households,
+      financeRepositories.sources,
+      financeRepositories.transactions,
+    ),
+  };
   const authService = new AuthService(userRepository, sessionRepository, emailService, logger);
   const fileService = new FileService(fileRepository, fileStorage);
   const systemService = new SystemService();
@@ -49,7 +80,7 @@ export function buildAppDependencies() {
   const userController = new UserController(userService);
   const authController = new AuthController(authService);
   const fileController = new FileController(fileService);
-  const financeController = new FinanceController(financeService);
+  const financeController = new FinanceController(financeServices);
   const systemController = new SystemController(systemService);
 
   return {

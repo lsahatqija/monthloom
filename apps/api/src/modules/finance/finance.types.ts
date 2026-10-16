@@ -1,4 +1,4 @@
-import type { Constants } from '@template/contracts';
+import type { Constants } from '@monthloom/contracts';
 
 import type { User } from '../users/user.types.js';
 

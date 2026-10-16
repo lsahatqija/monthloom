@@ -1,4 +1,4 @@
-import type { ApiErrorBody } from '@template/contracts';
+import type { ApiErrorBody } from '@monthloom/contracts';
 
 /** Thrown by the API client whenever the backend returns the standard error shape. */
 export class ApiClientError extends Error {

@@ -1,4 +1,4 @@
-import type { ApiErrorCode } from '@template/contracts';
+import type { ApiErrorCode } from '@monthloom/contracts';
 import type { ErrorRequestHandler } from 'express';
 import { MulterError } from 'multer';
 import { ZodError } from 'zod';

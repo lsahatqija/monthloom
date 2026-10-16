@@ -140,6 +140,10 @@ describe('household dashboard', () => {
     expect(within(selector).getAllByRole('option')).toHaveLength(2);
     await userEvent.selectOptions(selector, 'second-home');
     await waitFor(() => expect(selector).toHaveValue('second-home'));
+    await waitFor(() =>
+      expect(new URL(window.location.href).searchParams.get('household')).toBe('second-home'),
+    );
+    expect(new URL(window.location.href).searchParams.get('month')).toMatch(/^\d{4}-\d{2}$/);
     expect(screen.queryByRole('button', { name: 'Make default' })).not.toBeInTheDocument();
   });
 

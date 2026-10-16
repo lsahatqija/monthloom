@@ -5,7 +5,7 @@ import { defineConfig } from 'vitest/config';
 const root = fileURLToPath(new URL('.', import.meta.url));
 const resolve = {
   alias: {
-    '@template/contracts': `${root}packages/contracts/src/index.ts`,
+    '@monthloom/contracts': `${root}packages/contracts/src/index.ts`,
     '@assets': `${root}assets`,
     '@': `${root}apps/web/src`,
   },

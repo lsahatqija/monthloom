@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { authResponseSchema } from '@template/contracts';
+import { authResponseSchema } from '@monthloom/contracts';
 import request from 'supertest';
 
 import { createApp } from '../src/app.js';

@@ -1,9 +1,9 @@
-import type { LivenessResponse, ReadinessResponse } from '@template/contracts';
+import type { LivenessResponse, ReadinessResponse } from '@monthloom/contracts';
 
 import { config } from '../../config/index.js';
 import { checkDatabaseConnection } from '../../infrastructure/database/client.js';
 
-const SERVICE_NAME = 'template-api';
+const SERVICE_NAME = 'monthloom-api';
 const APP_VERSION = '0.1.0';
 const startedAt = Date.now();
 

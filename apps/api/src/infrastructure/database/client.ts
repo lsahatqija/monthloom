@@ -4,7 +4,7 @@ import { Pool } from 'pg';
 import { config } from '../../config/index.js';
 import { logger } from '../logging/logger.js';
 
-import * as schema from './schema.js';
+import * as schema from './schema/index.js';
 
 export const pool = new Pool({ connectionString: config.database.url });
 

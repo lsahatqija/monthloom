@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 
 import type { Database } from '../../../infrastructure/database/client.js';
-import { users } from '../../../infrastructure/database/schema.js';
+import { users } from '../../../infrastructure/database/schema/index.js';
 import type { UserRepository } from '../user.repository.js';
 import type { CreateUserData, UpdateUserData, User } from '../user.types.js';
 

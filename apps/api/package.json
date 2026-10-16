@@ -1,5 +1,5 @@
 {
-  "name": "@template/api",
+  "name": "@monthloom/api",
   "version": "0.1.0",
   "private": true,
   "description": "Express 5 modular-monolith API backend.",
@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "db:generate": "drizzle-kit generate --config drizzle.config.ts",
+    "db:generate": "tsc -p tsconfig.json && drizzle-kit generate --config drizzle.config.ts",
     "db:migrate": "tsx src/infrastructure/database/migrate.ts",
     "db:seed": "tsx src/infrastructure/database/seed.ts",
     "email:templates:sync": "tsx src/infrastructure/email/sync-resend-templates.ts",
@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^7.1.1",
-    "@template/contracts": "workspace:*",
+    "@monthloom/contracts": "workspace:*",
     "argon2": "^0.41.1",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
@@ -38,11 +38,10 @@
     "pino-http": "^10.3.0",
     "resend": "^6.32.1",
     "swagger-ui-express": "^5.0.1",
-    "uuid": "^10.0.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@template/eslint-config": "workspace:*",
+    "@monthloom/eslint-config": "workspace:*",
     "@types/compression": "^1.7.5",
     "@types/cookie-parser": "^1.4.7",
     "@types/cors": "^2.8.17",
