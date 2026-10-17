@@ -217,6 +217,7 @@ export function SourceSettings({ households }: { households: ManagedHousehold[] 
   const [householdId, setHouseholdId] = useState(
     households.find((household) => household.isPrimary)?.id ?? households[0]?.id ?? '',
   );
+  const [addingSource, setAddingSource] = useState(false);
   const [editingSource, setEditingSource] = useState<HouseholdSource | null>(null);
   const [copying, setCopying] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -252,17 +253,29 @@ export function SourceSettings({ households }: { households: ManagedHousehold[] 
           <h2 id="source-settings-heading">Sources</h2>
           <p>Edit, remove, or copy sources between households.</p>
         </div>
-        <Button
-          type="button"
-          disabled={households.length < 2}
-          title={households.length < 2 ? 'Join another household to copy sources.' : undefined}
-          onClick={() => {
-            setNotice(null);
-            setCopying(true);
-          }}
-        >
-          Copy Sources
-        </Button>
+        <div className="sourceSettingsActions">
+          <Button
+            type="button"
+            onClick={() => {
+              setNotice(null);
+              setAddingSource(true);
+            }}
+          >
+            Add source
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={households.length < 2}
+            title={households.length < 2 ? 'Join another household to copy sources.' : undefined}
+            onClick={() => {
+              setNotice(null);
+              setCopying(true);
+            }}
+          >
+            Copy Sources
+          </Button>
+        </div>
       </div>
 
       <label className="sourceHouseholdPicker">
@@ -344,6 +357,17 @@ export function SourceSettings({ households }: { households: ManagedHousehold[] 
         </div>
       ) : null}
 
+      {addingSource ? (
+        <SourceModal
+          householdId={householdId}
+          onClose={() => setAddingSource(false)}
+          onSaved={() => {
+            setAddingSource(false);
+            setError(null);
+            setNotice('Source added.');
+          }}
+        />
+      ) : null}
       {editingSource ? (
         <SourceModal
           householdId={householdId}

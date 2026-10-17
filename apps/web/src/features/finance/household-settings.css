@@ -209,6 +209,11 @@
   justify-content: space-between;
   gap: var(--space-4);
 }
+.sourceSettingsActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
 .sourceHouseholdPicker,
 .copyHouseholdSelectors label {
   display: flex;
@@ -304,6 +309,10 @@
     grid-column: 1 / -1;
   }
   .sourceSettingsHeading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .sourceSettingsActions {
     align-items: stretch;
     flex-direction: column;
   }
