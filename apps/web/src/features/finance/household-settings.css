@@ -1,6 +1,12 @@
 .householdSettings {
   min-width: 0;
 }
+.settingsSectionHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
 .settingsSectionHeading h2,
 .settingsSectionHeading p,
 .createHouseholdForm h3,
@@ -68,6 +74,18 @@
 .householdList {
   display: grid;
   gap: var(--space-4);
+}
+.createHouseholdModal {
+  overflow: visible;
+}
+.createHouseholdModal .householdColorDropdown[open] {
+  z-index: 1;
+}
+.createHouseholdModal .householdColorDropdown .colorPickerPopover {
+  z-index: 30;
+}
+.createHouseholdModalForm {
+  padding: var(--space-6);
 }
 .householdCardHeader {
   display: flex;
@@ -302,6 +320,10 @@
   accent-color: var(--ml-primary);
 }
 @media (max-width: 560px) {
+  .settingsSectionHeading {
+    align-items: stretch;
+    flex-direction: column;
+  }
   .householdFields {
     grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.8fr);
   }

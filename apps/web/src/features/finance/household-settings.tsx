@@ -523,17 +523,55 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
 export function HouseholdSettings({ user }: { user: PublicUser }) {
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState(defaultHousehold);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const query = useQuery({ queryKey: financeKeys.households(), queryFn: getHouseholds });
   const createMutation = useMutation({
     mutationFn: createHousehold,
     onSuccess: async () => {
       setDraft(defaultHousehold);
+      setIsCreateModalOpen(false);
       await queryClient.invalidateQueries({ queryKey: financeKeys.all });
       window.dispatchEvent(
         new CustomEvent('monthloom:onboarding', { detail: 'household-created' }),
       );
     },
   });
+  const hasHouseholds = Boolean(query.data?.length);
+  const { reset: resetCreateMutation } = createMutation;
+
+  useEffect(() => {
+    if (!isCreateModalOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !createMutation.isPending) {
+        setIsCreateModalOpen(false);
+        setDraft(defaultHousehold);
+        resetCreateMutation();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [createMutation.isPending, isCreateModalOpen, resetCreateMutation]);
+
+  const closeCreateModal = () => {
+    if (createMutation.isPending) return;
+    setIsCreateModalOpen(false);
+    setDraft(defaultHousehold);
+    resetCreateMutation();
+  };
+
+  const createFormFields = (prefix: string) => (
+    <>
+      {createMutation.isError ? (
+        <Alert variant="error">{errorMessage(createMutation.error)}</Alert>
+      ) : null}
+      <HouseholdFields value={draft} onChange={setDraft} prefix={prefix} />
+      <Button type="submit" disabled={createMutation.isPending || !draft.name.trim()}>
+        {createMutation.isPending ? 'Creating…' : 'Create household'}
+      </Button>
+    </>
+  );
 
   return (
     <section className="householdSettings" aria-labelledby="household-settings-heading">
@@ -542,25 +580,26 @@ export function HouseholdSettings({ user }: { user: PublicUser }) {
           <h2 id="household-settings-heading">Households</h2>
           <p>Create a household or manage the households you belong to.</p>
         </div>
+        {hasHouseholds ? (
+          <Button type="button" onClick={() => setIsCreateModalOpen(true)}>
+            Add Household
+          </Button>
+        ) : null}
       </div>
 
-      <form
-        className="createHouseholdForm"
-        data-onboarding="create-household"
-        onSubmit={(event) => {
-          event.preventDefault();
-          createMutation.mutate(draft);
-        }}
-      >
-        <h3>Add a household</h3>
-        {createMutation.isError ? (
-          <Alert variant="error">{errorMessage(createMutation.error)}</Alert>
-        ) : null}
-        <HouseholdFields value={draft} onChange={setDraft} prefix="create-household" />
-        <Button type="submit" disabled={createMutation.isPending || !draft.name.trim()}>
-          {createMutation.isPending ? 'Creating…' : 'Create household'}
-        </Button>
-      </form>
+      {query.data && !hasHouseholds ? (
+        <form
+          className="createHouseholdForm"
+          data-onboarding="create-household"
+          onSubmit={(event) => {
+            event.preventDefault();
+            createMutation.mutate(draft);
+          }}
+        >
+          <h3>Add a household</h3>
+          {createFormFields('create-household')}
+        </form>
+      ) : null}
 
       {query.isPending ? <LoadingIndicator label="Loading households…" /> : null}
       {query.isError ? <Alert variant="error">{errorMessage(query.error)}</Alert> : null}
@@ -572,6 +611,47 @@ export function HouseholdSettings({ user }: { user: PublicUser }) {
           <HouseholdCard key={household.id} household={household} user={user} />
         ))}
       </div>
+
+      {hasHouseholds && isCreateModalOpen ? (
+        <div
+          className="transactionModalBackdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeCreateModal();
+          }}
+        >
+          <section
+            className="transactionModal createHouseholdModal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-household-modal-title"
+          >
+            <div className="transactionModalHeader">
+              <div>
+                <p className="transactionModalEyebrow">New household</p>
+                <h2 id="create-household-modal-title">Add a household</h2>
+              </div>
+              <button
+                type="button"
+                className="modalCloseButton"
+                disabled={createMutation.isPending}
+                onClick={closeCreateModal}
+                aria-label="Close add household modal"
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+            <form
+              className="createHouseholdModalForm"
+              onSubmit={(event) => {
+                event.preventDefault();
+                createMutation.mutate(draft);
+              }}
+            >
+              {createFormFields('create-household-modal')}
+            </form>
+          </section>
+        </div>
+      ) : null}
     </section>
   );
 }
