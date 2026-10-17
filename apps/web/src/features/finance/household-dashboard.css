@@ -744,6 +744,12 @@
   box-shadow: 0 14px 36px var(--ml-shadow);
   transform: translateX(-50%);
 }
+.iconPickerPopover.isPortaled,
+.colorPickerPopover.isPortaled {
+  position: fixed;
+  z-index: 120;
+  transform: none;
+}
 .colorOptions label {
   display: grid;
   width: 2rem;

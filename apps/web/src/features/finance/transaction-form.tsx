@@ -10,7 +10,8 @@ import {
   type TransactionSeriesSelection,
 } from '@monthloom/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 
 import { Alert, Button } from '../../components/ui/index';
@@ -37,6 +38,54 @@ const COLOR_OPTIONS = [
   '#6B7280',
 ];
 
+function usePickerPosition(
+  open: boolean,
+  pickerRef: React.RefObject<HTMLDetailsElement>,
+  popoverRef: React.RefObject<HTMLDivElement>,
+  align: 'left' | 'center',
+) {
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    const positionPopover = () => {
+      const trigger = pickerRef.current?.querySelector('summary');
+      const popover = popoverRef.current;
+      if (!trigger || !popover) return;
+
+      const triggerRect = trigger.getBoundingClientRect();
+      const gap = 7;
+      const viewportMargin = 8;
+      const topBelow = triggerRect.bottom + gap;
+      const top =
+        topBelow + popover.offsetHeight <= window.innerHeight - viewportMargin
+          ? topBelow
+          : Math.max(viewportMargin, triggerRect.top - popover.offsetHeight - gap);
+      const desiredLeft =
+        align === 'center'
+          ? triggerRect.left + (triggerRect.width - popover.offsetWidth) / 2
+          : triggerRect.left;
+      const left = Math.min(
+        Math.max(viewportMargin, desiredLeft),
+        window.innerWidth - popover.offsetWidth - viewportMargin,
+      );
+
+      setPosition({ top, left });
+    };
+
+    positionPopover();
+    window.addEventListener('resize', positionPopover);
+    window.addEventListener('scroll', positionPopover, true);
+    return () => {
+      window.removeEventListener('resize', positionPopover);
+      window.removeEventListener('scroll', positionPopover, true);
+    };
+  }, [align, open, pickerRef, popoverRef]);
+
+  return position;
+}
+
 function todayDate(): string {
   const today = new Date();
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
@@ -61,11 +110,15 @@ export function TransactionForm({
 }: TransactionFormProps) {
   const iconPickerRef = useRef<HTMLDetailsElement>(null);
   const colorPickerRef = useRef<HTMLDetailsElement>(null);
+  const iconPickerPopoverRef = useRef<HTMLDivElement>(null);
+  const colorPickerPopoverRef = useRef<HTMLDivElement>(null);
   const sourcePickerRef = useRef<HTMLDivElement>(null);
   const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const [availableSources, setAvailableSources] = useState(sources);
   const [isAddingSource, setIsAddingSource] = useState(false);
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
   const [sourceQuery, setSourceQuery] = useState(transaction?.source.displayName ?? '');
   const [expires, setExpires] = useState(Boolean(transaction?.expiresOn));
@@ -104,6 +157,18 @@ export function TransactionForm({
   const userId = watch('userId');
   const recurring = watch('recurring');
   const expiresOn = watch('expiresOn') ?? '';
+  const iconPickerPosition = usePickerPosition(
+    iconPickerOpen,
+    iconPickerRef,
+    iconPickerPopoverRef,
+    'left',
+  );
+  const colorPickerPosition = usePickerPosition(
+    colorPickerOpen,
+    colorPickerRef,
+    colorPickerPopoverRef,
+    'center',
+  );
   const filteredSources = useMemo(() => {
     const query = sourceQuery.trim().toLocaleLowerCase();
     if (!query) return availableSources;
@@ -124,9 +189,9 @@ export function TransactionForm({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      if (iconPickerRef.current?.open || colorPickerRef.current?.open || sourcePickerOpen) {
-        if (iconPickerRef.current) iconPickerRef.current.open = false;
-        if (colorPickerRef.current) colorPickerRef.current.open = false;
+      if (iconPickerOpen || colorPickerOpen || sourcePickerOpen) {
+        setIconPickerOpen(false);
+        setColorPickerOpen(false);
         setSourcePickerOpen(false);
         return;
       }
@@ -138,22 +203,32 @@ export function TransactionForm({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAddingSource, onClose, sourcePickerOpen]);
+  }, [colorPickerOpen, iconPickerOpen, isAddingSource, onClose, sourcePickerOpen]);
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
       const target = event.target as Node;
       const iconPicker = iconPickerRef.current;
       const colorPicker = colorPickerRef.current;
-      if (iconPicker?.open && !iconPicker.contains(target)) iconPicker.open = false;
-      if (colorPicker?.open && !colorPicker.contains(target)) colorPicker.open = false;
+      if (
+        iconPickerOpen &&
+        !iconPicker?.contains(target) &&
+        !iconPickerPopoverRef.current?.contains(target)
+      )
+        setIconPickerOpen(false);
+      if (
+        colorPickerOpen &&
+        !colorPicker?.contains(target) &&
+        !colorPickerPopoverRef.current?.contains(target)
+      )
+        setColorPickerOpen(false);
       if (sourcePickerOpen && !sourcePickerRef.current?.contains(target)) {
         setSourcePickerOpen(false);
       }
     };
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, [sourcePickerOpen]);
+  }, [colorPickerOpen, iconPickerOpen, sourcePickerOpen]);
 
   const mutation = useMutation({
     mutationFn: (input: CreateHouseholdTransactionRequest) =>
@@ -273,6 +348,8 @@ export function TransactionForm({
                   ref={iconPickerRef}
                   className="iconPickerDropdown"
                   aria-disabled={mutation.isPending}
+                  open={iconPickerOpen}
+                  onToggle={(event) => setIconPickerOpen(event.currentTarget.open)}
                 >
                   <summary
                     onClick={(event) => {
@@ -284,35 +361,44 @@ export function TransactionForm({
                     </span>
                     <span>{financialIconLabel(icon)}</span>
                   </summary>
-                  <div className="iconPickerPopover">
-                    <div className="iconPickerGrid" role="group" aria-label="Choose an icon">
-                      {Constants.FINANCIAL_ICONS.map((option) => {
-                        const label = financialIconLabel(option);
-                        return (
-                          <label
-                            key={option}
-                            className={icon === option ? 'isSelected' : undefined}
-                            title={label}
-                          >
-                            <input
-                              type="radio"
-                              name="icon"
-                              value={option}
-                              checked={icon === option}
-                              disabled={mutation.isPending}
-                              onChange={() => {
-                                setValue('icon', option);
-                                if (iconPickerRef.current) iconPickerRef.current.open = false;
-                              }}
-                            />
-                            <FinancialIcon name={option} size={21} />
-                            <span className="srOnly">{label}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
                 </details>
+                {iconPickerOpen && typeof document !== 'undefined'
+                  ? createPortal(
+                      <div
+                        ref={iconPickerPopoverRef}
+                        className="iconPickerPopover isPortaled"
+                        style={iconPickerPosition}
+                      >
+                        <div className="iconPickerGrid" role="group" aria-label="Choose an icon">
+                          {Constants.FINANCIAL_ICONS.map((option) => {
+                            const label = financialIconLabel(option);
+                            return (
+                              <label
+                                key={option}
+                                className={icon === option ? 'isSelected' : undefined}
+                                title={label}
+                              >
+                                <input
+                                  type="radio"
+                                  name="icon"
+                                  value={option}
+                                  checked={icon === option}
+                                  disabled={mutation.isPending}
+                                  onChange={() => {
+                                    setValue('icon', option);
+                                    setIconPickerOpen(false);
+                                  }}
+                                />
+                                <FinancialIcon name={option} size={21} />
+                                <span className="srOnly">{label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>,
+                      document.body,
+                    )
+                  : null}
               </div>
 
               <div className="colorPicker">
@@ -321,6 +407,8 @@ export function TransactionForm({
                   ref={colorPickerRef}
                   className="colorPickerDropdown"
                   aria-disabled={mutation.isPending}
+                  open={colorPickerOpen}
+                  onToggle={(event) => setColorPickerOpen(event.currentTarget.open)}
                 >
                   <summary
                     onClick={(event) => {
@@ -330,40 +418,49 @@ export function TransactionForm({
                     <span className="selectedColorPreview" style={{ backgroundColor: color }} />
                     <span>{color.toUpperCase()}</span>
                   </summary>
-                  <div className="colorPickerPopover">
-                    <div className="colorOptions">
-                      {COLOR_OPTIONS.map((option) => (
-                        <label key={option} style={{ backgroundColor: option }}>
-                          <input
-                            type="radio"
-                            name="color"
-                            value={option}
-                            checked={color === option}
-                            disabled={mutation.isPending}
-                            onChange={() => {
-                              setValue('color', option);
-                              if (colorPickerRef.current) colorPickerRef.current.open = false;
-                            }}
-                          />
-                          <span className="srOnly">{option}</span>
-                        </label>
-                      ))}
-                      <label className="customColor" title="Custom color">
-                        <input
-                          type="color"
-                          value={color}
-                          disabled={mutation.isPending}
-                          onChange={(event) => {
-                            setValue('color', event.target.value);
-                            if (colorPickerRef.current) colorPickerRef.current.open = false;
-                          }}
-                        />
-                        <span aria-hidden="true">+</span>
-                        <span className="srOnly">Custom color</span>
-                      </label>
-                    </div>
-                  </div>
                 </details>
+                {colorPickerOpen && typeof document !== 'undefined'
+                  ? createPortal(
+                      <div
+                        ref={colorPickerPopoverRef}
+                        className="colorPickerPopover isPortaled"
+                        style={colorPickerPosition}
+                      >
+                        <div className="colorOptions">
+                          {COLOR_OPTIONS.map((option) => (
+                            <label key={option} style={{ backgroundColor: option }}>
+                              <input
+                                type="radio"
+                                name="color"
+                                value={option}
+                                checked={color === option}
+                                disabled={mutation.isPending}
+                                onChange={() => {
+                                  setValue('color', option);
+                                  setColorPickerOpen(false);
+                                }}
+                              />
+                              <span className="srOnly">{option}</span>
+                            </label>
+                          ))}
+                          <label className="customColor" title="Custom color">
+                            <input
+                              type="color"
+                              value={color}
+                              disabled={mutation.isPending}
+                              onChange={(event) => {
+                                setValue('color', event.target.value);
+                                setColorPickerOpen(false);
+                              }}
+                            />
+                            <span aria-hidden="true">+</span>
+                            <span className="srOnly">Custom color</span>
+                          </label>
+                        </div>
+                      </div>,
+                      document.body,
+                    )
+                  : null}
               </div>
 
               <label className="transactionField transactionMemberField">

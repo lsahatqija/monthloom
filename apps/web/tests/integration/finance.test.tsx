@@ -177,4 +177,22 @@ describe('transaction form + query + HTTP client', () => {
     expect(onClose).toHaveBeenCalledOnce();
     expect(fetch).not.toHaveBeenCalled();
   });
+
+  it('renders icon and color pickers outside the scrolling dialog', async () => {
+    renderForm();
+
+    await userEvent.click(screen.getByText('Receipt').closest('summary')!);
+    const iconGrid = screen.getByRole('group', { name: 'Choose an icon' });
+    expect(iconGrid.closest('[role="dialog"]')).toBeNull();
+    await userEvent.click(screen.getByRole('radio', { name: 'House' }));
+    expect(screen.queryByRole('group', { name: 'Choose an icon' })).not.toBeInTheDocument();
+    expect(screen.getByText('House')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('#35675B').closest('summary')!);
+    const colorOption = screen.getByRole('radio', { name: '#33805C' });
+    expect(colorOption.closest('[role="dialog"]')).toBeNull();
+    await userEvent.click(colorOption);
+    expect(screen.queryByRole('radio', { name: '#33805C' })).not.toBeInTheDocument();
+    expect(screen.getByText('#33805C')).toBeInTheDocument();
+  });
 });
