@@ -13,6 +13,7 @@ import { RemoveTransactionDialog } from './dashboard/remove-transaction-dialog';
 import { TransactionSummary } from './dashboard/summary';
 import { TransactionMenu } from './dashboard/transaction-menu';
 import {
+  isUpcomingRecurringTransaction,
   transactionTypeLabel,
   type RecurringFilter,
   type TransactionFilters,
@@ -385,7 +386,11 @@ export function HouseholdDashboard() {
                 {sortedTransactions.map((entry) => (
                   <tr
                     key={`${entry.kind}-${entry.id}`}
-                    className={entry.projected ? 'projectedTransaction' : undefined}
+                    className={
+                      entry.projected || isUpcomingRecurringTransaction(entry, month)
+                        ? 'projectedTransaction'
+                        : undefined
+                    }
                   >
                     <td>
                       <time dateTime={entry.date}>

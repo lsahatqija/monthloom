@@ -10,9 +10,19 @@ import type {
 import { and, eq, gte, lt } from 'drizzle-orm';
 
 import type { Database } from '../../../infrastructure/database/client.js';
-import { expenses, incomes, sources, users } from '../../../infrastructure/database/schema/index.js';
+import {
+  expenses,
+  incomes,
+  sources,
+  users,
+} from '../../../infrastructure/database/schema/index.js';
 import type { TransactionRepository } from '../finance.repository.js';
-import { alignOccurrenceDate, currentMonth, monthEnd } from '../rules/dates.js';
+import {
+  alignOccurrenceDate,
+  currentMonth,
+  monthEnd,
+  recurringOccurrenceDates,
+} from '../rules/dates.js';
 import { averageAmounts } from '../rules/money.js';
 
 export class PostgresTransactionRepository implements TransactionRepository {
@@ -222,6 +232,11 @@ export class PostgresTransactionRepository implements TransactionRepository {
 
       if (!source) throw new Error('Transaction source does not belong to the household.');
 
+      const recurrenceId = input.recurring ? randomUUID() : null;
+      const occurrenceDates =
+        input.recurring && input.date.slice(0, 7) < currentMonth()
+          ? recurringOccurrenceDates(input.date, currentMonth(), input.expiresOn)
+          : [input.date];
       const values = {
         householdId,
         sourceId: source.id,
@@ -229,18 +244,21 @@ export class PostgresTransactionRepository implements TransactionRepository {
         icon: input.icon,
         color: input.color,
         amount: input.amount,
-        date: input.date,
         recurring: input.recurring,
         expiresOn: input.recurring ? input.expiresOn : null,
-        recurrenceId: input.recurring ? randomUUID() : null,
+        recurrenceId,
       };
-      const [record] =
+      const records =
         input.kind === 'income'
-          ? await transaction.insert(incomes).values(values).returning()
+          ? await transaction
+              .insert(incomes)
+              .values(occurrenceDates.map((date) => ({ ...values, date })))
+              .returning()
           : await transaction
               .insert(expenses)
-              .values({ ...values, type: input.type! })
+              .values(occurrenceDates.map((date) => ({ ...values, date, type: input.type! })))
               .returning();
+      const record = records.find(({ date }) => date === input.date);
       if (!record) throw new Error('Failed to create transaction.');
 
       const [user] = await transaction
@@ -470,4 +488,3 @@ export class PostgresTransactionRepository implements TransactionRepository {
     });
   }
 }
-
