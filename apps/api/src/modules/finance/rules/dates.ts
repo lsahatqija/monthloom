@@ -15,3 +15,21 @@ export function alignOccurrenceDate(existingDate: string, editedDate: string): s
 export function currentMonth(now = new Date()): string {
   return now.toISOString().slice(0, 7);
 }
+
+export function recurringOccurrenceDates(
+  startDate: string,
+  throughMonth: string,
+  expiresOn: string | null,
+): string[] {
+  const dates: string[] = [];
+  let month = startDate.slice(0, 7);
+
+  while (month <= throughMonth) {
+    const date = alignOccurrenceDate(`${month}-01`, startDate);
+    if (expiresOn && date > expiresOn) break;
+    dates.push(date);
+    month = monthEnd(month).slice(0, 7);
+  }
+
+  return dates;
+}

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   emptyTransactionFilters,
   filterAndSortTransactions,
+  isUpcomingRecurringTransaction,
   summarizeTransactions,
 } from '../../src/features/finance/dashboard/transaction-view';
 
@@ -24,7 +25,12 @@ function transaction(
     recurring: false,
     expiresOn: null,
     projected: false,
-    user: { id: 'user', displayName: 'User', profileImage: 'braided-border', desiredColor: 'green' },
+    user: {
+      id: 'user',
+      displayName: 'User',
+      profileImage: 'braided-border',
+      desiredColor: 'green',
+    },
     source: { id: 'source', displayName: 'Source', key: 'source', aliases: ['Source'] },
     ...overrides,
   };
@@ -38,10 +44,9 @@ describe('transaction view', () => {
       transaction('large-expense', 'expense', '20.00'),
     ];
     const filters = { ...emptyTransactionFilters, type: 'expense' };
-    expect(filterAndSortTransactions(entries, filters, 'amount', 'ascending').map(({ id }) => id)).toEqual([
-      'large-expense',
-      'small-expense',
-    ]);
+    expect(
+      filterAndSortTransactions(entries, filters, 'amount', 'ascending').map(({ id }) => id),
+    ).toEqual(['large-expense', 'small-expense']);
   });
 
   it('calculates filtered totals without changing the server summary', () => {
@@ -52,5 +57,22 @@ describe('transaction view', () => {
     expect(summary.income).toBe(0.3);
     expect(summary.expenses).toBe(0.4);
     expect(summary.balance).toBeCloseTo(-0.1);
+  });
+
+  it('identifies only upcoming recurring transactions in the current month', () => {
+    const today = new Date(2026, 9, 17, 12);
+    const upcoming = transaction('upcoming', 'expense', '20.00', {
+      recurring: true,
+      date: '2026-10-18',
+    });
+
+    expect(isUpcomingRecurringTransaction(upcoming, '2026-10', today)).toBe(true);
+    expect(
+      isUpcomingRecurringTransaction({ ...upcoming, recurring: false }, '2026-10', today),
+    ).toBe(false);
+    expect(
+      isUpcomingRecurringTransaction({ ...upcoming, date: '2026-10-17' }, '2026-10', today),
+    ).toBe(false);
+    expect(isUpcomingRecurringTransaction(upcoming, '2026-11', today)).toBe(false);
   });
 });

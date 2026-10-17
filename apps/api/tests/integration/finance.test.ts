@@ -79,6 +79,31 @@ describe('finance HTTP + PostgreSQL', () => {
     }
   });
 
+  it('backfills each month when a recurring transaction starts before the current month', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-04-15T12:00:00Z'));
+    try {
+      const { agent, base, transaction } = await fixture();
+      await agent
+        .post(`${base}/transactions`)
+        .send({ ...transaction, recurring: true })
+        .expect(201);
+
+      for (const [month, date] of [
+        ['2026-01', '2026-01-31'],
+        ['2026-02', '2026-02-28'],
+        ['2026-03', '2026-03-31'],
+        ['2026-04', '2026-04-30'],
+      ]) {
+        const response = await agent.get(`${base}/month?month=${month}`).expect(200);
+        expect(response.body.transactions).toHaveLength(1);
+        expect(response.body.transactions[0]).toMatchObject({ date, projected: false });
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('isolates household data and refuses transactions assigned to outsiders', async () => {
     const { agent, base, transaction } = await fixture();
     const outsider = await register();

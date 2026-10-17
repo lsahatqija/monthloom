@@ -436,8 +436,71 @@
   flex-direction: column;
 }
 .transactionSourceField {
+  position: relative;
   grid-column: 1 / -1;
   grid-row: 1;
+}
+.transactionSourceField > label {
+  margin-bottom: var(--space-2);
+  color: var(--ml-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.transactionSourceOptions {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  left: 0;
+  overflow: hidden;
+  border: 1px solid var(--ml-border);
+  border-radius: 11px;
+  background: var(--ml-surface);
+  box-shadow: 0 12px 28px var(--ml-shadow);
+}
+.transactionSourceMatches {
+  max-height: 13rem;
+  overflow-y: auto;
+  padding: var(--space-2);
+}
+.transactionSourceMatches button,
+.transactionAddSource {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ml-text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.transactionSourceMatches button {
+  padding: 0.65rem var(--space-3);
+  border-radius: 8px;
+}
+.transactionSourceMatches button:hover,
+.transactionSourceMatches button:focus-visible,
+.transactionSourceMatches button.isSelected {
+  background: var(--ml-surface-hover);
+}
+.transactionSourceEmpty {
+  margin: 0;
+  padding: 0.65rem var(--space-3);
+  color: var(--ml-text-muted);
+  font-size: 0.9rem;
+}
+.transactionAddSource {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  padding: 0.75rem var(--space-3);
+  border-top: 1px solid var(--ml-border);
+  color: var(--ml-primary);
+  font-weight: 700;
+}
+.transactionAddSource:hover,
+.transactionAddSource:focus-visible {
+  background: var(--ml-surface-hover);
 }
 .transactionAmountField {
   grid-column: 1;
@@ -680,6 +743,12 @@
   background: var(--ml-surface);
   box-shadow: 0 14px 36px var(--ml-shadow);
   transform: translateX(-50%);
+}
+.iconPickerPopover.isPortaled,
+.colorPickerPopover.isPortaled {
+  position: fixed;
+  z-index: 120;
+  transform: none;
 }
 .colorOptions label {
   display: grid;
