@@ -10,7 +10,7 @@ import {
   type TransactionSeriesSelection,
 } from '@monthloom/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Alert, Button } from '../../components/ui/index';
@@ -61,10 +61,13 @@ export function TransactionForm({
 }: TransactionFormProps) {
   const iconPickerRef = useRef<HTMLDetailsElement>(null);
   const colorPickerRef = useRef<HTMLDetailsElement>(null);
+  const sourcePickerRef = useRef<HTMLDivElement>(null);
   const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const [availableSources, setAvailableSources] = useState(sources);
   const [isAddingSource, setIsAddingSource] = useState(false);
+  const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
+  const [sourceQuery, setSourceQuery] = useState(transaction?.source.displayName ?? '');
   const [expires, setExpires] = useState(Boolean(transaction?.expiresOn));
   const [selection, setSelection] = useState<TransactionSeriesSelection>({
     past: false,
@@ -101,6 +104,16 @@ export function TransactionForm({
   const userId = watch('userId');
   const recurring = watch('recurring');
   const expiresOn = watch('expiresOn') ?? '';
+  const filteredSources = useMemo(() => {
+    const query = sourceQuery.trim().toLocaleLowerCase();
+    if (!query) return availableSources;
+
+    return availableSources.filter(
+      (source) =>
+        source.displayName.toLocaleLowerCase().includes(query) ||
+        source.aliases.some((alias) => alias.toLocaleLowerCase().includes(query)),
+    );
+  }, [availableSources, sourceQuery]);
 
   useEffect(() => {
     const currentUserId = currentUser.data?.user?.id;
@@ -111,9 +124,10 @@ export function TransactionForm({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      if (iconPickerRef.current?.open || colorPickerRef.current?.open) {
+      if (iconPickerRef.current?.open || colorPickerRef.current?.open || sourcePickerOpen) {
         if (iconPickerRef.current) iconPickerRef.current.open = false;
         if (colorPickerRef.current) colorPickerRef.current.open = false;
+        setSourcePickerOpen(false);
         return;
       }
       if (isAddingSource) {
@@ -124,7 +138,7 @@ export function TransactionForm({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAddingSource, onClose]);
+  }, [isAddingSource, onClose, sourcePickerOpen]);
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -133,10 +147,13 @@ export function TransactionForm({
       const colorPicker = colorPickerRef.current;
       if (iconPicker?.open && !iconPicker.contains(target)) iconPicker.open = false;
       if (colorPicker?.open && !colorPicker.contains(target)) colorPicker.open = false;
+      if (sourcePickerOpen && !sourcePickerRef.current?.contains(target)) {
+        setSourcePickerOpen(false);
+      }
     };
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, []);
+  }, [sourcePickerOpen]);
 
   const mutation = useMutation({
     mutationFn: (input: CreateHouseholdTransactionRequest) =>
@@ -172,6 +189,7 @@ export function TransactionForm({
             ),
           );
           setValue('sourceId', source.id);
+          setSourceQuery(source.displayName);
           setIsAddingSource(false);
         }}
       />
@@ -365,38 +383,78 @@ export function TransactionForm({
                 </select>
               </label>
             </div>
-            <label
+            <div
+              ref={sourcePickerRef}
               className="transactionField transactionSourceField"
               data-onboarding="transaction-source"
             >
-              <span>Source</span>
-              <select
-                value={sourceId}
+              <label htmlFor="transaction-source">Source</label>
+              <input
+                id="transaction-source"
+                type="text"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-controls="transaction-source-options"
+                aria-expanded={sourcePickerOpen}
+                aria-haspopup="listbox"
+                value={sourceQuery}
                 autoFocus
                 required
                 disabled={mutation.isPending}
+                placeholder="Search sources"
+                onClick={() => setSourcePickerOpen(true)}
                 onChange={(event) => {
-                  if (event.target.value === 'add-new-source') {
-                    setIsAddingSource(true);
-                    window.dispatchEvent(
-                      new CustomEvent('monthloom:onboarding', { detail: 'add-source' }),
-                    );
-                    return;
-                  }
-                  setValue('sourceId', event.target.value);
+                  setSourceQuery(event.target.value);
+                  setValue('sourceId', '');
+                  setSourcePickerOpen(true);
                 }}
-              >
-                <option value="add-new-source">Add new source</option>
-                <option value="" disabled>
-                  Select a source
-                </option>
-                {availableSources.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.displayName}
-                  </option>
-                ))}
-              </select>
-            </label>
+              />
+              {sourcePickerOpen ? (
+                <div
+                  id="transaction-source-options"
+                  className="transactionSourceOptions"
+                  role="listbox"
+                  aria-label="Sources"
+                >
+                  <div className="transactionSourceMatches">
+                    {filteredSources.length ? (
+                      filteredSources.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          role="option"
+                          aria-selected={sourceId === option.id}
+                          className={sourceId === option.id ? 'isSelected' : undefined}
+                          onClick={() => {
+                            setValue('sourceId', option.id, { shouldValidate: true });
+                            setSourceQuery(option.displayName);
+                            setSourcePickerOpen(false);
+                          }}
+                        >
+                          {option.displayName}
+                        </button>
+                      ))
+                    ) : (
+                      <p className="transactionSourceEmpty">No matching sources</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="transactionAddSource"
+                    onClick={() => {
+                      setSourcePickerOpen(false);
+                      setIsAddingSource(true);
+                      window.dispatchEvent(
+                        new CustomEvent('monthloom:onboarding', { detail: 'add-source' }),
+                      );
+                    }}
+                  >
+                    <span aria-hidden="true">+</span>
+                    Add new source
+                  </button>
+                </div>
+              ) : null}
+            </div>
 
             <label className="transactionField transactionTypeField">
               <span>Type</span>

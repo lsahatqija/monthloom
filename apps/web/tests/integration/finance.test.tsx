@@ -19,8 +19,14 @@ const source = {
   key: 'shop',
   aliases: ['Shop'],
 };
+const salarySource = {
+  id: '33333333-3333-4333-8333-333333333333',
+  displayName: 'Salary',
+  key: 'salary',
+  aliases: ['Paycheck'],
+};
 
-function renderForm(transaction?: HouseholdTransaction) {
+function renderForm(transaction?: HouseholdTransaction, sources = [source]) {
   const client = new QueryClient({
     defaultOptions: {
       queries: { retry: false, staleTime: Infinity, gcTime: 0 },
@@ -33,7 +39,7 @@ function renderForm(transaction?: HouseholdTransaction) {
     <TransactionForm
       householdId="home"
       members={[member]}
-      sources={[source]}
+      sources={sources}
       transaction={transaction}
       onClose={onClose}
     />,
@@ -88,7 +94,8 @@ describe('transaction form + query + HTTP client', () => {
     const { onClose, client } = renderForm();
     const invalidate = vi.spyOn(client, 'invalidateQueries');
     expect(screen.getByRole('button', { name: 'Add transaction' })).toBeDisabled();
-    await userEvent.selectOptions(screen.getByLabelText('Source'), source.id);
+    await userEvent.click(screen.getByRole('combobox', { name: 'Source' }));
+    await userEvent.click(screen.getByRole('option', { name: source.displayName }));
     await userEvent.click(screen.getByRole('radio', { name: 'Income' }));
     await userEvent.type(screen.getByLabelText('Amount'), '12,34');
     await userEvent.click(screen.getByRole('button', { name: 'Add transaction' }));
@@ -103,6 +110,33 @@ describe('transaction form + query + HTTP client', () => {
       expiresOn: null,
     });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['finance'] });
+  });
+
+  it('filters sources live and always offers adding a new source', async () => {
+    renderForm(undefined, [source, salarySource]);
+    const sourceInput = screen.getByRole('combobox', { name: 'Source' });
+
+    expect(sourceInput).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('listbox', { name: 'Sources' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add new source' })).not.toBeInTheDocument();
+
+    await userEvent.click(sourceInput);
+
+    expect(screen.getByRole('option', { name: 'Shop' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Salary' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add new source' })).toBeInTheDocument();
+
+    await userEvent.type(sourceInput, 'pay');
+
+    expect(screen.queryByRole('option', { name: 'Shop' })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Salary' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add new source' })).toBeInTheDocument();
+
+    await userEvent.clear(sourceInput);
+    await userEvent.type(sourceInput, 'missing');
+
+    expect(screen.getByText('No matching sources')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add new source' })).toBeInTheDocument();
   });
 
   it('disables recurring edits when no occurrences are selected', async () => {
@@ -129,9 +163,16 @@ describe('transaction form + query + HTTP client', () => {
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
   });
 
-  it('closes the dialog on Escape without saving', async () => {
+  it('closes the source menu before closing the dialog on Escape', async () => {
     vi.stubGlobal('fetch', vi.fn());
     const { onClose } = renderForm();
+    await userEvent.click(screen.getByRole('combobox', { name: 'Source' }));
+    await userEvent.keyboard('{Escape}');
+    expect(screen.getByRole('combobox', { name: 'Source' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    expect(onClose).not.toHaveBeenCalled();
     await userEvent.keyboard('{Escape}');
     expect(onClose).toHaveBeenCalledOnce();
     expect(fetch).not.toHaveBeenCalled();
