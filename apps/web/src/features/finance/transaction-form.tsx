@@ -10,7 +10,8 @@ import {
   type TransactionSeriesSelection,
 } from '@monthloom/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 
 import { Alert, Button } from '../../components/ui/index';
@@ -37,6 +38,54 @@ const COLOR_OPTIONS = [
   '#6B7280',
 ];
 
+function usePickerPosition(
+  open: boolean,
+  pickerRef: React.RefObject<HTMLDetailsElement>,
+  popoverRef: React.RefObject<HTMLDivElement>,
+  align: 'left' | 'center',
+) {
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    const positionPopover = () => {
+      const trigger = pickerRef.current?.querySelector('summary');
+      const popover = popoverRef.current;
+      if (!trigger || !popover) return;
+
+      const triggerRect = trigger.getBoundingClientRect();
+      const gap = 7;
+      const viewportMargin = 8;
+      const topBelow = triggerRect.bottom + gap;
+      const top =
+        topBelow + popover.offsetHeight <= window.innerHeight - viewportMargin
+          ? topBelow
+          : Math.max(viewportMargin, triggerRect.top - popover.offsetHeight - gap);
+      const desiredLeft =
+        align === 'center'
+          ? triggerRect.left + (triggerRect.width - popover.offsetWidth) / 2
+          : triggerRect.left;
+      const left = Math.min(
+        Math.max(viewportMargin, desiredLeft),
+        window.innerWidth - popover.offsetWidth - viewportMargin,
+      );
+
+      setPosition({ top, left });
+    };
+
+    positionPopover();
+    window.addEventListener('resize', positionPopover);
+    window.addEventListener('scroll', positionPopover, true);
+    return () => {
+      window.removeEventListener('resize', positionPopover);
+      window.removeEventListener('scroll', positionPopover, true);
+    };
+  }, [align, open, pickerRef, popoverRef]);
+
+  return position;
+}
+
 function todayDate(): string {
   const today = new Date();
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
@@ -48,7 +97,6 @@ interface TransactionFormProps {
   householdId: string;
   members: HouseholdMonthResponse['members'];
   sources: HouseholdMonthResponse['sources'];
-  transactions?: HouseholdMonthResponse['transactions'];
   transaction?: HouseholdTransaction;
   onClose: () => void;
 }
@@ -57,16 +105,22 @@ export function TransactionForm({
   householdId,
   members,
   sources,
-  transactions = [],
   transaction,
   onClose,
 }: TransactionFormProps) {
   const iconPickerRef = useRef<HTMLDetailsElement>(null);
   const colorPickerRef = useRef<HTMLDetailsElement>(null);
+  const iconPickerPopoverRef = useRef<HTMLDivElement>(null);
+  const colorPickerPopoverRef = useRef<HTMLDivElement>(null);
+  const sourcePickerRef = useRef<HTMLDivElement>(null);
   const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const [availableSources, setAvailableSources] = useState(sources);
   const [isAddingSource, setIsAddingSource] = useState(false);
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
+  const [sourceQuery, setSourceQuery] = useState(transaction?.source.displayName ?? '');
   const [expires, setExpires] = useState(Boolean(transaction?.expiresOn));
   const [selection, setSelection] = useState<TransactionSeriesSelection>({
     past: false,
@@ -103,23 +157,28 @@ export function TransactionForm({
   const userId = watch('userId');
   const recurring = watch('recurring');
   const expiresOn = watch('expiresOn') ?? '';
+  const iconPickerPosition = usePickerPosition(
+    iconPickerOpen,
+    iconPickerRef,
+    iconPickerPopoverRef,
+    'left',
+  );
+  const colorPickerPosition = usePickerPosition(
+    colorPickerOpen,
+    colorPickerRef,
+    colorPickerPopoverRef,
+    'center',
+  );
+  const filteredSources = useMemo(() => {
+    const query = sourceQuery.trim().toLocaleLowerCase();
+    if (!query) return availableSources;
 
-  const selectSource = (selectedSourceId: string) => {
-    setValue('sourceId', selectedSourceId);
-    if (transaction) return;
-
-    const mostRecentTransaction = transactions
-      .filter((entry) => !entry.projected && entry.source.id === selectedSourceId)
-      .sort(
-        (left, right) => right.date.localeCompare(left.date) || right.id.localeCompare(left.id),
-      )[0];
-    if (!mostRecentTransaction) return;
-
-    setValue('kind', mostRecentTransaction.kind);
-    setValue('type', mostRecentTransaction.type);
-    setValue('icon', mostRecentTransaction.icon);
-    setValue('color', mostRecentTransaction.color);
-  };
+    return availableSources.filter(
+      (source) =>
+        source.displayName.toLocaleLowerCase().includes(query) ||
+        source.aliases.some((alias) => alias.toLocaleLowerCase().includes(query)),
+    );
+  }, [availableSources, sourceQuery]);
 
   useEffect(() => {
     const currentUserId = currentUser.data?.user?.id;
@@ -130,9 +189,10 @@ export function TransactionForm({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      if (iconPickerRef.current?.open || colorPickerRef.current?.open) {
-        if (iconPickerRef.current) iconPickerRef.current.open = false;
-        if (colorPickerRef.current) colorPickerRef.current.open = false;
+      if (iconPickerOpen || colorPickerOpen || sourcePickerOpen) {
+        setIconPickerOpen(false);
+        setColorPickerOpen(false);
+        setSourcePickerOpen(false);
         return;
       }
       if (isAddingSource) {
@@ -143,19 +203,32 @@ export function TransactionForm({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAddingSource, onClose]);
+  }, [colorPickerOpen, iconPickerOpen, isAddingSource, onClose, sourcePickerOpen]);
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
       const target = event.target as Node;
       const iconPicker = iconPickerRef.current;
       const colorPicker = colorPickerRef.current;
-      if (iconPicker?.open && !iconPicker.contains(target)) iconPicker.open = false;
-      if (colorPicker?.open && !colorPicker.contains(target)) colorPicker.open = false;
+      if (
+        iconPickerOpen &&
+        !iconPicker?.contains(target) &&
+        !iconPickerPopoverRef.current?.contains(target)
+      )
+        setIconPickerOpen(false);
+      if (
+        colorPickerOpen &&
+        !colorPicker?.contains(target) &&
+        !colorPickerPopoverRef.current?.contains(target)
+      )
+        setColorPickerOpen(false);
+      if (sourcePickerOpen && !sourcePickerRef.current?.contains(target)) {
+        setSourcePickerOpen(false);
+      }
     };
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, []);
+  }, [colorPickerOpen, iconPickerOpen, sourcePickerOpen]);
 
   const mutation = useMutation({
     mutationFn: (input: CreateHouseholdTransactionRequest) =>
@@ -191,6 +264,7 @@ export function TransactionForm({
             ),
           );
           setValue('sourceId', source.id);
+          setSourceQuery(source.displayName);
           setIsAddingSource(false);
         }}
       />
@@ -274,6 +348,8 @@ export function TransactionForm({
                   ref={iconPickerRef}
                   className="iconPickerDropdown"
                   aria-disabled={mutation.isPending}
+                  open={iconPickerOpen}
+                  onToggle={(event) => setIconPickerOpen(event.currentTarget.open)}
                 >
                   <summary
                     onClick={(event) => {
@@ -285,35 +361,44 @@ export function TransactionForm({
                     </span>
                     <span>{financialIconLabel(icon)}</span>
                   </summary>
-                  <div className="iconPickerPopover">
-                    <div className="iconPickerGrid" role="group" aria-label="Choose an icon">
-                      {Constants.FINANCIAL_ICONS.map((option) => {
-                        const label = financialIconLabel(option);
-                        return (
-                          <label
-                            key={option}
-                            className={icon === option ? 'isSelected' : undefined}
-                            title={label}
-                          >
-                            <input
-                              type="radio"
-                              name="icon"
-                              value={option}
-                              checked={icon === option}
-                              disabled={mutation.isPending}
-                              onChange={() => {
-                                setValue('icon', option);
-                                if (iconPickerRef.current) iconPickerRef.current.open = false;
-                              }}
-                            />
-                            <FinancialIcon name={option} size={21} />
-                            <span className="srOnly">{label}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
                 </details>
+                {iconPickerOpen && typeof document !== 'undefined'
+                  ? createPortal(
+                      <div
+                        ref={iconPickerPopoverRef}
+                        className="iconPickerPopover isPortaled"
+                        style={iconPickerPosition}
+                      >
+                        <div className="iconPickerGrid" role="group" aria-label="Choose an icon">
+                          {Constants.FINANCIAL_ICONS.map((option) => {
+                            const label = financialIconLabel(option);
+                            return (
+                              <label
+                                key={option}
+                                className={icon === option ? 'isSelected' : undefined}
+                                title={label}
+                              >
+                                <input
+                                  type="radio"
+                                  name="icon"
+                                  value={option}
+                                  checked={icon === option}
+                                  disabled={mutation.isPending}
+                                  onChange={() => {
+                                    setValue('icon', option);
+                                    setIconPickerOpen(false);
+                                  }}
+                                />
+                                <FinancialIcon name={option} size={21} />
+                                <span className="srOnly">{label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>,
+                      document.body,
+                    )
+                  : null}
               </div>
 
               <div className="colorPicker">
@@ -322,6 +407,8 @@ export function TransactionForm({
                   ref={colorPickerRef}
                   className="colorPickerDropdown"
                   aria-disabled={mutation.isPending}
+                  open={colorPickerOpen}
+                  onToggle={(event) => setColorPickerOpen(event.currentTarget.open)}
                 >
                   <summary
                     onClick={(event) => {
@@ -331,40 +418,49 @@ export function TransactionForm({
                     <span className="selectedColorPreview" style={{ backgroundColor: color }} />
                     <span>{color.toUpperCase()}</span>
                   </summary>
-                  <div className="colorPickerPopover">
-                    <div className="colorOptions">
-                      {COLOR_OPTIONS.map((option) => (
-                        <label key={option} style={{ backgroundColor: option }}>
-                          <input
-                            type="radio"
-                            name="color"
-                            value={option}
-                            checked={color === option}
-                            disabled={mutation.isPending}
-                            onChange={() => {
-                              setValue('color', option);
-                              if (colorPickerRef.current) colorPickerRef.current.open = false;
-                            }}
-                          />
-                          <span className="srOnly">{option}</span>
-                        </label>
-                      ))}
-                      <label className="customColor" title="Custom color">
-                        <input
-                          type="color"
-                          value={color}
-                          disabled={mutation.isPending}
-                          onChange={(event) => {
-                            setValue('color', event.target.value);
-                            if (colorPickerRef.current) colorPickerRef.current.open = false;
-                          }}
-                        />
-                        <span aria-hidden="true">+</span>
-                        <span className="srOnly">Custom color</span>
-                      </label>
-                    </div>
-                  </div>
                 </details>
+                {colorPickerOpen && typeof document !== 'undefined'
+                  ? createPortal(
+                      <div
+                        ref={colorPickerPopoverRef}
+                        className="colorPickerPopover isPortaled"
+                        style={colorPickerPosition}
+                      >
+                        <div className="colorOptions">
+                          {COLOR_OPTIONS.map((option) => (
+                            <label key={option} style={{ backgroundColor: option }}>
+                              <input
+                                type="radio"
+                                name="color"
+                                value={option}
+                                checked={color === option}
+                                disabled={mutation.isPending}
+                                onChange={() => {
+                                  setValue('color', option);
+                                  setColorPickerOpen(false);
+                                }}
+                              />
+                              <span className="srOnly">{option}</span>
+                            </label>
+                          ))}
+                          <label className="customColor" title="Custom color">
+                            <input
+                              type="color"
+                              value={color}
+                              disabled={mutation.isPending}
+                              onChange={(event) => {
+                                setValue('color', event.target.value);
+                                setColorPickerOpen(false);
+                              }}
+                            />
+                            <span aria-hidden="true">+</span>
+                            <span className="srOnly">Custom color</span>
+                          </label>
+                        </div>
+                      </div>,
+                      document.body,
+                    )
+                  : null}
               </div>
 
               <label className="transactionField transactionMemberField">
@@ -384,38 +480,78 @@ export function TransactionForm({
                 </select>
               </label>
             </div>
-            <label
+            <div
+              ref={sourcePickerRef}
               className="transactionField transactionSourceField"
               data-onboarding="transaction-source"
             >
-              <span>Source</span>
-              <select
-                value={sourceId}
+              <label htmlFor="transaction-source">Source</label>
+              <input
+                id="transaction-source"
+                type="text"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-controls="transaction-source-options"
+                aria-expanded={sourcePickerOpen}
+                aria-haspopup="listbox"
+                value={sourceQuery}
                 autoFocus
                 required
                 disabled={mutation.isPending}
+                placeholder="Search sources"
+                onClick={() => setSourcePickerOpen(true)}
                 onChange={(event) => {
-                  if (event.target.value === 'add-new-source') {
-                    setIsAddingSource(true);
-                    window.dispatchEvent(
-                      new CustomEvent('monthloom:onboarding', { detail: 'add-source' }),
-                    );
-                    return;
-                  }
-                  selectSource(event.target.value);
+                  setSourceQuery(event.target.value);
+                  setValue('sourceId', '');
+                  setSourcePickerOpen(true);
                 }}
-              >
-                <option value="add-new-source">Add new source</option>
-                <option value="" disabled>
-                  Select a source
-                </option>
-                {availableSources.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.displayName}
-                  </option>
-                ))}
-              </select>
-            </label>
+              />
+              {sourcePickerOpen ? (
+                <div
+                  id="transaction-source-options"
+                  className="transactionSourceOptions"
+                  role="listbox"
+                  aria-label="Sources"
+                >
+                  <div className="transactionSourceMatches">
+                    {filteredSources.length ? (
+                      filteredSources.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          role="option"
+                          aria-selected={sourceId === option.id}
+                          className={sourceId === option.id ? 'isSelected' : undefined}
+                          onClick={() => {
+                            setValue('sourceId', option.id, { shouldValidate: true });
+                            setSourceQuery(option.displayName);
+                            setSourcePickerOpen(false);
+                          }}
+                        >
+                          {option.displayName}
+                        </button>
+                      ))
+                    ) : (
+                      <p className="transactionSourceEmpty">No matching sources</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="transactionAddSource"
+                    onClick={() => {
+                      setSourcePickerOpen(false);
+                      setIsAddingSource(true);
+                      window.dispatchEvent(
+                        new CustomEvent('monthloom:onboarding', { detail: 'add-source' }),
+                      );
+                    }}
+                  >
+                    <span aria-hidden="true">+</span>
+                    Add new source
+                  </button>
+                </div>
+              ) : null}
+            </div>
 
             <label className="transactionField transactionTypeField">
               <span>Type</span>

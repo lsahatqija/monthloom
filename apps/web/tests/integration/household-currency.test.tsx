@@ -52,7 +52,7 @@ describe('household currency settings', () => {
     });
     vi.stubGlobal('fetch', fetch);
     renderWithQuery(<HouseholdSettings user={user} />);
-    const picker = screen.getByLabelText('Currency');
+    const picker = await screen.findByLabelText('Currency');
     expect(picker).toHaveValue('EUR');
     expect(
       within(picker)
@@ -73,5 +73,44 @@ describe('household currency settings', () => {
     await userEvent.click(within(card).getByRole('button', { name: 'Edit' }));
     expect(within(card).getByLabelText('Currency')).toHaveValue('JPY');
     expect(households[1]?.currency).toBe('GBP');
+  });
+
+  it('opens household creation in a modal when the user already has a household', async () => {
+    const existingHousehold: ManagedHousehold = {
+      id: 'existing-home',
+      ownerId: user.id,
+      name: 'Existing home',
+      currency: 'EUR',
+      icon: 'small-house',
+      color: '#35675B',
+      isPrimary: true,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      members: [{ ...user, joinedAt: user.createdAt }],
+    };
+    let households = [existingHousehold];
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (_input, options) => {
+      if (options?.method === 'POST') {
+        const details = JSON.parse(String(options.body));
+        const household = { ...existingHousehold, ...details, id: 'new-home', isPrimary: false };
+        households = [...households, household];
+        return Response.json({ household });
+      }
+      return Response.json({ households });
+    });
+    vi.stubGlobal('fetch', fetch);
+    renderWithQuery(<HouseholdSettings user={user} />);
+
+    const addButton = await screen.findByRole('button', { name: 'Add Household' });
+    expect(screen.queryByLabelText('Name')).not.toBeInTheDocument();
+
+    await userEvent.click(addButton);
+    const dialog = screen.getByRole('dialog', { name: 'Add a household' });
+    await userEvent.type(within(dialog).getByLabelText('Name'), 'Second home');
+    await userEvent.selectOptions(within(dialog).getByLabelText('Currency'), 'USD');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Create household' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(households[1]).toMatchObject({ name: 'Second home', currency: 'USD' });
   });
 });

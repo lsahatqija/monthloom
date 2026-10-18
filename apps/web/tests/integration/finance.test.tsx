@@ -19,8 +19,14 @@ const source = {
   key: 'shop',
   aliases: ['Shop'],
 };
+const salarySource = {
+  id: '33333333-3333-4333-8333-333333333333',
+  displayName: 'Salary',
+  key: 'salary',
+  aliases: ['Paycheck'],
+};
 
-function renderForm(transaction?: HouseholdTransaction, transactions: HouseholdTransaction[] = []) {
+function renderForm(transaction?: HouseholdTransaction, sources = [source]) {
   const client = new QueryClient({
     defaultOptions: {
       queries: { retry: false, staleTime: Infinity, gcTime: 0 },
@@ -33,8 +39,7 @@ function renderForm(transaction?: HouseholdTransaction, transactions: HouseholdT
     <TransactionForm
       householdId="home"
       members={[member]}
-      sources={[source]}
-      transactions={transactions}
+      sources={sources}
       transaction={transaction}
       onClose={onClose}
     />,
@@ -89,7 +94,8 @@ describe('transaction form + query + HTTP client', () => {
     const { onClose, client } = renderForm();
     const invalidate = vi.spyOn(client, 'invalidateQueries');
     expect(screen.getByRole('button', { name: 'Add transaction' })).toBeDisabled();
-    await userEvent.selectOptions(screen.getByLabelText('Source'), source.id);
+    await userEvent.click(screen.getByRole('combobox', { name: 'Source' }));
+    await userEvent.click(screen.getByRole('option', { name: source.displayName }));
     await userEvent.click(screen.getByRole('radio', { name: 'Income' }));
     await userEvent.type(screen.getByLabelText('Amount'), '12,34');
     await userEvent.click(screen.getByRole('button', { name: 'Add transaction' }));
@@ -106,41 +112,31 @@ describe('transaction form + query + HTTP client', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['finance'] });
   });
 
-  it('prefills editable fields from the most recent transaction for a selected source', async () => {
-    const older: HouseholdTransaction = {
-      id: '33333333-3333-4333-8333-333333333333',
-      kind: 'expense',
-      type: 'groceries',
-      date: '2026-01-02',
-      icon: 'receipt',
-      color: '#123456',
-      amount: '12.34',
-      recurring: false,
-      expiresOn: null,
-      projected: false,
-      user: member,
-      source,
-    };
-    const newest: HouseholdTransaction = {
-      ...older,
-      id: '44444444-4444-4444-8444-444444444444',
-      kind: 'income',
-      type: null,
-      date: '2026-01-20',
-      icon: 'banknote',
-      color: '#ABCDEF',
-    };
-    renderForm(undefined, [newest, older]);
+  it('filters sources live and always offers adding a new source', async () => {
+    renderForm(undefined, [source, salarySource]);
+    const sourceInput = screen.getByRole('combobox', { name: 'Source' });
 
-    await userEvent.selectOptions(screen.getByLabelText('Source'), source.id);
+    expect(sourceInput).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('listbox', { name: 'Sources' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add new source' })).not.toBeInTheDocument();
 
-    expect(screen.getByRole('radio', { name: 'Income' })).toBeChecked();
-    expect(screen.getByLabelText('Type')).toHaveValue('income');
-    expect(screen.getByRole('radio', { name: 'Banknote' })).toBeChecked();
-    expect(screen.getByText('#ABCDEF')).toBeInTheDocument();
+    await userEvent.click(sourceInput);
 
-    await userEvent.click(screen.getByRole('radio', { name: 'Expense' }));
-    expect(screen.getByRole('radio', { name: 'Expense' })).toBeChecked();
+    expect(screen.getByRole('option', { name: 'Shop' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Salary' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add new source' })).toBeInTheDocument();
+
+    await userEvent.type(sourceInput, 'pay');
+
+    expect(screen.queryByRole('option', { name: 'Shop' })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Salary' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add new source' })).toBeInTheDocument();
+
+    await userEvent.clear(sourceInput);
+    await userEvent.type(sourceInput, 'missing');
+
+    expect(screen.getByText('No matching sources')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add new source' })).toBeInTheDocument();
   });
 
   it('disables recurring edits when no occurrences are selected', async () => {
@@ -167,11 +163,36 @@ describe('transaction form + query + HTTP client', () => {
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
   });
 
-  it('closes the dialog on Escape without saving', async () => {
+  it('closes the source menu before closing the dialog on Escape', async () => {
     vi.stubGlobal('fetch', vi.fn());
     const { onClose } = renderForm();
+    await userEvent.click(screen.getByRole('combobox', { name: 'Source' }));
+    await userEvent.keyboard('{Escape}');
+    expect(screen.getByRole('combobox', { name: 'Source' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    expect(onClose).not.toHaveBeenCalled();
     await userEvent.keyboard('{Escape}');
     expect(onClose).toHaveBeenCalledOnce();
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('renders icon and color pickers outside the scrolling dialog', async () => {
+    renderForm();
+
+    await userEvent.click(screen.getByText('Receipt').closest('summary')!);
+    const iconGrid = screen.getByRole('group', { name: 'Choose an icon' });
+    expect(iconGrid.closest('[role="dialog"]')).toBeNull();
+    await userEvent.click(screen.getByRole('radio', { name: 'House' }));
+    expect(screen.queryByRole('group', { name: 'Choose an icon' })).not.toBeInTheDocument();
+    expect(screen.getByText('House')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('#35675B').closest('summary')!);
+    const colorOption = screen.getByRole('radio', { name: '#33805C' });
+    expect(colorOption.closest('[role="dialog"]')).toBeNull();
+    await userEvent.click(colorOption);
+    expect(screen.queryByRole('radio', { name: '#33805C' })).not.toBeInTheDocument();
+    expect(screen.getByText('#33805C')).toBeInTheDocument();
   });
 });

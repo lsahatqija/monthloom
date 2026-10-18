@@ -35,6 +35,23 @@ export function transactionTypeLabel(transaction: HouseholdTransaction): string 
   return transaction.type ? formatTransactionType(transaction.type) : 'Other';
 }
 
+function localDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate(),
+  ).padStart(2, '0')}`;
+}
+
+export function isUpcomingRecurringTransaction(
+  transaction: HouseholdTransaction,
+  selectedMonth: string,
+  today = new Date(),
+): boolean {
+  const todayKey = localDateKey(today);
+  return (
+    transaction.recurring && selectedMonth === todayKey.slice(0, 7) && transaction.date > todayKey
+  );
+}
+
 export function filterAndSortTransactions(
   transactions: HouseholdTransaction[],
   filters: TransactionFilters,

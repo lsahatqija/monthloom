@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { alignOccurrenceDate, currentMonth, monthEnd } from '../../src/modules/finance/rules/dates.js';
+import {
+  alignOccurrenceDate,
+  currentMonth,
+  monthEnd,
+  recurringOccurrenceDates,
+} from '../../src/modules/finance/rules/dates.js';
 import { averageAmounts, fromCents, toCents } from '../../src/modules/finance/rules/money.js';
 import { sourceKey, sourceValues } from '../../src/modules/finance/rules/sources.js';
 
@@ -28,6 +33,22 @@ describe('finance date and recurrence rules', () => {
 
   it('derives the current UTC month from an injected clock', () => {
     expect(currentMonth(new Date('2026-01-31T23:59:59Z'))).toBe('2026-01');
+  });
+
+  it('lists monthly occurrences from a past start date through the requested month', () => {
+    expect(recurringOccurrenceDates('2026-01-31', '2026-04', null)).toEqual([
+      '2026-01-31',
+      '2026-02-28',
+      '2026-03-31',
+      '2026-04-30',
+    ]);
+  });
+
+  it('stops monthly occurrences at the recurrence expiration date', () => {
+    expect(recurringOccurrenceDates('2026-01-31', '2026-04', '2026-03-15')).toEqual([
+      '2026-01-31',
+      '2026-02-28',
+    ]);
   });
 });
 
