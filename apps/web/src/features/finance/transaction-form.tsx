@@ -97,6 +97,7 @@ interface TransactionFormProps {
   householdId: string;
   members: HouseholdMonthResponse['members'];
   sources: HouseholdMonthResponse['sources'];
+  transactions?: HouseholdMonthResponse['transactions'];
   transaction?: HouseholdTransaction;
   onClose: () => void;
 }
@@ -105,6 +106,7 @@ export function TransactionForm({
   householdId,
   members,
   sources,
+  transactions = [],
   transaction,
   onClose,
 }: TransactionFormProps) {
@@ -157,6 +159,23 @@ export function TransactionForm({
   const userId = watch('userId');
   const recurring = watch('recurring');
   const expiresOn = watch('expiresOn') ?? '';
+
+  const selectSource = (selectedSourceId: string) => {
+    setValue('sourceId', selectedSourceId, { shouldValidate: true });
+    if (transaction) return;
+
+    const mostRecentTransaction = transactions
+      .filter((entry) => !entry.projected && entry.source.id === selectedSourceId)
+      .sort(
+        (left, right) => right.date.localeCompare(left.date) || right.id.localeCompare(left.id),
+      )[0];
+    if (!mostRecentTransaction) return;
+
+    setValue('kind', mostRecentTransaction.kind);
+    setValue('type', mostRecentTransaction.type);
+    setValue('icon', mostRecentTransaction.icon);
+    setValue('color', mostRecentTransaction.color);
+  };
   const iconPickerPosition = usePickerPosition(
     iconPickerOpen,
     iconPickerRef,
@@ -523,7 +542,7 @@ export function TransactionForm({
                           aria-selected={sourceId === option.id}
                           className={sourceId === option.id ? 'isSelected' : undefined}
                           onClick={() => {
-                            setValue('sourceId', option.id, { shouldValidate: true });
+                            selectSource(option.id);
                             setSourceQuery(option.displayName);
                             setSourcePickerOpen(false);
                           }}

@@ -454,6 +454,7 @@ export function HouseholdDashboard() {
           householdId={household.id}
           members={query.data.members}
           sources={query.data.sources}
+          transactions={query.data.transactions}
           onClose={() => setAddingTransaction(false)}
         />
       ) : null}
