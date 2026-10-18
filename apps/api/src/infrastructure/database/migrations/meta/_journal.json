@@ -120,6 +120,13 @@
       "when": 1792070169255,
       "tag": "0016_add-expense-types",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792355737821,
+      "tag": "0017_omniscient_rage",
+      "breakpoints": true
     }
   ]
 }
