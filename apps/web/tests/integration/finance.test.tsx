@@ -26,7 +26,11 @@ const salarySource = {
   aliases: ['Paycheck'],
 };
 
-function renderForm(transaction?: HouseholdTransaction, sources = [source]) {
+function renderForm(
+  transaction?: HouseholdTransaction,
+  sources = [source],
+  transactions: HouseholdTransaction[] = [],
+) {
   const client = new QueryClient({
     defaultOptions: {
       queries: { retry: false, staleTime: Infinity, gcTime: 0 },
@@ -40,6 +44,7 @@ function renderForm(transaction?: HouseholdTransaction, sources = [source]) {
       householdId="home"
       members={[member]}
       sources={sources}
+      transactions={transactions}
       transaction={transaction}
       onClose={onClose}
     />,
@@ -110,6 +115,41 @@ describe('transaction form + query + HTTP client', () => {
       expiresOn: null,
     });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['finance'] });
+  });
+
+  it('prefills fields from the most recent transaction for a selected source', async () => {
+    const older: HouseholdTransaction = {
+      id: '33333333-3333-4333-8333-333333333333',
+      kind: 'expense',
+      type: 'groceries',
+      date: '2026-01-02',
+      icon: 'receipt',
+      color: '#123456',
+      amount: '12.34',
+      recurring: false,
+      expiresOn: null,
+      projected: false,
+      user: member,
+      source,
+    };
+    const newest: HouseholdTransaction = {
+      ...older,
+      id: '44444444-4444-4444-8444-444444444444',
+      kind: 'income',
+      type: null,
+      date: '2026-01-20',
+      icon: 'banknote',
+      color: '#ABCDEF',
+    };
+    renderForm(undefined, [source], [newest, older]);
+
+    await userEvent.click(screen.getByRole('combobox', { name: 'Source' }));
+    await userEvent.click(screen.getByRole('option', { name: source.displayName }));
+
+    expect(screen.getByRole('radio', { name: 'Income' })).toBeChecked();
+    expect(screen.getByLabelText('Type')).toHaveValue('income');
+    expect(screen.getByText('Banknote')).toBeInTheDocument();
+    expect(screen.getByText('#ABCDEF')).toBeInTheDocument();
   });
 
   it('filters sources live and always offers adding a new source', async () => {
