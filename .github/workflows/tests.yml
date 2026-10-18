@@ -51,3 +51,47 @@ jobs:
             coverage/
           if-no-files-found: warn
           retention-days: 14
+
+  patch-notes:
+    name: Publish wiki and patch notes
+    needs: tests
+    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: monthloom-wiki
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the tested source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check out the GitHub wiki
+        id: wiki
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}.wiki
+          path: .wiki
+
+      - name: Publish documentation and patch notes
+        if: steps.wiki.outcome == 'success'
+        uses: ./.github/actions/publish-wiki
+        with:
+          wiki-path: .wiki
+          before-sha: ${{ github.event.before }}
+          after-sha: ${{ github.sha }}
+          repository: ${{ github.repository }}
+          server-url: ${{ github.server_url }}
+          run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          verification-result: ${{ needs.tests.result }}
+          pushed-at: ${{ github.event.head_commit.timestamp }}
+
+      - name: Explain missing wiki setup
+        if: steps.wiki.outcome != 'success'
+        run: |
+          echo "::warning title=GitHub wiki is not initialized::Enable Wikis and create the first Home page, then rerun this workflow. See docs/github-wiki.md."

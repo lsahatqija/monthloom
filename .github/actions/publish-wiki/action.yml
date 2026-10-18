@@ -1,0 +1,61 @@
+name: Publish wiki and patch notes
+description: Sync the project documentation and publish readable patch notes to the GitHub wiki.
+
+inputs:
+  wiki-path:
+    description: Path to the checked-out wiki repository.
+    required: true
+  before-sha:
+    description: Commit immediately before the push.
+    required: true
+  after-sha:
+    description: Commit at the tip of the push.
+    required: true
+  repository:
+    description: GitHub owner and repository name.
+    required: true
+  server-url:
+    description: GitHub server URL.
+    required: true
+  run-url:
+    description: URL of the workflow run that verified the change.
+    required: true
+  verification-result:
+    description: Result of the automated test job.
+    required: true
+  pushed-at:
+    description: ISO-8601 timestamp for the push.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Generate wiki pages
+      shell: bash
+      env:
+        WIKI_PATH: ${{ inputs.wiki-path }}
+        BEFORE_SHA: ${{ inputs.before-sha }}
+        AFTER_SHA: ${{ inputs.after-sha }}
+        REPOSITORY: ${{ inputs.repository }}
+        SERVER_URL: ${{ inputs.server-url }}
+        RUN_URL: ${{ inputs.run-url }}
+        VERIFICATION_RESULT: ${{ inputs.verification-result }}
+        PUSHED_AT: ${{ inputs.pushed-at }}
+      run: node scripts/publish-wiki.mjs
+
+    - name: Commit and push wiki changes
+      shell: bash
+      working-directory: ${{ inputs.wiki-path }}
+      env:
+        AFTER_SHA: ${{ inputs.after-sha }}
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add --all
+        if git diff --cached --quiet; then
+          echo "The wiki is already up to date."
+          exit 0
+        fi
+        git commit -m "docs: publish patch notes for ${AFTER_SHA:0:7}"
+        git push
