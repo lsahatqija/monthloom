@@ -48,6 +48,10 @@ GitHub Actions runs lint, type checks, tests and coverage checks on pull request
 See [the testing guide](docs/testing.md) for package commands, watch mode, test isolation,
 coverage reports, adding regression tests and requiring tests before deployment.
 
+Every push to `main` also publishes human-readable patch notes and the maintained project guides
+to the GitHub wiki after automated checks finish. See [the wiki setup guide](docs/github-wiki.md)
+for the one-time GitHub configuration and publishing behavior.
+
 ## Architecture
 
 Monthloom is a pnpm workspace with two independently deployable applications and a shared
