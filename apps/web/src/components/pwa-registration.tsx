@@ -56,13 +56,6 @@ function isIos(navigatorValue: Navigator) {
   );
 }
 
-function expectsNativeInstallPrompt(navigatorValue: Navigator) {
-  return (
-    /Android/i.test(navigatorValue.userAgent) &&
-    /Chrome|Chromium|EdgA|OPR|Opera|SamsungBrowser/i.test(navigatorValue.userAgent)
-  );
-}
-
 export function usePwaInstall() {
   return useContext(PwaInstallContext);
 }
@@ -70,7 +63,6 @@ export function usePwaInstall() {
 export function PwaRegistration({ children }: { children: ReactNode }) {
   const [mobileBrowser, setMobileBrowser] = useState(false);
   const [iosDevice, setIosDevice] = useState(false);
-  const [nativePromptExpected, setNativePromptExpected] = useState(false);
   const [installed, setInstalled] = useState(false);
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [promptOpen, setPromptOpen] = useState(false);
@@ -80,7 +72,6 @@ export function PwaRegistration({ children }: { children: ReactNode }) {
     const isMobile = isMobileBrowser(navigator, window);
     setMobileBrowser(isMobile);
     setIosDevice(isIos(navigator));
-    setNativePromptExpected(expectsNativeInstallPrompt(navigator));
     setPromptOpen(isMobile && sessionStorage.getItem(PROMPT_DISMISSED_KEY) !== 'true');
 
     if ('serviceWorker' in navigator) {
@@ -166,10 +157,9 @@ export function PwaRegistration({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 className="installPromptConfirm"
-                disabled={!installEvent && nativePromptExpected}
                 onClick={() => void install()}
               >
-                {installEvent ? 'Install' : nativePromptExpected ? 'Preparing…' : 'Show me how'}
+                {installEvent ? 'Install' : 'Show me how'}
               </button>
             ) : null}
           </div>

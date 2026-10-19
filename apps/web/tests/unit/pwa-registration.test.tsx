@@ -59,7 +59,7 @@ describe('PWA installation', () => {
     );
 
     expect(await screen.findByRole('dialog', { name: 'Install Monthloom' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Preparing…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Show me how' })).toBeEnabled();
     await act(async () => {
       window.dispatchEvent(installEvent);
     });
@@ -108,5 +108,18 @@ describe('PWA installation', () => {
     expect(
       screen.getByText(/Apple does not allow sites to open this dialog automatically/),
     ).toBeInTheDocument();
+  });
+
+  it('offers browser-menu instructions when Opera does not expose an installer', async () => {
+    setDevice('Mozilla/5.0 (Linux; Android 15; Mobile) OPR/92.0');
+
+    render(
+      <PwaRegistration>
+        <InstallMenuEntry />
+      </PwaRegistration>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Show me how' }));
+    expect(screen.getByText(/Open the browser menu and choose Install app/)).toBeInTheDocument();
   });
 });
