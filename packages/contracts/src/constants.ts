@@ -43,8 +43,6 @@ export class Constants {
     'braided-border': 'Braided Border',
     'concentric-lozenge': 'Concentric Lozenge',
   } as const;
-  static readonly DEFAULT_PROFILE_IMAGE = 'diamond-kilim' as const;
-
   static readonly DESIRED_COLORS = [
     'slate',
     'red',
@@ -81,8 +79,6 @@ export class Constants {
     purple: '#bf33ea',
     rose: '#f34d71',
   } as const;
-  static readonly DEFAULT_DESIRED_COLOR = 'indigo' as const;
-
   /** Stable icon keys used to represent different kinds of households and properties. */
   static readonly HOUSEHOLD_ICONS = [
     'small-house',

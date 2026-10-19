@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Constants, registerRequestSchema, type RegisterRequest } from '@monthloom/contracts';
+import { Defaults, registerRequestSchema, type RegisterRequest } from '@monthloom/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -26,8 +26,8 @@ export function RegisterForm({ redirectTo }: { redirectTo: string }) {
   } = useForm<RegisterRequest>({
     resolver: zodResolver(registerRequestSchema),
     defaultValues: {
-      profileImage: Constants.DEFAULT_PROFILE_IMAGE,
-      desiredColor: Constants.DEFAULT_DESIRED_COLOR,
+      profileImage: Defaults.USER_PROFILE_IMAGE,
+      desiredColor: Defaults.USER_DESIRED_COLOR,
     },
   });
 

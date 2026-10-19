@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Constants,
+  Defaults,
   createHouseholdTransactionRequestSchema,
   type CreateHouseholdTransactionRequest,
   type HouseholdMonthResponse,
@@ -24,7 +25,7 @@ import { SourceModal } from './source-modal';
 import { transactionTypeLabel } from './transaction-type';
 
 const COLOR_OPTIONS = [
-  '#35675B',
+  Defaults.TRANSACTION_COLOR,
   '#33805C',
   '#2F7D78',
   '#2F6F9F',
@@ -137,15 +138,15 @@ export function TransactionForm({
   } = useForm<CreateHouseholdTransactionRequest>({
     resolver: zodResolver(createHouseholdTransactionRequestSchema),
     defaultValues: {
-      kind: transaction?.kind ?? 'expense',
-      type: transaction?.type ?? 'other',
+      kind: transaction?.kind ?? Defaults.TRANSACTION_KIND,
+      type: transaction?.type ?? Defaults.TRANSACTION_TYPE,
       sourceId: transaction?.source.id ?? '',
-      icon: transaction?.icon ?? 'receipt',
-      color: transaction?.color ?? COLOR_OPTIONS[0]!,
+      icon: transaction?.icon ?? Defaults.TRANSACTION_ICON,
+      color: transaction?.color ?? Defaults.TRANSACTION_COLOR,
       amount: transaction?.amount ?? '',
       date: transaction?.date ?? todayDate(),
       userId: transaction?.user.id ?? currentUser.data?.user?.id ?? members[0]?.id ?? '',
-      recurring: transaction?.recurring ?? false,
+      recurring: transaction?.recurring ?? Defaults.TRANSACTION_RECURRING,
       expiresOn: transaction?.expiresOn ?? null,
     },
   });
@@ -338,8 +339,10 @@ export function TransactionForm({
                 checked={kind === 'expense'}
                 onChange={() => {
                   setValue('kind', 'expense');
-                  if (!type) setValue('type', 'other');
-                  if (icon === 'banknote') setValue('icon', 'receipt');
+                  if (!type) setValue('type', Defaults.TRANSACTION_TYPE);
+                  if (icon === Defaults.INCOME_TRANSACTION_ICON) {
+                    setValue('icon', Defaults.TRANSACTION_ICON);
+                  }
                 }}
               />
               Expense
@@ -353,7 +356,9 @@ export function TransactionForm({
                 onChange={() => {
                   setValue('kind', 'income');
                   setValue('type', null);
-                  if (icon === 'receipt') setValue('icon', 'banknote');
+                  if (icon === Defaults.TRANSACTION_ICON) {
+                    setValue('icon', Defaults.INCOME_TRANSACTION_ICON);
+                  }
                 }}
               />
               Income

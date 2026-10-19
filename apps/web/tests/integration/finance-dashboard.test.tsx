@@ -147,7 +147,7 @@ describe('household dashboard', () => {
     expect(screen.queryByRole('button', { name: 'Make default' })).not.toBeInTheDocument();
   });
 
-  it('sorts by signed amount and filters expenses without changing monthly totals', async () => {
+  it('shows latest transactions first, sorts by signed amount, and filters expenses', async () => {
     mockDashboard();
     renderWithQuery(<HouseholdDashboard />);
     await screen.findByRole('heading', { name: 'Our Home' });
@@ -156,8 +156,8 @@ describe('household dashboard', () => {
       within(table)
         .getAllByRole('columnheader')
         .map((header) => header.textContent),
-    ).toEqual(['Date↑', '', 'Amount↕', 'Source↕', 'Type↕', 'User↕', '']);
-    expect(within(table).getAllByRole('row')[1]).toHaveTextContent('Employer');
+    ).toEqual(['Date↓', '', 'Amount↕', 'Source↕', 'Type↕', 'User↕', '']);
+    expect(within(table).getAllByRole('row')[1]).toHaveTextContent('Grocer');
     await userEvent.click(screen.getByRole('button', { name: 'Amount' }));
     expect(within(table).getAllByRole('row')[1]).toHaveTextContent('Grocer');
     await userEvent.click(screen.getByText('Filters', { exact: true }));

@@ -1,4 +1,4 @@
-import type { HouseholdTransaction } from '@monthloom/contracts';
+import { Defaults, type HouseholdTransaction } from '@monthloom/contracts';
 import { useMemo, useState } from 'react';
 
 import {
@@ -12,8 +12,10 @@ import {
 } from './transaction-view';
 
 export function useTransactionView(transactions: HouseholdTransaction[]) {
-  const [sortKey, setSortKey] = useState<TransactionSortKey>('date');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('ascending');
+  const [sortKey, setSortKey] = useState<TransactionSortKey>(Defaults.TRANSACTION_SORT_KEY);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(
+    Defaults.TRANSACTION_SORT_DIRECTION,
+  );
   const [filters, setFilters] = useState<TransactionFilters>(emptyTransactionFilters);
   const visibleTransactions = useMemo(
     () => filterAndSortTransactions(transactions, filters, sortKey, sortDirection),

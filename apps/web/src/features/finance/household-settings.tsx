@@ -2,6 +2,7 @@
 
 import {
   Constants,
+  Defaults,
   HOUSEHOLD_CURRENCIES,
   type CreateHouseholdRequest,
   type ManagedHousehold,
@@ -29,7 +30,7 @@ import {
 import { HouseholdIcon, householdIconLabel } from './household-icon';
 
 const HOUSEHOLD_COLOR_OPTIONS = [
-  '#35675B',
+  Defaults.HOUSEHOLD_COLOR,
   '#33805C',
   '#2F7D78',
   '#2F6F9F',
@@ -48,10 +49,10 @@ const HOUSEHOLD_COLOR_OPTIONS = [
 ] as const;
 
 const defaultHousehold: CreateHouseholdRequest = {
-  currency: 'EUR',
+  currency: Defaults.HOUSEHOLD_CURRENCY,
   name: '',
-  icon: 'small-house',
-  color: HOUSEHOLD_COLOR_OPTIONS[0],
+  icon: Defaults.HOUSEHOLD_ICON,
+  color: Defaults.HOUSEHOLD_COLOR,
 };
 
 function errorMessage(error: unknown): string {

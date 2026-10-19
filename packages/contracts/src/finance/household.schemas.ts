@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { idSchema, isoDateTimeSchema } from '../common/identifiers.js';
 import { Constants } from '../constants.js';
+import { Defaults } from '../defaults.js';
 import { publicUserSchema } from '../users/user.schemas.js';
 
 import { householdCurrencySchema } from './currencies.js';
@@ -43,7 +44,7 @@ const householdDetailsSchema = z.object({
 });
 
 export const createHouseholdRequestSchema = householdDetailsSchema.extend({
-  currency: householdCurrencySchema.default('EUR'),
+  currency: householdCurrencySchema.default(Defaults.HOUSEHOLD_CURRENCY),
 });
 export const updateHouseholdRequestSchema = householdDetailsSchema
   .partial()

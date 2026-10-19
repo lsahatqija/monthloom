@@ -1,5 +1,6 @@
 'use client';
 
+import { Defaults } from '@monthloom/contracts';
 import {
   createContext,
   type ReactNode,
@@ -55,16 +56,19 @@ function applyHeaderStyle(enabled: boolean) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeId>('linen-sage');
-  const [mode, setMode] = useState<ColorMode>('light');
-  const [darkHeaderInLightMode, setDarkHeaderState] = useState(false);
+  const [theme, setThemeState] = useState<ThemeId>(Defaults.THEME);
+  const [mode, setMode] = useState<ColorMode>(Defaults.COLOR_MODE);
+  const [darkHeaderInLightMode, setDarkHeaderState] = useState(Defaults.DARK_HEADER_IN_LIGHT_MODE);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
     const storedMode = localStorage.getItem(MODE_STORAGE_KEY);
-    const initialDarkHeader = localStorage.getItem(DARK_HEADER_STORAGE_KEY) === 'true';
-    const initialTheme = isThemeId(storedTheme) ? storedTheme : 'linen-sage';
-    const initialMode = storedMode === 'dark' ? 'dark' : 'light';
+    const storedDarkHeader = localStorage.getItem(DARK_HEADER_STORAGE_KEY);
+    const initialDarkHeader =
+      storedDarkHeader === null ? Defaults.DARK_HEADER_IN_LIGHT_MODE : storedDarkHeader === 'true';
+    const initialTheme = isThemeId(storedTheme) ? storedTheme : Defaults.THEME;
+    const initialMode =
+      storedMode === 'light' || storedMode === 'dark' ? storedMode : Defaults.COLOR_MODE;
 
     setThemeState(initialTheme);
     setMode(initialMode);

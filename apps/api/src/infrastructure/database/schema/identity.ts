@@ -1,5 +1,14 @@
-import { Constants } from '@monthloom/contracts';
-import { boolean, index, pgEnum, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import { Constants, Defaults } from '@monthloom/contracts';
+import {
+  boolean,
+  index,
+  pgEnum,
+  pgTable,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 
 export const userRoleEnum = pgEnum('user_role', [...Constants.USER_ROLES]);
 export const profileImageEnum = pgEnum('profile_image', [...Constants.PROFILE_IMAGES]);
@@ -12,12 +21,8 @@ export const users = pgTable(
     emailVerified: boolean('email_verified').notNull().default(false),
     passwordHash: varchar('password_hash', { length: 255 }).notNull(),
     displayName: varchar('display_name', { length: Constants.DISPLAY_NAME_MAX_LENGTH }).notNull(),
-    profileImage: profileImageEnum('profile_image')
-      .notNull()
-      .default(Constants.DEFAULT_PROFILE_IMAGE),
-    desiredColor: desiredColorEnum('desired_color')
-      .notNull()
-      .default(Constants.DEFAULT_DESIRED_COLOR),
+    profileImage: profileImageEnum('profile_image').notNull().default(Defaults.USER_PROFILE_IMAGE),
+    desiredColor: desiredColorEnum('desired_color').notNull().default(Defaults.USER_DESIRED_COLOR),
     role: userRoleEnum('role').notNull().default('user'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -85,4 +90,3 @@ export const emailVerificationTokens = pgTable(
     expiresAtIdx: index('email_verification_tokens_expires_at_idx').on(table.expiresAt),
   }),
 );
-

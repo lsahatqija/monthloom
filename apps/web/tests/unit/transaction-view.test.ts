@@ -49,6 +49,20 @@ describe('transaction view', () => {
     ).toEqual(['large-expense', 'small-expense']);
   });
 
+  it('sorts dates in reverse chronological order', () => {
+    const entries = [
+      transaction('oldest', 'expense', '10.00', { date: '2026-01-02' }),
+      transaction('latest', 'expense', '10.00', { date: '2026-01-20' }),
+      transaction('middle', 'expense', '10.00', { date: '2026-01-11' }),
+    ];
+
+    expect(
+      filterAndSortTransactions(entries, emptyTransactionFilters, 'date', 'descending').map(
+        ({ id }) => id,
+      ),
+    ).toEqual(['latest', 'middle', 'oldest']);
+  });
+
   it('calculates filtered totals without changing the server summary', () => {
     const summary = summarizeTransactions([
       transaction('income', 'income', '0.30'),

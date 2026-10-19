@@ -1,6 +1,18 @@
-import { Constants } from '@monthloom/contracts';
+import { Constants, Defaults } from '@monthloom/contracts';
 import { sql } from 'drizzle-orm';
-import { boolean, char, check, index, pgEnum, pgTable, primaryKey, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  char,
+  check,
+  index,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 
 import { users } from './identity.js';
 
@@ -12,8 +24,10 @@ export const households = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     name: varchar('name', { length: Constants.HOUSEHOLD_NAME_MAX_LENGTH }).notNull(),
     currency: char('currency', { length: 3 }).notNull(),
-    icon: householdIconEnum('icon').notNull().default('small-house'),
-    color: varchar('color', { length: 7 }).notNull().default('#35675b'),
+    icon: householdIconEnum('icon').notNull().default(Defaults.HOUSEHOLD_ICON),
+    color: varchar('color', { length: 7 })
+      .notNull()
+      .default(Defaults.HOUSEHOLD_COLOR.toLowerCase()),
     ownerId: uuid('owner_id')
       .notNull()
       .references(() => users.id, { onDelete: 'restrict' }),
@@ -78,4 +92,3 @@ export const householdInvitations = pgTable(
     expiresAtIdx: index('household_invitations_expires_at_idx').on(table.expiresAt),
   }),
 );
-
