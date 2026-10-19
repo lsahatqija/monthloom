@@ -67,10 +67,12 @@ describe('transaction view', () => {
     const summary = summarizeTransactions([
       transaction('income', 'income', '0.30'),
       transaction('expense', 'expense', '0.40'),
+      transaction('savings', 'expense', '0.20', { type: 'savings' }),
     ]);
     expect(summary.income).toBe(0.3);
-    expect(summary.expenses).toBe(0.4);
-    expect(summary.balance).toBeCloseTo(-0.1);
+    expect(summary.expenses).toBeCloseTo(0.6);
+    expect(summary.savings).toBe(0.2);
+    expect(summary.balance).toBeCloseTo(-0.3);
   });
 
   it('identifies only upcoming recurring transactions in the current month', () => {

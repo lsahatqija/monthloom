@@ -107,11 +107,14 @@ export function summarizeTransactions(transactions: HouseholdTransaction[]) {
     (totals, transaction) => {
       const amount = Number(transaction.amount);
       if (transaction.kind === 'income') totals.income += amount;
-      else totals.expenses += amount;
+      else {
+        totals.expenses += amount;
+        if (transaction.type === 'savings') totals.savings += amount;
+      }
       totals.balance = totals.income - totals.expenses;
       return totals;
     },
-    { income: 0, expenses: 0, balance: 0 },
+    { income: 0, expenses: 0, savings: 0, balance: 0 },
   );
 }
 
