@@ -95,7 +95,7 @@ describe('PWA installation', () => {
     await waitFor(() => expect(nativePrompt).toHaveBeenCalledOnce());
   });
 
-  it('explains the platform limitation when iOS cannot expose an installer', async () => {
+  it('shows step-by-step installation instructions on iOS', async () => {
     setDevice('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)');
 
     render(
@@ -105,9 +105,9 @@ describe('PWA installation', () => {
     );
 
     fireEvent.click(await screen.findByRole('button', { name: 'Show me how' }));
-    expect(
-      screen.getByText(/Apple does not allow sites to open this dialog automatically/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Tap the Share button/)).toBeInTheDocument();
+    expect(screen.getByText(/Choose Add to Home Screen/)).toBeInTheDocument();
+    expect(screen.getByText(/Turn on Open as Web App/)).toBeInTheDocument();
   });
 
   it('offers browser-menu instructions when Opera does not expose an installer', async () => {
@@ -120,6 +120,22 @@ describe('PWA installation', () => {
     );
 
     fireEvent.click(await screen.findByRole('button', { name: 'Show me how' }));
-    expect(screen.getByText(/Open the browser menu and choose Install app/)).toBeInTheDocument();
+    expect(screen.getByText(/Open your browser menu/)).toBeInTheDocument();
+    expect(screen.getByText(/Choose Install app or Add to Home screen/)).toBeInTheDocument();
+  });
+
+  it('offers an unobtrusive taskbar action on desktop', async () => {
+    setDevice('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0');
+
+    render(
+      <PwaRegistration>
+        <InstallMenuEntry />
+      </PwaRegistration>,
+    );
+
+    const dialog = await screen.findByRole('dialog', { name: 'Keep Monthloom close' });
+    expect(dialog).toHaveClass('installPromptDesktop');
+    fireEvent.click(screen.getByRole('button', { name: 'Pin to Taskbar' }));
+    expect(screen.getByText(/right-click its taskbar icon/)).toBeInTheDocument();
   });
 });

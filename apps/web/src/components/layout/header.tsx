@@ -54,7 +54,7 @@ function useMobileHeader() {
 
 export function Header({ user }: { user: PublicUser | null }) {
   const { mode, toggleMode } = useTheme();
-  const { canOfferInstall, openInstallPrompt } = usePwaInstall();
+  const { canOfferInstall, installActionLabel, openInstallPrompt } = usePwaInstall();
   const pathname = usePathname();
   const isMobile = useMobileHeader();
   const [isOpen, setIsOpen] = useState(false);
@@ -214,14 +214,14 @@ export function Header({ user }: { user: PublicUser | null }) {
                       }}
                     >
                       <Download aria-hidden="true" />
-                      Install app
+                      {installActionLabel}
                     </button>
                   ) : null}
                   <LogoutButton className="accountMenuItem" />
                 </div>
               ) : null}
             </div>
-          ) : canOfferInstall || isMobile ? (
+          ) : isMobile ? (
             <div className="accountMenu" ref={menuRef}>
               <button
                 type="button"
@@ -261,7 +261,7 @@ export function Header({ user }: { user: PublicUser | null }) {
                       }}
                     >
                       <Download aria-hidden="true" />
-                      Install app
+                      {installActionLabel}
                     </button>
                   ) : null}
                   <Link href="/login" className="accountMenuItem">
