@@ -15,14 +15,21 @@ import { createHouseholdSource, financeKeys, updateHouseholdSource } from './fin
 
 interface SourceModalProps {
   householdId: string;
+  initialDisplayName?: string;
   source?: HouseholdSource;
   onClose: () => void;
   onSaved: (source: HouseholdSource) => void;
 }
 
-export function SourceModal({ householdId, source, onClose, onSaved }: SourceModalProps) {
+export function SourceModal({
+  householdId,
+  initialDisplayName = '',
+  source,
+  onClose,
+  onSaved,
+}: SourceModalProps) {
   const queryClient = useQueryClient();
-  const [displayName, setDisplayName] = useState(source?.displayName ?? '');
+  const [displayName, setDisplayName] = useState(source?.displayName ?? initialDisplayName);
   const [aliases, setAliases] = useState(() => {
     const additionalAliases = source?.aliases.filter((alias) => alias !== source.displayName) ?? [];
     return additionalAliases.length ? additionalAliases : [''];
@@ -108,10 +115,6 @@ export function SourceModal({ householdId, source, onClose, onSaved }: SourceMod
               Add names that may appear on bank records. The display name is always included as an
               alias.
             </p>
-            <label className="transactionField">
-              <span>Display name alias</span>
-              <input value={displayName} disabled readOnly placeholder="Display name" />
-            </label>
             {aliases.map((alias, index) => (
               <div className="sourceAliasRow" key={index}>
                 <label className="transactionField">

@@ -179,6 +179,18 @@ describe('transaction form + query + HTTP client', () => {
     expect(screen.getByRole('button', { name: 'Add new source' })).toBeInTheDocument();
   });
 
+  it('prefills a new source from the source search', async () => {
+    renderForm();
+    const sourceInput = screen.getByRole('combobox', { name: 'Source' });
+
+    await userEvent.type(sourceInput, 'Neighborhood Market');
+    await userEvent.click(screen.getByRole('button', { name: 'Add new source' }));
+
+    expect(screen.getByRole('dialog', { name: 'Add new source' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Source Display Name')).toHaveValue('Neighborhood Market');
+    expect(screen.queryByLabelText('Display name alias')).not.toBeInTheDocument();
+  });
+
   it('disables recurring edits when no occurrences are selected', async () => {
     const fetch = vi.fn();
     vi.stubGlobal('fetch', fetch);

@@ -273,6 +273,7 @@ export function TransactionForm({
     return (
       <SourceModal
         householdId={householdId}
+        initialDisplayName={sourceQuery}
         onClose={() => setIsAddingSource(false)}
         onSaved={(source) => {
           setAvailableSources((current) =>
