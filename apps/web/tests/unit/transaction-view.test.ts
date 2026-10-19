@@ -17,7 +17,7 @@ function transaction(
   return {
     id,
     kind,
-    type: kind === 'expense' ? 'other' : null,
+    type: kind === 'expense' ? 'other' : 'income',
     amount,
     date: '2026-01-01',
     icon: 'wallet',

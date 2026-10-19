@@ -17,6 +17,7 @@ import {
   users,
 } from '../../../infrastructure/database/schema/index.js';
 import type { TransactionRepository } from '../finance.repository.js';
+import type { ExpenseType } from '../finance.types.js';
 import {
   alignOccurrenceDate,
   currentMonth,
@@ -92,7 +93,7 @@ export class PostgresTransactionRepository implements TransactionRepository {
     ): HouseholdTransaction => ({
       id: row.id,
       kind,
-      type: null,
+      type: 'income',
       date: row.date,
       icon: row.icon,
       color: row.color,
@@ -161,7 +162,11 @@ export class PostgresTransactionRepository implements TransactionRepository {
         ),
       );
     const history = [
-      ...recurringIncomeRows.map((row) => ({ ...row, kind: 'income' as const, type: null })),
+      ...recurringIncomeRows.map((row) => ({
+        ...row,
+        kind: 'income' as const,
+        type: 'income' as const,
+      })),
       ...recurringExpenseRows.map((row) => ({ ...row, kind: 'expense' as const })),
     ];
     const historiesBySeries = new Map<string, typeof history>();
@@ -256,7 +261,13 @@ export class PostgresTransactionRepository implements TransactionRepository {
               .returning()
           : await transaction
               .insert(expenses)
-              .values(occurrenceDates.map((date) => ({ ...values, date, type: input.type! })))
+              .values(
+                occurrenceDates.map((date) => ({
+                  ...values,
+                  date,
+                  type: input.type as ExpenseType,
+                })),
+              )
               .returning();
       const record = records.find(({ date }) => date === input.date);
       if (!record) throw new Error('Failed to create transaction.');
@@ -276,7 +287,7 @@ export class PostgresTransactionRepository implements TransactionRepository {
       return {
         id: record.id,
         kind: input.kind,
-        type: input.kind === 'expense' ? input.type : null,
+        type: input.kind === 'expense' ? input.type : 'income',
         date: record.date,
         icon: record.icon,
         color: record.color,
@@ -395,16 +406,18 @@ export class PostgresTransactionRepository implements TransactionRepository {
           } else {
             await transaction
               .update(expenses)
-              .set({ ...values, type: input.transaction.type! })
+              .set({ ...values, type: input.transaction.type as ExpenseType })
               .where(eq(expenses.id, occurrence.id));
           }
         } else if (input.transaction.kind === 'income') {
           await transaction.insert(incomes).values({ id: occurrence.id, ...values });
           await transaction.delete(expenses).where(eq(expenses.id, occurrence.id));
         } else {
-          await transaction
-            .insert(expenses)
-            .values({ id: occurrence.id, ...values, type: input.transaction.type! });
+          await transaction.insert(expenses).values({
+            id: occurrence.id,
+            ...values,
+            type: input.transaction.type as ExpenseType,
+          });
           await transaction.delete(incomes).where(eq(incomes.id, occurrence.id));
         }
       }
@@ -424,7 +437,7 @@ export class PostgresTransactionRepository implements TransactionRepository {
       return {
         id: transactionId,
         kind: input.transaction.kind,
-        type: input.transaction.kind === 'expense' ? input.transaction.type : null,
+        type: input.transaction.kind === 'expense' ? input.transaction.type : 'income',
         date: input.transaction.date,
         icon: input.transaction.icon,
         color: input.transaction.color,

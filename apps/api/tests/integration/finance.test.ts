@@ -31,9 +31,9 @@ describe('finance HTTP + PostgreSQL', () => {
   it('creates, edits and removes transactions and returns validated monthly totals', async () => {
     const { agent, base, transaction } = await fixture();
     const expense = await agent.post(`${base}/transactions`).send(transaction).expect(201);
-    await agent
+    const income = await agent
       .post(`${base}/transactions`)
-      .send({ ...transaction, kind: 'income', type: null, amount: '100.00' })
+      .send({ ...transaction, kind: 'income', type: 'income', amount: '100.00' })
       .expect(201);
     const month = await agent.get(`${base}/month?month=2026-01`).expect(200);
     expect(householdMonthResponseSchema.parse(month.body).summary).toEqual({
@@ -41,6 +41,15 @@ describe('finance HTTP + PostgreSQL', () => {
       expenses: '12.34',
       leftover: '87.66',
     });
+    await agent
+      .patch(`${base}/transactions/${income.body.transaction.id}`)
+      .send({
+        transaction: { ...transaction, kind: 'income', type: 'income', amount: '110.00' },
+        selection: { past: false, current: true, future: false },
+      })
+      .expect(200)
+      .expect(({ body }) => expect(body.transaction.type).toBe('income'));
+    expect((await agent.get(`${base}/month?month=2026-01`)).body.summary.income).toBe('110.00');
     const entryUrl = `${base}/transactions/${expense.body.transaction.id}`;
     await agent
       .patch(entryUrl)

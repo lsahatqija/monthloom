@@ -3,11 +3,12 @@ import { describe, expect, it } from 'vitest';
 import {
   copyHouseholdSourcesRequestSchema,
   createHouseholdRequestSchema,
-  updateHouseholdRequestSchema,
+  Defaults,
   HOUSEHOLD_CURRENCIES,
   createHouseholdInvitationRequestSchema,
   createHouseholdTransactionRequestSchema,
   householdMonthQuerySchema,
+  updateHouseholdRequestSchema,
   updateHouseholdTransactionRequestSchema,
 } from '../src/index.js';
 
@@ -51,6 +52,19 @@ describe('finance contracts', () => {
   it('accepts a valid transaction', () => {
     expect(createHouseholdTransactionRequestSchema.parse(transaction)).toEqual(transaction);
   });
+  it('derives the canonical income type from the transaction kind', () => {
+    const income = { ...transaction, kind: 'income', type: 'income' };
+    expect(createHouseholdTransactionRequestSchema.parse(income)).toEqual(income);
+    expect(createHouseholdTransactionRequestSchema.parse({ ...income, type: null })).toEqual(
+      income,
+    );
+    expect(
+      createHouseholdTransactionRequestSchema.parse({
+        ...income,
+        type: Defaults.TRANSACTION_TYPE,
+      }),
+    ).toEqual(income);
+  });
   it.each(['0', '-1', '1.234', '1e3', 'NaN', '1000000000000'])(
     'rejects invalid amount %s',
     (amount) => {
@@ -59,7 +73,7 @@ describe('finance contracts', () => {
       ).toBe(false);
     },
   );
-  it.each([{ type: null }, { kind: 'income' }, { expiresOn: '2026-01-14' }])(
+  it.each([{ type: null }, { type: 'income' }, { expiresOn: '2026-01-14' }])(
     'rejects invalid transaction %j',
     (change) => {
       expect(
