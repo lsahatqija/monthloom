@@ -93,7 +93,118 @@ describe('transaction form + query + HTTP client', () => {
     });
   });
 
-  it('requires a source, normalizes decimal commas and submits income without an expense type', async () => {
+  it('clears a hidden legacy expiration before validating an edited recurring transaction', async () => {
+    const fetch = vi.fn().mockResolvedValue(Response.json({ transaction: { id: 'entry' } }));
+    vi.stubGlobal('fetch', fetch);
+    const { onClose } = renderForm({
+      id: 'entry',
+      kind: 'expense',
+      type: 'groceries',
+      date: '2026-01-01',
+      icon: 'receipt',
+      color: '#123456',
+      amount: '12.34',
+      recurring: true,
+      expiresOn: '2026-01-31',
+      projected: false,
+      user: member,
+      source,
+    });
+
+    await userEvent.clear(screen.getByLabelText(/Date/));
+    await userEvent.type(screen.getByLabelText(/Date/), '2026-02-01');
+    await userEvent.click(screen.getByRole('switch', { name: 'Expires' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(JSON.parse(fetch.mock.calls[0]![1].body)).toMatchObject({
+      transaction: { date: '2026-02-01', expiresOn: null },
+    });
+  });
+
+  it('normalizes the renamed legacy gadgets type when editing', async () => {
+    const fetch = vi.fn().mockResolvedValue(Response.json({ transaction: { id: 'entry' } }));
+    vi.stubGlobal('fetch', fetch);
+    const { onClose } = renderForm({
+      id: 'entry',
+      kind: 'expense',
+      type: 'gadgets',
+      date: '2026-01-01',
+      icon: 'smartphone',
+      color: '#123456',
+      amount: '12.34',
+      recurring: false,
+      expiresOn: null,
+      projected: false,
+      user: member,
+      source,
+    } as unknown as HouseholdTransaction);
+
+    expect(screen.getByLabelText('Type')).toHaveValue('technology');
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(JSON.parse(fetch.mock.calls[0]![1].body)).toMatchObject({
+      transaction: { type: 'technology' },
+    });
+  });
+
+  it('canonicalizes a stale expense type before editing an existing income', async () => {
+    const fetch = vi.fn().mockResolvedValue(Response.json({ transaction: { id: 'entry' } }));
+    vi.stubGlobal('fetch', fetch);
+    const { onClose } = renderForm({
+      id: 'entry',
+      kind: 'income',
+      type: 'other',
+      date: '2026-01-01',
+      icon: 'banknote',
+      color: '#123456',
+      amount: '100.00',
+      recurring: false,
+      expiresOn: null,
+      projected: false,
+      user: member,
+      source,
+    } as unknown as HouseholdTransaction);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(JSON.parse(fetch.mock.calls[0]![1].body)).toMatchObject({
+      transaction: { kind: 'income', type: 'income' },
+    });
+  });
+
+  it.each([null, '2026-10-30'])(
+    'edits an existing recurring income with expiration %s',
+    async (expiresOn) => {
+      const fetch = vi.fn().mockResolvedValue(Response.json({ transaction: { id: 'entry' } }));
+      vi.stubGlobal('fetch', fetch);
+      const { onClose } = renderForm({
+        id: 'entry',
+        kind: 'income',
+        type: 'income',
+        date: '2026-10-04',
+        icon: 'banknote',
+        color: '#33805C',
+        amount: '1700.00',
+        recurring: true,
+        expiresOn,
+        projected: false,
+        user: member,
+        source,
+      });
+
+      await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+      await waitFor(() => expect(onClose).toHaveBeenCalled());
+      expect(JSON.parse(fetch.mock.calls[0]![1].body)).toMatchObject({
+        transaction: { kind: 'income', type: 'income', recurring: true, expiresOn },
+      });
+    },
+  );
+
+  it('requires a source, normalizes decimal commas and submits the income type', async () => {
     const fetch = vi.fn().mockResolvedValue(Response.json({ transaction: { id: 'new' } }));
     vi.stubGlobal('fetch', fetch);
     const { onClose, client } = renderForm();
@@ -108,7 +219,7 @@ describe('transaction form + query + HTTP client', () => {
     expect(JSON.parse(fetch.mock.calls[0]![1].body)).toMatchObject({
       amount: '12.34',
       kind: 'income',
-      type: null,
+      type: 'income',
       userId: member.id,
       sourceId: source.id,
       recurring: false,
@@ -136,7 +247,7 @@ describe('transaction form + query + HTTP client', () => {
       ...older,
       id: '44444444-4444-4444-8444-444444444444',
       kind: 'income',
-      type: null,
+      type: 'income',
       date: '2026-01-20',
       icon: 'banknote',
       color: '#ABCDEF',

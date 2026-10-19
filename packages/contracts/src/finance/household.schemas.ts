@@ -10,6 +10,7 @@ import { householdCurrencySchema } from './currencies.js';
 export const financialIconSchema = z.enum(Constants.FINANCIAL_ICONS);
 export const householdIconSchema = z.enum(Constants.HOUSEHOLD_ICONS);
 export const expenseTypeSchema = z.enum(Constants.EXPENSE_TYPES);
+export const transactionTypeSchema = z.union([z.literal('income'), expenseTypeSchema]);
 const calendarDateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must use YYYY-MM-DD format');
@@ -97,10 +98,23 @@ export const copyHouseholdSourcesResponseSchema = z.object({
   skippedCount: z.number().int().nonnegative(),
 });
 
-export const householdTransactionSchema = z.object({
-  id: idSchema,
+function normalizeLegacyIncomeType(value: unknown): unknown {
+  if (
+    value &&
+    typeof value === 'object' &&
+    'kind' in value &&
+    value.kind === 'income' &&
+    (!('type' in value) || value.type !== 'income')
+  ) {
+    return { ...value, type: 'income' };
+  }
+  return value;
+}
+
+const householdTransactionFields = {
   kind: z.enum(['income', 'expense']),
-  type: expenseTypeSchema.nullable(),
+  type: transactionTypeSchema,
+  id: idSchema,
   date: calendarDateSchema,
   icon: financialIconSchema,
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
@@ -115,7 +129,12 @@ export const householdTransactionSchema = z.object({
     desiredColor: true,
   }),
   source: householdSourceSchema,
-});
+};
+
+export const householdTransactionSchema = z.preprocess(
+  normalizeLegacyIncomeType,
+  z.object(householdTransactionFields),
+);
 
 export const householdMemberSchema = publicUserSchema.pick({
   id: true,
@@ -141,42 +160,42 @@ export const transferHouseholdOwnershipRequestSchema = z.object({
   newOwnerId: idSchema,
 });
 
-const householdTransactionInputSchema = z
-  .object({
-    kind: z.enum(['income', 'expense']),
-    type: expenseTypeSchema.nullable(),
-    date: calendarDateSchema,
-    sourceId: idSchema,
-    icon: financialIconSchema,
-    color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Choose a valid color'),
-    amount: transactionAmountSchema,
-    userId: idSchema,
-    recurring: z.boolean(),
-    expiresOn: calendarDateSchema.nullable(),
-  })
-  .superRefine((input, context) => {
-    if (input.kind === 'expense' && !input.type) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['type'],
-        message: 'Expense type is required',
-      });
-    }
-    if (input.kind === 'income' && input.type) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['type'],
-        message: 'Income transactions cannot have an expense type',
-      });
-    }
-    if (input.expiresOn && input.expiresOn < input.date) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['expiresOn'],
-        message: 'Expiration date cannot be before the transaction date',
-      });
-    }
-  });
+const householdTransactionInputFields = {
+  date: calendarDateSchema,
+  sourceId: idSchema,
+  icon: financialIconSchema,
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Choose a valid color'),
+  amount: transactionAmountSchema,
+  userId: idSchema,
+  recurring: z.boolean(),
+  expiresOn: calendarDateSchema.nullable(),
+};
+
+const householdTransactionInputSchema = z.preprocess(
+  normalizeLegacyIncomeType,
+  z
+    .object({
+      ...householdTransactionInputFields,
+      kind: z.enum(['income', 'expense']),
+      type: transactionTypeSchema,
+    })
+    .superRefine((input, context) => {
+      if (input.kind === 'expense' && input.type === 'income') {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['type'],
+          message: 'Expense type is required',
+        });
+      }
+      if (input.expiresOn && input.expiresOn < input.date) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['expiresOn'],
+          message: 'Expiration date cannot be before the transaction date',
+        });
+      }
+    }),
+);
 
 export const createHouseholdTransactionRequestSchema = householdTransactionInputSchema;
 

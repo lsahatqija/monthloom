@@ -32,7 +32,7 @@ const transactions = [
   {
     id: 'income',
     kind: 'income',
-    type: null,
+    type: 'income',
     date: '2026-01-01',
     amount: '100.00',
     icon: 'banknote',

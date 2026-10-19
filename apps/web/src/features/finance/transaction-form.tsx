@@ -94,6 +94,18 @@ function todayDate(): string {
   ).padStart(2, '0')}`;
 }
 
+function editableTransactionType(
+  transaction: HouseholdTransaction | undefined,
+): CreateHouseholdTransactionRequest['type'] {
+  if (!transaction) return Defaults.TRANSACTION_TYPE;
+  if (transaction.kind === 'income') return Defaults.INCOME_TRANSACTION_TYPE;
+
+  // `gadgets` was renamed to `technology`. The database migration updates persisted rows, but
+  // clients can still hold the old representation in an already-loaded monthly view.
+  if ((transaction.type as string | null) === 'gadgets') return 'technology';
+  return transaction.type ?? Defaults.TRANSACTION_TYPE;
+}
+
 interface TransactionFormProps {
   householdId: string;
   members: HouseholdMonthResponse['members'];
@@ -139,7 +151,7 @@ export function TransactionForm({
     resolver: zodResolver(createHouseholdTransactionRequestSchema),
     defaultValues: {
       kind: transaction?.kind ?? Defaults.TRANSACTION_KIND,
-      type: transaction?.type ?? Defaults.TRANSACTION_TYPE,
+      type: transaction ? editableTransactionType(transaction) : Defaults.TRANSACTION_TYPE,
       sourceId: transaction?.source.id ?? '',
       icon: transaction?.icon ?? Defaults.TRANSACTION_ICON,
       color: transaction?.color ?? Defaults.TRANSACTION_COLOR,
@@ -173,7 +185,7 @@ export function TransactionForm({
     if (!mostRecentTransaction) return;
 
     setValue('kind', mostRecentTransaction.kind);
-    setValue('type', mostRecentTransaction.type);
+    setValue('type', editableTransactionType(mostRecentTransaction));
     setValue('icon', mostRecentTransaction.icon);
     setValue('color', mostRecentTransaction.color);
   };
@@ -261,10 +273,14 @@ export function TransactionForm({
     },
   });
 
+  const validationMessage = Object.values(errors)
+    .map((error) => error?.message)
+    .find((message): message is string => typeof message === 'string');
+
   const submit = handleSubmit((input) =>
     mutation.mutate({
       ...input,
-      type: input.kind === 'expense' ? input.type : null,
+      type: input.type,
       date: input.date || todayDate(),
       expiresOn: input.recurring && expires && input.expiresOn ? input.expiresOn : null,
     }),
@@ -324,7 +340,7 @@ export function TransactionForm({
           </button>
         </div>
 
-        <form className="transactionForm" onSubmit={submit}>
+        <form className="transactionForm" onSubmit={submit} noValidate>
           <fieldset
             className="transactionKind"
             data-onboarding="transaction-kind"
@@ -355,7 +371,7 @@ export function TransactionForm({
                 checked={kind === 'income'}
                 onChange={() => {
                   setValue('kind', 'income');
-                  setValue('type', null);
+                  setValue('type', Defaults.INCOME_TRANSACTION_TYPE);
                   if (icon === Defaults.TRANSACTION_ICON) {
                     setValue('icon', Defaults.INCOME_TRANSACTION_ICON);
                   }
@@ -665,7 +681,13 @@ export function TransactionForm({
                     role="switch"
                     checked={expires}
                     disabled={mutation.isPending}
-                    onChange={(event) => setExpires(event.target.checked)}
+                    onChange={(event) => {
+                      const isExpiring = event.target.checked;
+                      setExpires(isExpiring);
+                      if (!isExpiring) {
+                        setValue('expiresOn', null, { shouldValidate: true });
+                      }
+                    }}
                   />
                 </label>
                 {expires ? (
@@ -729,7 +751,9 @@ export function TransactionForm({
           ) : null}
 
           {Object.keys(errors).length ? (
-            <Alert variant="error">Check the highlighted transaction fields and try again.</Alert>
+            <Alert variant="error">
+              {validationMessage ?? 'Check the transaction fields and try again.'}
+            </Alert>
           ) : null}
 
           {mutation.isError ? (

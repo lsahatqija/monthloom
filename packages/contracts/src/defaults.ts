@@ -18,6 +18,7 @@ export class Defaults {
 
   static readonly TRANSACTION_KIND = 'expense' as const;
   static readonly TRANSACTION_TYPE = 'other' as const;
+  static readonly INCOME_TRANSACTION_TYPE = 'income' as const;
   static readonly TRANSACTION_ICON = 'receipt' as const;
   static readonly INCOME_TRANSACTION_ICON = 'banknote' as const;
   static readonly TRANSACTION_COLOR = '#35675B' as const;
