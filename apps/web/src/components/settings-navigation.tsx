@@ -5,9 +5,9 @@ import { usePathname } from 'next/navigation';
 
 const SETTINGS_LINKS = [
   { href: '/settings/profile', label: 'Profile' },
-  { href: '/settings/appearance', label: 'Appearance' },
   { href: '/settings/households', label: 'Households' },
   { href: '/settings/sources', label: 'Sources' },
+  { href: '/settings/appearance', label: 'Appearance' },
 ] as const;
 
 export function SettingsNavigation() {

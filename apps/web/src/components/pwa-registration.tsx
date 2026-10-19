@@ -1,5 +1,6 @@
 'use client';
 
+import { Download, MoreVertical, Pin, Plus, Share2 } from 'lucide-react';
 import Image from 'next/image';
 import {
   createContext,
@@ -23,13 +24,22 @@ interface NavigatorWithInstallState extends Navigator {
   userAgentData?: { mobile?: boolean };
 }
 
+type InstallPlatform = 'ios' | 'android' | 'windows' | 'macos' | 'desktop';
+
+interface InstallStep {
+  icon: typeof Download;
+  text: string;
+}
+
 interface PwaInstallContextValue {
   canOfferInstall: boolean;
+  installActionLabel: string;
   openInstallPrompt: () => void;
 }
 
 const PwaInstallContext = createContext<PwaInstallContextValue>({
   canOfferInstall: false,
+  installActionLabel: 'Install app',
   openInstallPrompt: () => undefined,
 });
 
@@ -49,6 +59,14 @@ export function isMobileBrowser(navigatorValue: Navigator, windowValue: Window) 
   return isMobileDevice && !isStandalone;
 }
 
+function isStandalone(navigatorValue: Navigator, windowValue: Window) {
+  const extendedNavigator = navigatorValue as NavigatorWithInstallState;
+  return (
+    windowValue.matchMedia?.('(display-mode: standalone)').matches ||
+    extendedNavigator.standalone === true
+  );
+}
+
 function isIos(navigatorValue: Navigator) {
   return (
     /iPhone|iPad|iPod/i.test(navigatorValue.userAgent) ||
@@ -56,11 +74,78 @@ function isIos(navigatorValue: Navigator) {
   );
 }
 
-function expectsNativeInstallPrompt(navigatorValue: Navigator) {
-  return (
-    /Android/i.test(navigatorValue.userAgent) &&
-    /Chrome|Chromium|EdgA|OPR|Opera|SamsungBrowser/i.test(navigatorValue.userAgent)
-  );
+function getInstallPlatform(navigatorValue: Navigator, mobileBrowser: boolean): InstallPlatform {
+  if (isIos(navigatorValue)) return 'ios';
+  if (mobileBrowser) return 'android';
+  if (/Windows/i.test(navigatorValue.userAgent)) return 'windows';
+  if (/Macintosh|Mac OS X/i.test(navigatorValue.userAgent)) return 'macos';
+  return 'desktop';
+}
+
+function getManualInstallSteps(platform: InstallPlatform, userAgent: string): InstallStep[] {
+  const chromeBrowser =
+    /Chrome|CriOS/i.test(userAgent) && !/Edg|EdgiOS|OPR|Opera/i.test(userAgent);
+
+  if (platform === 'ios') {
+    return [
+      { icon: Share2, text: 'Tap the Share button in your browser toolbar.' },
+      { icon: Plus, text: 'Choose Add to Home Screen.' },
+      { icon: Download, text: 'Turn on Open as Web App, then tap Add.' },
+    ];
+  }
+
+  if (platform === 'android') {
+    if (chromeBrowser) {
+      return [
+        { icon: MoreVertical, text: 'Tap More (three dots) beside the address bar.' },
+        { icon: Download, text: 'Tap Install and create shortcut.' },
+        { icon: Plus, text: 'Tap Install, then follow the confirmation shown by Chrome.' },
+      ];
+    }
+
+    return [
+      { icon: MoreVertical, text: 'Open your browser menu.' },
+      { icon: Download, text: 'Choose Install app or Add to Home screen.' },
+      { icon: Plus, text: 'Confirm the name, then tap Install or Add.' },
+    ];
+  }
+
+  if (chromeBrowser) {
+    return [
+      { icon: MoreVertical, text: 'Click More (three dots) in the top-right of Chrome.' },
+      { icon: Share2, text: 'Select Cast, save and share.' },
+      { icon: Download, text: 'Select Install page as app, then confirm Install.' },
+      {
+        icon: Pin,
+        text:
+          platform === 'macos'
+            ? 'When Monthloom opens, right-click its Dock icon and select Options, then Keep in Dock.'
+            : 'When Monthloom opens, right-click its taskbar icon and select Pin to taskbar.',
+      },
+    ];
+  }
+
+  if (platform === 'macos') {
+    return [
+      { icon: Share2, text: 'In Safari, open the Share menu.' },
+      { icon: Download, text: 'Choose Add to Dock.' },
+      { icon: Plus, text: 'Confirm the name, then click Add.' },
+    ];
+  }
+
+  if (/Firefox/i.test(userAgent)) {
+    return [
+      { icon: Download, text: 'Click the web app button in the Firefox address bar.' },
+      { icon: Plus, text: 'Allow Firefox to install Monthloom as a web app.' },
+      { icon: Pin, text: 'Choose Yes when Firefox asks to pin it to the taskbar.' },
+    ];
+  }
+
+  return [
+    { icon: MoreVertical, text: 'Open your browser menu.' },
+    { icon: Download, text: 'Choose Install Monthloom or Install page as app.' },
+    { icon: Pin, text: 'Open the app, right-click its taskbar icon, then choose Pin to taskbar.' },
+  ];
 }
 
 export function usePwaInstall() {
@@ -69,8 +154,9 @@ export function usePwaInstall() {
 
 export function PwaRegistration({ children }: { children: ReactNode }) {
   const [mobileBrowser, setMobileBrowser] = useState(false);
-  const [iosDevice, setIosDevice] = useState(false);
-  const [nativePromptExpected, setNativePromptExpected] = useState(false);
+  const [eligibleSession, setEligibleSession] = useState(false);
+  const [platform, setPlatform] = useState<InstallPlatform>('desktop');
+  const [userAgent, setUserAgent] = useState('');
   const [installed, setInstalled] = useState(false);
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [promptOpen, setPromptOpen] = useState(false);
@@ -78,10 +164,12 @@ export function PwaRegistration({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const isMobile = isMobileBrowser(navigator, window);
+    const canInstall = !isStandalone(navigator, window);
     setMobileBrowser(isMobile);
-    setIosDevice(isIos(navigator));
-    setNativePromptExpected(expectsNativeInstallPrompt(navigator));
-    setPromptOpen(isMobile && sessionStorage.getItem(PROMPT_DISMISSED_KEY) !== 'true');
+    setEligibleSession(canInstall);
+    setPlatform(getInstallPlatform(navigator, isMobile));
+    setUserAgent(navigator.userAgent);
+    setPromptOpen(canInstall && sessionStorage.getItem(PROMPT_DISMISSED_KEY) !== 'true');
 
     if ('serviceWorker' in navigator) {
       void navigator.serviceWorker.register('/service-worker.js');
@@ -136,26 +224,51 @@ export function PwaRegistration({ children }: { children: ReactNode }) {
   }, [install, installEvent]);
 
   const value = useMemo(
-    () => ({ canOfferInstall: mobileBrowser && !installed, openInstallPrompt }),
-    [installed, mobileBrowser, openInstallPrompt],
+    () => ({
+      canOfferInstall: eligibleSession && !installed,
+      installActionLabel: mobileBrowser ? 'Install app' : 'Pin to Taskbar',
+      openInstallPrompt,
+    }),
+    [eligibleSession, installed, mobileBrowser, openInstallPrompt],
   );
+
+  const desktopBrowser = !mobileBrowser;
+  const manualSteps = getManualInstallSteps(platform, userAgent);
+  const actionLabel = desktopBrowser ? 'Pin to Taskbar' : installEvent ? 'Install' : 'Show me how';
 
   return (
     <PwaInstallContext.Provider value={value}>
       {children}
-      {promptOpen && mobileBrowser && !installed ? (
-        <aside className="installPrompt" role="dialog" aria-labelledby="install-prompt-title">
+      {promptOpen && eligibleSession && !installed ? (
+        <aside
+          className={`installPrompt${desktopBrowser ? ' installPromptDesktop' : ''}`}
+          role="dialog"
+          aria-labelledby="install-prompt-title"
+        >
           <Image src="/icons/icon-192.png" width="52" height="52" alt="" />
           <div className="installPromptCopy">
-            <h2 id="install-prompt-title">Install Monthloom</h2>
+            <h2 id="install-prompt-title">
+              {desktopBrowser ? 'Keep Monthloom close' : 'Install Monthloom'}
+            </h2>
             {manualHelp ? (
-              <p>
-                {iosDevice
-                  ? 'On iPhone or iPad, tap Share and then Add to Home Screen. Apple does not allow sites to open this dialog automatically.'
-                  : 'This browser has not exposed its installer. Open the browser menu and choose Install app or Add to Home screen.'}
-              </p>
+              <ol className="installPromptSteps">
+                {manualSteps.map(({ icon: StepIcon, text }, index) => (
+                  <li key={text}>
+                    <span className="installPromptStepIcon" aria-hidden="true">
+                      <StepIcon />
+                    </span>
+                    <span>
+                      <strong>{index + 1}.</strong> {text}
+                    </span>
+                  </li>
+                ))}
+              </ol>
             ) : (
-              <p>Keep Monthloom on your home screen for quick, app-like access.</p>
+              <p>
+                {desktopBrowser
+                  ? 'Pin Monthloom for quick access without searching through browser tabs.'
+                  : 'Keep Monthloom on your home screen for quick, app-like access.'}
+              </p>
             )}
           </div>
           <div className="installPromptActions">
@@ -166,10 +279,9 @@ export function PwaRegistration({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 className="installPromptConfirm"
-                disabled={!installEvent && nativePromptExpected}
                 onClick={() => void install()}
               >
-                {installEvent ? 'Install' : nativePromptExpected ? 'Preparing…' : 'Show me how'}
+                {actionLabel}
               </button>
             ) : null}
           </div>

@@ -54,7 +54,7 @@ function useMobileHeader() {
 
 export function Header({ user }: { user: PublicUser | null }) {
   const { mode, toggleMode } = useTheme();
-  const { canOfferInstall, openInstallPrompt } = usePwaInstall();
+  const { canOfferInstall, installActionLabel, openInstallPrompt } = usePwaInstall();
   const pathname = usePathname();
   const isMobile = useMobileHeader();
   const [isOpen, setIsOpen] = useState(false);
@@ -146,22 +146,6 @@ export function Header({ user }: { user: PublicUser | null }) {
                   data-onboarding="settings-links"
                 >
                   <p className="accountMenuName">{user.displayName}</p>
-                  {isMobile && pathname === '/' ? (
-                    <InfoModal triggerVariant="menuItem" onClose={() => setIsOpen(false)} />
-                  ) : null}
-                  {isMobile ? (
-                    <button
-                      type="button"
-                      className="accountMenuItem"
-                      onClick={() => {
-                        toggleMode();
-                        setIsOpen(false);
-                      }}
-                    >
-                      {mode === 'light' ? <MoonIcon /> : <SunIcon />}
-                      {mode === 'light' ? 'Dark mode' : 'Light mode'}
-                    </button>
-                  ) : null}
                   <Link
                     href="/"
                     className="accountMenuItem"
@@ -180,14 +164,6 @@ export function Header({ user }: { user: PublicUser | null }) {
                     Profile
                   </Link>
                   <Link
-                    href="/settings/appearance"
-                    className="accountMenuItem"
-                    aria-current={pathname === '/settings/appearance' ? 'page' : undefined}
-                  >
-                    <Palette aria-hidden="true" />
-                    Appearance
-                  </Link>
-                  <Link
                     href="/settings/households"
                     className="accountMenuItem"
                     data-onboarding="household-settings-link"
@@ -204,6 +180,14 @@ export function Header({ user }: { user: PublicUser | null }) {
                     <Database aria-hidden="true" />
                     Sources
                   </Link>
+                  <Link
+                    href="/settings/appearance"
+                    className="accountMenuItem"
+                    aria-current={pathname === '/settings/appearance' ? 'page' : undefined}
+                  >
+                    <Palette aria-hidden="true" />
+                    Appearance
+                  </Link>
                   {canOfferInstall ? (
                     <button
                       type="button"
@@ -214,27 +198,9 @@ export function Header({ user }: { user: PublicUser | null }) {
                       }}
                     >
                       <Download aria-hidden="true" />
-                      Install app
+                      {installActionLabel}
                     </button>
                   ) : null}
-                  <LogoutButton className="accountMenuItem" />
-                </div>
-              ) : null}
-            </div>
-          ) : canOfferInstall || isMobile ? (
-            <div className="accountMenu" ref={menuRef}>
-              <button
-                type="button"
-                className="iconButton"
-                aria-label="Open navigation menu"
-                aria-expanded={isOpen}
-                aria-controls="account-menu"
-                onClick={() => setIsOpen((open) => !open)}
-              >
-                <MenuIcon />
-              </button>
-              {isOpen ? (
-                <div id="account-menu" className="accountMenuPanel">
                   {isMobile && pathname === '/' ? (
                     <InfoModal triggerVariant="menuItem" onClose={() => setIsOpen(false)} />
                   ) : null}
@@ -251,6 +217,24 @@ export function Header({ user }: { user: PublicUser | null }) {
                       {mode === 'light' ? 'Dark mode' : 'Light mode'}
                     </button>
                   ) : null}
+                  <LogoutButton className="accountMenuItem accountMenuLogout" />
+                </div>
+              ) : null}
+            </div>
+          ) : isMobile ? (
+            <div className="accountMenu" ref={menuRef}>
+              <button
+                type="button"
+                className="iconButton"
+                aria-label="Open navigation menu"
+                aria-expanded={isOpen}
+                aria-controls="account-menu"
+                onClick={() => setIsOpen((open) => !open)}
+              >
+                <MenuIcon />
+              </button>
+              {isOpen ? (
+                <div id="account-menu" className="accountMenuPanel">
                   {canOfferInstall ? (
                     <button
                       type="button"
@@ -261,7 +245,7 @@ export function Header({ user }: { user: PublicUser | null }) {
                       }}
                     >
                       <Download aria-hidden="true" />
-                      Install app
+                      {installActionLabel}
                     </button>
                   ) : null}
                   <Link href="/login" className="accountMenuItem">
@@ -270,6 +254,22 @@ export function Header({ user }: { user: PublicUser | null }) {
                   <Link href="/register" className="accountMenuItem">
                     Register
                   </Link>
+                  {isMobile && pathname === '/' ? (
+                    <InfoModal triggerVariant="menuItem" onClose={() => setIsOpen(false)} />
+                  ) : null}
+                  {isMobile ? (
+                    <button
+                      type="button"
+                      className="accountMenuItem"
+                      onClick={() => {
+                        toggleMode();
+                        setIsOpen(false);
+                      }}
+                    >
+                      {mode === 'light' ? <MoonIcon /> : <SunIcon />}
+                      {mode === 'light' ? 'Dark mode' : 'Light mode'}
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
             </div>

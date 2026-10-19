@@ -47,6 +47,7 @@ describe('source settings', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Add source' }));
     const dialog = screen.getByRole('dialog', { name: 'Add new source' });
+    expect(within(dialog).queryByLabelText('Display name alias')).not.toBeInTheDocument();
     await userEvent.type(
       within(dialog).getByLabelText('Source Display Name'),
       'Neighborhood Market',
