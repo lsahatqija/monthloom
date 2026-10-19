@@ -146,22 +146,6 @@ export function Header({ user }: { user: PublicUser | null }) {
                   data-onboarding="settings-links"
                 >
                   <p className="accountMenuName">{user.displayName}</p>
-                  {isMobile && pathname === '/' ? (
-                    <InfoModal triggerVariant="menuItem" onClose={() => setIsOpen(false)} />
-                  ) : null}
-                  {isMobile ? (
-                    <button
-                      type="button"
-                      className="accountMenuItem"
-                      onClick={() => {
-                        toggleMode();
-                        setIsOpen(false);
-                      }}
-                    >
-                      {mode === 'light' ? <MoonIcon /> : <SunIcon />}
-                      {mode === 'light' ? 'Dark mode' : 'Light mode'}
-                    </button>
-                  ) : null}
                   <Link
                     href="/"
                     className="accountMenuItem"
@@ -180,14 +164,6 @@ export function Header({ user }: { user: PublicUser | null }) {
                     Profile
                   </Link>
                   <Link
-                    href="/settings/appearance"
-                    className="accountMenuItem"
-                    aria-current={pathname === '/settings/appearance' ? 'page' : undefined}
-                  >
-                    <Palette aria-hidden="true" />
-                    Appearance
-                  </Link>
-                  <Link
                     href="/settings/households"
                     className="accountMenuItem"
                     data-onboarding="household-settings-link"
@@ -204,6 +180,14 @@ export function Header({ user }: { user: PublicUser | null }) {
                     <Database aria-hidden="true" />
                     Sources
                   </Link>
+                  <Link
+                    href="/settings/appearance"
+                    className="accountMenuItem"
+                    aria-current={pathname === '/settings/appearance' ? 'page' : undefined}
+                  >
+                    <Palette aria-hidden="true" />
+                    Appearance
+                  </Link>
                   {canOfferInstall ? (
                     <button
                       type="button"
@@ -217,7 +201,23 @@ export function Header({ user }: { user: PublicUser | null }) {
                       {installActionLabel}
                     </button>
                   ) : null}
-                  <LogoutButton className="accountMenuItem" />
+                  {isMobile && pathname === '/' ? (
+                    <InfoModal triggerVariant="menuItem" onClose={() => setIsOpen(false)} />
+                  ) : null}
+                  {isMobile ? (
+                    <button
+                      type="button"
+                      className="accountMenuItem"
+                      onClick={() => {
+                        toggleMode();
+                        setIsOpen(false);
+                      }}
+                    >
+                      {mode === 'light' ? <MoonIcon /> : <SunIcon />}
+                      {mode === 'light' ? 'Dark mode' : 'Light mode'}
+                    </button>
+                  ) : null}
+                  <LogoutButton className="accountMenuItem accountMenuLogout" />
                 </div>
               ) : null}
             </div>
@@ -235,22 +235,6 @@ export function Header({ user }: { user: PublicUser | null }) {
               </button>
               {isOpen ? (
                 <div id="account-menu" className="accountMenuPanel">
-                  {isMobile && pathname === '/' ? (
-                    <InfoModal triggerVariant="menuItem" onClose={() => setIsOpen(false)} />
-                  ) : null}
-                  {isMobile ? (
-                    <button
-                      type="button"
-                      className="accountMenuItem"
-                      onClick={() => {
-                        toggleMode();
-                        setIsOpen(false);
-                      }}
-                    >
-                      {mode === 'light' ? <MoonIcon /> : <SunIcon />}
-                      {mode === 'light' ? 'Dark mode' : 'Light mode'}
-                    </button>
-                  ) : null}
                   {canOfferInstall ? (
                     <button
                       type="button"
@@ -270,6 +254,22 @@ export function Header({ user }: { user: PublicUser | null }) {
                   <Link href="/register" className="accountMenuItem">
                     Register
                   </Link>
+                  {isMobile && pathname === '/' ? (
+                    <InfoModal triggerVariant="menuItem" onClose={() => setIsOpen(false)} />
+                  ) : null}
+                  {isMobile ? (
+                    <button
+                      type="button"
+                      className="accountMenuItem"
+                      onClick={() => {
+                        toggleMode();
+                        setIsOpen(false);
+                      }}
+                    >
+                      {mode === 'light' ? <MoonIcon /> : <SunIcon />}
+                      {mode === 'light' ? 'Dark mode' : 'Light mode'}
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
             </div>
