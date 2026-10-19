@@ -83,6 +83,9 @@ function getInstallPlatform(navigatorValue: Navigator, mobileBrowser: boolean): 
 }
 
 function getManualInstallSteps(platform: InstallPlatform, userAgent: string): InstallStep[] {
+  const chromeBrowser =
+    /Chrome|CriOS/i.test(userAgent) && !/Edg|EdgiOS|OPR|Opera/i.test(userAgent);
+
   if (platform === 'ios') {
     return [
       { icon: Share2, text: 'Tap the Share button in your browser toolbar.' },
@@ -92,6 +95,14 @@ function getManualInstallSteps(platform: InstallPlatform, userAgent: string): In
   }
 
   if (platform === 'android') {
+    if (chromeBrowser) {
+      return [
+        { icon: MoreVertical, text: 'Tap More (three dots) beside the address bar.' },
+        { icon: Download, text: 'Tap Install and create shortcut.' },
+        { icon: Plus, text: 'Tap Install, then follow the confirmation shown by Chrome.' },
+      ];
+    }
+
     return [
       { icon: MoreVertical, text: 'Open your browser menu.' },
       { icon: Download, text: 'Choose Install app or Add to Home screen.' },
@@ -99,15 +110,22 @@ function getManualInstallSteps(platform: InstallPlatform, userAgent: string): In
     ];
   }
 
-  if (platform === 'macos') {
-    if (!/Safari/i.test(userAgent) || /Chrome|Chromium|CriOS|Edg|OPR|Opera/i.test(userAgent)) {
-      return [
-        { icon: MoreVertical, text: 'Open your browser menu.' },
-        { icon: Download, text: 'Choose Install Monthloom or Install page as app.' },
-        { icon: Pin, text: 'Open the app, right-click its Dock icon, then choose Keep in Dock.' },
-      ];
-    }
+  if (chromeBrowser) {
+    return [
+      { icon: MoreVertical, text: 'Click More (three dots) in the top-right of Chrome.' },
+      { icon: Share2, text: 'Select Cast, save and share.' },
+      { icon: Download, text: 'Select Install page as app, then confirm Install.' },
+      {
+        icon: Pin,
+        text:
+          platform === 'macos'
+            ? 'When Monthloom opens, right-click its Dock icon and select Options, then Keep in Dock.'
+            : 'When Monthloom opens, right-click its taskbar icon and select Pin to taskbar.',
+      },
+    ];
+  }
 
+  if (platform === 'macos') {
     return [
       { icon: Share2, text: 'In Safari, open the Share menu.' },
       { icon: Download, text: 'Choose Add to Dock.' },

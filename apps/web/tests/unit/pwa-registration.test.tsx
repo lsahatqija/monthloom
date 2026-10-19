@@ -136,6 +136,8 @@ describe('PWA installation', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Keep Monthloom close' });
     expect(dialog).toHaveClass('installPromptDesktop');
     fireEvent.click(screen.getByRole('button', { name: 'Pin to Taskbar' }));
+    expect(screen.getByText(/Select Cast, save and share/)).toBeInTheDocument();
+    expect(screen.getByText(/Select Install page as app/)).toBeInTheDocument();
     expect(screen.getByText(/right-click its taskbar icon/)).toBeInTheDocument();
   });
 });
