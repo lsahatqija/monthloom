@@ -1,6 +1,7 @@
 'use client';
 
 import type { HouseholdTransaction } from '@monthloom/contracts';
+import { RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -14,6 +15,7 @@ import { TransactionSummary } from './dashboard/summary';
 import { TransactionMenu } from './dashboard/transaction-menu';
 import {
   isUpcomingRecurringTransaction,
+  summarizeTransactions,
   transactionTypeLabel,
   type RecurringFilter,
   type TransactionFilters,
@@ -39,7 +41,7 @@ function monthOptions(): Array<{
   isCurrent: boolean;
   isFuture: boolean;
 }> {
-  const formatter = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
+  const formatter = new Intl.DateTimeFormat(undefined, { month: 'short' });
   const today = new Date();
   const offsets = Array.from({ length: 25 }, (_, index) => index - 12);
   return offsets.map((offset) => {
@@ -47,7 +49,7 @@ function monthOptions(): Array<{
     const isCurrent = offset === 0;
     return {
       value: monthKey(date),
-      label: `${formatter.format(date)}${isCurrent ? ' (current)' : ''}`,
+      label: `${formatter.format(date)} '${String(date.getFullYear()).slice(-2)}${isCurrent ? ' (current)' : ''}`,
       isCurrent,
       isFuture: offset > 0,
     };
@@ -67,9 +69,26 @@ function EntryIcon({ entry }: { entry: HouseholdTransaction }) {
   );
 }
 
+function RecurringIcon({ entry }: { entry: HouseholdTransaction }) {
+  if (!entry.recurring) return null;
+
+  const label = entry.expiresOn ? `Recurring until ${entry.expiresOn}` : 'Recurring indefinitely';
+  return (
+    <span className="transactionRecurringIcon" role="img" aria-label={label} title={label}>
+      <RefreshCw aria-hidden="true" />
+      {entry.expiresOn ? (
+        <svg className="transactionRecurringEndpoint" viewBox="0 0 12 12" aria-hidden="true">
+          <polygon points="3.5,0.75 8.5,0.75 11.25,3.5 11.25,8.5 8.5,11.25 3.5,11.25 0.75,8.5 0.75,3.5" />
+        </svg>
+      ) : null}
+    </span>
+  );
+}
+
 export function HouseholdDashboard() {
   const months = useMemo(monthOptions, []);
   const { month, setMonth, householdId, setHouseholdId } = useDashboardSelection();
+  const selectedMonthIndex = months.findIndex((option) => option.value === month);
   const [addingTransaction, setAddingTransaction] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<HouseholdTransaction | null>(null);
   const [transactionToRemove, setTransactionToRemove] = useState<HouseholdTransaction | null>(null);
@@ -144,6 +163,7 @@ export function HouseholdDashboard() {
     visibleTransactions: sortedTransactions,
   } = transactionView;
   const filteredTransactions = sortedTransactions;
+  const savings = summarizeTransactions(transactions).savings;
   const sortableHeader = (key: TransactionSortKey, label: string, className?: string) => (
     <th className={className} aria-sort={sortKey === key ? sortDirection : 'none'}>
       <button type="button" className="transactionSortButton" onClick={() => sortBy(key)}>
@@ -199,25 +219,50 @@ export function HouseholdDashboard() {
               <h1 className="householdNameText">{household.name}</h1>
             )}
           </div>
-          <label className="monthPicker">
-            <span className="srOnly">Month</span>
-            <select value={month} onChange={(event) => setMonth(event.target.value)}>
-              {months.map((option) => (
-                <option
-                  key={option.value}
-                  value={option.value}
-                  className={option.isFuture ? 'futureMonthOption' : undefined}
-                >
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="monthNavigation">
+            <button
+              type="button"
+              className="monthNavigationButton"
+              aria-label="Previous month"
+              disabled={selectedMonthIndex <= 0}
+              onClick={() => setMonth(months[selectedMonthIndex - 1]!.value)}
+            >
+              <span aria-hidden="true">←</span>
+            </button>
+            <label className="monthPicker">
+              <span className="srOnly">Month</span>
+              <select value={month} onChange={(event) => setMonth(event.target.value)}>
+                {months.map((option) => (
+                  <option
+                    key={option.value}
+                    value={option.value}
+                    className={option.isFuture ? 'futureMonthOption' : undefined}
+                  >
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="monthNavigationButton"
+              aria-label="Next month"
+              disabled={selectedMonthIndex < 0 || selectedMonthIndex >= months.length - 1}
+              onClick={() => setMonth(months[selectedMonthIndex + 1]!.value)}
+            >
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
         </div>
       </div>
       <TransactionSummary
         currency={household.currency}
-        totals={{ income: summary.income, expenses: summary.expenses, balance: summary.leftover }}
+        totals={{
+          income: summary.income,
+          expenses: summary.expenses,
+          savings,
+          balance: summary.leftover,
+        }}
       />
       {activeFilterCount ? (
         <TransactionSummary currency={household.currency} totals={filteredSummary} filtered />
@@ -374,6 +419,7 @@ export function HouseholdDashboard() {
               <thead>
                 <tr>
                   {sortableHeader('date', 'Date')}
+                  <th aria-label="Recurring status" />
                   <th aria-label="Icon" />
                   {sortableHeader('amount', 'Amount', 'transactionAmountColumn')}
                   {sortableHeader('source', 'Source')}
@@ -396,6 +442,9 @@ export function HouseholdDashboard() {
                       <time dateTime={entry.date}>
                         {date.format(new Date(`${entry.date}T12:00:00`))}
                       </time>
+                    </td>
+                    <td>
+                      <RecurringIcon entry={entry} />
                     </td>
                     <td>
                       <EntryIcon entry={entry} />

@@ -52,6 +52,36 @@
   gap: var(--space-3);
 }
 
+.monthNavigation {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.monthNavigationButton {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--ml-border);
+  border-radius: 50%;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+.monthNavigationButton:hover:not(:disabled) {
+  border-color: var(--ml-primary);
+  background: var(--ml-surface-hover);
+}
+.monthNavigationButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
 .monthPicker,
 .householdPicker {
   position: relative;
@@ -101,6 +131,9 @@
   background: var(--ml-surface);
   box-shadow: 0 8px 28px var(--ml-shadow);
 }
+.financeRecap.hasSavings {
+  grid-template-columns: repeat(4, 1fr);
+}
 .financeRecap > div {
   display: flex;
   flex-direction: column;
@@ -126,6 +159,9 @@
 }
 .expenseAmount {
   color: var(--color-danger);
+}
+.savingsAmount {
+  color: var(--color-primary);
 }
 .leftoverRecap {
   background: color-mix(in srgb, var(--ml-accent-1) 45%, var(--ml-surface));
@@ -1024,6 +1060,12 @@
 }
 .transactionTable th:nth-child(2),
 .transactionTable td:nth-child(2) {
+  width: 2rem;
+  padding-inline: 0;
+  text-align: center;
+}
+.transactionTable th:nth-child(3),
+.transactionTable td:nth-child(3) {
   width: 3rem;
   padding-inline: 0;
 }
@@ -1073,6 +1115,29 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2;
+}
+.transactionRecurringIcon {
+  position: relative;
+  display: inline-grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  color: var(--ml-primary);
+}
+.transactionRecurringIcon svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  stroke-width: 2.2;
+}
+.transactionRecurringEndpoint {
+  position: absolute;
+  right: -0.05rem;
+  bottom: -0.05rem;
+  width: 0.49rem;
+  height: 0.49rem;
+  fill: currentColor;
+  stroke: var(--ml-surface);
+  stroke-width: 1.25;
 }
 .transactionMenu {
   position: relative;
@@ -1149,7 +1214,7 @@
   }
   .dashboardSelectors {
     width: 100%;
-    grid-template-columns: minmax(0, 1fr) minmax(8.5rem, auto);
+    grid-template-columns: minmax(0, 1fr) auto;
   }
   .householdPicker {
     width: 100%;
@@ -1162,7 +1227,7 @@
     font-size: 1.4rem;
   }
   .monthPicker select {
-    width: min(11.5rem, 43vw);
+    width: min(9.5rem, 33vw);
     max-width: 100%;
     text-overflow: ellipsis;
   }
@@ -1179,6 +1244,17 @@
     grid-column: 1 / -1;
     border-top: 1px solid var(--ml-divider);
     border-left: 0;
+  }
+  .financeRecap.hasSavings .savingsRecap,
+  .financeRecap.hasSavings .leftoverRecap {
+    grid-column: auto;
+    border-top: 1px solid var(--ml-divider);
+  }
+  .financeRecap.hasSavings .savingsRecap {
+    border-left: 0;
+  }
+  .financeRecap.hasSavings .leftoverRecap {
+    border-left: 1px solid var(--ml-divider);
   }
   .transactionPanelHeading {
     padding-inline: var(--space-4);
