@@ -1,6 +1,6 @@
 import type { HouseholdTransaction } from '@monthloom/contracts';
 import { QueryClient } from '@tanstack/react-query';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -57,6 +57,15 @@ describe('transaction form + query + HTTP client', () => {
   it('starts recurring transactions without expiration and reveals a required date when enabled', async () => {
     renderForm();
     await userEvent.click(screen.getByRole('switch', { name: /Recurring transaction/ }));
+    expect(screen.getByRole('group', { name: 'Recurrence interval: 1' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Recurrence unit: month' })).toBeInTheDocument();
+    expect(screen.getByText('Every 1 month')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Next recurrence interval' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Previous recurrence unit' }));
+    expect(screen.getByText('Every 2 weeks')).toBeInTheDocument();
+    const intervalWheel = screen.getByRole('group', { name: 'Recurrence interval: 2' });
+    fireEvent.keyDown(intervalWheel, { key: 'ArrowDown' });
+    expect(screen.getByText('Every 3 weeks')).toBeInTheDocument();
     const expires = screen.getByRole('switch', { name: 'Expires' });
     expect(expires).not.toBeChecked();
     expect(screen.queryByLabelText('Expiration date')).not.toBeInTheDocument();

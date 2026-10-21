@@ -5,6 +5,7 @@ import type { User } from '../users/user.types.js';
 export type FinancialIcon = (typeof Constants.FINANCIAL_ICONS)[number];
 export type HouseholdIcon = (typeof Constants.HOUSEHOLD_ICONS)[number];
 export type ExpenseType = (typeof Constants.EXPENSE_TYPES)[number];
+export type RecurrenceUnit = (typeof Constants.RECURRENCE_UNITS)[number];
 
 export interface HouseholdRecord {
   id: string;
@@ -70,6 +71,8 @@ interface Transaction {
   /** Calendar date in YYYY-MM-DD format. */
   date: string;
   recurring: boolean;
+  recurrenceInterval: number;
+  recurrenceUnit: RecurrenceUnit;
   /** Optional final calendar date for a recurring transaction. */
   expiresOn: string | null;
   /** Groups persisted occurrences that belong to the same recurring transaction. */

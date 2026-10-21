@@ -1,6 +1,6 @@
 'use client';
 
-import type { HouseholdTransaction } from '@monthloom/contracts';
+import { Defaults, type HouseholdTransaction } from '@monthloom/contracts';
 import { RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
@@ -72,7 +72,10 @@ function EntryIcon({ entry }: { entry: HouseholdTransaction }) {
 function RecurringIcon({ entry }: { entry: HouseholdTransaction }) {
   if (!entry.recurring) return null;
 
-  const label = entry.expiresOn ? `Recurring until ${entry.expiresOn}` : 'Recurring indefinitely';
+  const interval = entry.recurrenceInterval ?? Defaults.TRANSACTION_RECURRENCE_INTERVAL;
+  const unit = entry.recurrenceUnit ?? Defaults.TRANSACTION_RECURRENCE_UNIT;
+  const schedule = `Every ${interval} ${unit}${interval === 1 ? '' : 's'}`;
+  const label = entry.expiresOn ? `${schedule}, until ${entry.expiresOn}` : schedule;
   return (
     <span className="transactionRecurringIcon" role="img" aria-label={label} title={label}>
       <RefreshCw aria-hidden="true" />
@@ -431,7 +434,7 @@ export function HouseholdDashboard() {
               <tbody>
                 {sortedTransactions.map((entry) => (
                   <tr
-                    key={`${entry.kind}-${entry.id}`}
+                    key={`${entry.kind}-${entry.id}-${entry.date}`}
                     className={
                       entry.projected || isUpcomingRecurringTransaction(entry, month)
                         ? 'projectedTransaction'

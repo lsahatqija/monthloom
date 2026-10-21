@@ -11,6 +11,7 @@ import {
   type TransactionSeriesSelection,
 } from '@monthloom/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
@@ -38,6 +39,158 @@ const COLOR_OPTIONS = [
   '#C48A2C',
   '#6B7280',
 ];
+
+interface RecurrenceWheelProps<T extends string | number> {
+  label: string;
+  options: readonly T[];
+  value: T;
+  disabled: boolean;
+  format: (option: T) => string;
+  onChange: (option: T) => void;
+  freeMoving?: boolean;
+}
+
+function RecurrenceWheel<T extends string | number>({
+  label,
+  options,
+  value,
+  disabled,
+  format,
+  onChange,
+  freeMoving = false,
+}: RecurrenceWheelProps<T>) {
+  const drag = useRef<{ y: number; time: number; velocity: number; offset: number } | null>(null);
+  const [offset, setOffset] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const currentIndex = Math.max(0, options.indexOf(value));
+  const itemHeight = 28;
+
+  const settle = (steps: number, restingOffset = 0) => {
+    const targetIndex = Math.min(options.length - 1, Math.max(0, currentIndex + steps));
+    const actualSteps = targetIndex - currentIndex;
+    if (actualSteps) onChange(options[targetIndex]!);
+    setDragging(false);
+    setOffset(
+      Math.max(-itemHeight * 3, Math.min(itemHeight * 3, restingOffset + actualSteps * itemHeight)),
+    );
+    requestAnimationFrame(() => requestAnimationFrame(() => setOffset(0)));
+  };
+
+  const move = (direction: -1 | 1) => {
+    settle(direction);
+  };
+
+  const visibleOptions = Array.from({ length: 7 }, (_, index) => {
+    const optionIndex = currentIndex + index - 3;
+    return optionIndex >= 0 && optionIndex < options.length
+      ? { option: options[optionIndex]!, relativeIndex: index - 3 }
+      : null;
+  });
+
+  return (
+    <div className="recurrenceWheelControl">
+      <div
+        className="recurrenceWindow"
+        role="group"
+        aria-label={`${label}: ${format(value)}`}
+        tabIndex={disabled ? -1 : 0}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            move(-1);
+          } else if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            move(1);
+          }
+        }}
+        onWheel={(event) => {
+          event.preventDefault();
+          move(event.deltaY < 0 ? -1 : 1);
+        }}
+        onPointerDown={(event) => {
+          if (disabled) return;
+          drag.current = { y: event.clientY, time: performance.now(), velocity: 0, offset: 0 };
+          setDragging(true);
+          event.currentTarget.setPointerCapture?.(event.pointerId);
+        }}
+        onPointerMove={(event) => {
+          if (!drag.current) return;
+          const now = performance.now();
+          const distance = event.clientY - drag.current.y;
+          const elapsed = Math.max(1, now - drag.current.time);
+          const nextOffset = freeMoving
+            ? drag.current.offset + distance
+            : Math.max(-itemHeight, Math.min(itemHeight, drag.current.offset + distance));
+          drag.current = {
+            y: event.clientY,
+            time: now,
+            velocity: distance / elapsed,
+            offset: nextOffset,
+          };
+          setOffset(nextOffset);
+        }}
+        onPointerUp={(event) => {
+          if (!drag.current) return;
+          const { offset: releaseOffset, velocity } = drag.current;
+          drag.current = null;
+          const projectedOffset = releaseOffset + (freeMoving ? velocity * 140 : 0);
+          const steps = freeMoving
+            ? Math.round(-projectedOffset / itemHeight)
+            : Math.abs(releaseOffset) >= 12
+              ? releaseOffset > 0
+                ? -1
+                : 1
+              : 0;
+          settle(steps, releaseOffset);
+          event.currentTarget.releasePointerCapture?.(event.pointerId);
+        }}
+        onPointerCancel={() => {
+          drag.current = null;
+          setDragging(false);
+          setOffset(0);
+        }}
+      >
+        <div className={`recurrenceWindowTrack${dragging ? ' isDragging' : ''}`}>
+          {visibleOptions.map((item, index) =>
+            item ? (
+              <span
+                key={item.option}
+                className={item.relativeIndex === 0 ? 'isCurrent' : undefined}
+                style={{
+                  transform: `translateY(calc(-50% + ${item.relativeIndex * itemHeight + offset}px))`,
+                }}
+                aria-hidden={item.relativeIndex !== 0}
+                aria-live={item.relativeIndex === 0 ? 'polite' : undefined}
+              >
+                {format(item.option)}
+              </span>
+            ) : (
+              <span key={`empty-${index}`} aria-hidden="true" />
+            ),
+          )}
+        </div>
+      </div>
+      <div className="recurrenceWheelButtons">
+        <button
+          type="button"
+          aria-label={`Previous ${label.toLowerCase()}`}
+          disabled={disabled || currentIndex === 0}
+          onClick={() => move(-1)}
+        >
+          <ChevronUp aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          aria-label={`Next ${label.toLowerCase()}`}
+          disabled={disabled || currentIndex === options.length - 1}
+          onClick={() => move(1)}
+        >
+          <ChevronDown aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function usePickerPosition(
   open: boolean,
@@ -159,6 +312,9 @@ export function TransactionForm({
       date: transaction?.date ?? todayDate(),
       userId: transaction?.user.id ?? currentUser.data?.user?.id ?? members[0]?.id ?? '',
       recurring: transaction?.recurring ?? Defaults.TRANSACTION_RECURRING,
+      recurrenceInterval:
+        transaction?.recurrenceInterval ?? Defaults.TRANSACTION_RECURRENCE_INTERVAL,
+      recurrenceUnit: transaction?.recurrenceUnit ?? Defaults.TRANSACTION_RECURRENCE_UNIT,
       expiresOn: transaction?.expiresOn ?? null,
     },
   });
@@ -171,6 +327,8 @@ export function TransactionForm({
   const date = watch('date');
   const userId = watch('userId');
   const recurring = watch('recurring');
+  const recurrenceInterval = watch('recurrenceInterval');
+  const recurrenceUnit = watch('recurrenceUnit');
   const expiresOn = watch('expiresOn') ?? '';
 
   const selectSource = (selectedSourceId: string) => {
@@ -618,38 +776,40 @@ export function TransactionForm({
               </select>
             </label>
 
-            <label className="transactionField transactionAmountField">
-              <span>Amount</span>
-              <input
-                value={amount}
-                type="text"
-                inputMode="decimal"
-                pattern="\d{1,12}([.,]\d{1,2})?"
-                placeholder="0.00"
-                required
-                disabled={mutation.isPending}
-                onChange={(event) => setValue('amount', event.target.value.replace(',', '.'))}
-              />
-            </label>
+            <div className="transactionAmountDateRow">
+              <label className="transactionField transactionAmountField">
+                <span>Amount</span>
+                <input
+                  value={amount}
+                  type="text"
+                  inputMode="decimal"
+                  pattern="\d{1,12}([.,]\d{1,2})?"
+                  placeholder="0.00"
+                  required
+                  disabled={mutation.isPending}
+                  onChange={(event) => setValue('amount', event.target.value.replace(',', '.'))}
+                />
+              </label>
 
-            <label className="transactionField transactionDateField">
-              <span>
-                Date <small>Optional</small>
-              </span>
-              <input
-                type="date"
-                value={date}
-                disabled={mutation.isPending}
-                onChange={(event) => setValue('date', event.target.value)}
-              />
-            </label>
+              <label className="transactionField transactionDateField">
+                <span>
+                  Date <small>Optional</small>
+                </span>
+                <input
+                  type="date"
+                  value={date}
+                  disabled={mutation.isPending}
+                  onChange={(event) => setValue('date', event.target.value)}
+                />
+              </label>
+            </div>
           </div>
 
           <div className="recurringSection" data-onboarding="recurring">
             <label className="toggleRow">
               <span>
                 <strong>Recurring transaction</strong>
-                <small>Repeat this entry each month</small>
+                <small>Repeat this entry on a schedule</small>
               </span>
               <input
                 type="checkbox"
@@ -671,39 +831,72 @@ export function TransactionForm({
               />
             </label>
             {recurring ? (
-              <div className="expirationControls" data-onboarding="expiration">
-                <label className="toggleRow">
-                  <span>
-                    <strong>Expires</strong>
-                  </span>
-                  <input
-                    type="checkbox"
-                    role="switch"
-                    checked={expires}
+              <>
+                <fieldset className="recurrenceControls">
+                  <legend>Repeat every</legend>
+                  <RecurrenceWheel
+                    label="Recurrence interval"
+                    options={Array.from(
+                      { length: Constants.RECURRENCE_INTERVAL_MAX },
+                      (_, index) => index + 1,
+                    )}
+                    value={recurrenceInterval}
                     disabled={mutation.isPending}
-                    onChange={(event) => {
-                      const isExpiring = event.target.checked;
-                      setExpires(isExpiring);
-                      if (!isExpiring) {
-                        setValue('expiresOn', null, { shouldValidate: true });
-                      }
-                    }}
+                    freeMoving
+                    format={String}
+                    onChange={(option) =>
+                      setValue('recurrenceInterval', option, { shouldValidate: true })
+                    }
                   />
-                </label>
-                {expires ? (
-                  <label className="transactionField expirationField">
-                    <span>Expiration date</span>
+                  <RecurrenceWheel
+                    label="Recurrence unit"
+                    options={Constants.RECURRENCE_UNITS}
+                    value={recurrenceUnit}
+                    disabled={mutation.isPending}
+                    format={(option) => `${option}${recurrenceInterval === 1 ? '' : 's'}`}
+                    onChange={(option) =>
+                      setValue('recurrenceUnit', option, { shouldValidate: true })
+                    }
+                  />
+                  <p aria-live="polite">
+                    Every {recurrenceInterval} {recurrenceUnit}
+                    {recurrenceInterval === 1 ? '' : 's'}
+                  </p>
+                </fieldset>
+                <div className="expirationControls" data-onboarding="expiration">
+                  <label className="toggleRow">
+                    <span>
+                      <strong>Expires</strong>
+                    </span>
                     <input
-                      type="date"
-                      required
-                      value={expiresOn}
-                      min={date || todayDate()}
+                      type="checkbox"
+                      role="switch"
+                      checked={expires}
                       disabled={mutation.isPending}
-                      onChange={(event) => setValue('expiresOn', event.target.value)}
+                      onChange={(event) => {
+                        const isExpiring = event.target.checked;
+                        setExpires(isExpiring);
+                        if (!isExpiring) {
+                          setValue('expiresOn', null, { shouldValidate: true });
+                        }
+                      }}
                     />
                   </label>
-                ) : null}
-              </div>
+                  {expires ? (
+                    <label className="transactionField expirationField">
+                      <span>Expiration date</span>
+                      <input
+                        type="date"
+                        required
+                        value={expiresOn}
+                        min={date || todayDate()}
+                        disabled={mutation.isPending}
+                        onChange={(event) => setValue('expiresOn', event.target.value)}
+                      />
+                    </label>
+                  ) : null}
+                </div>
+              </>
             ) : null}
           </div>
 
