@@ -126,7 +126,8 @@ export class PostgresTransactionRepository implements TransactionRepository {
       ...expenseRows.map((row) => ({ ...mapRow(row, 'expense'), type: row.type })),
     ];
 
-    if (month <= currentMonth()) {
+    const thisMonth = currentMonth();
+    if (month < thisMonth) {
       return actualTransactions.sort(
         (a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id),
       );
@@ -176,6 +177,12 @@ export class PostgresTransactionRepository implements TransactionRepository {
         type: 'income' as const,
       })),
       ...recurringExpenseRows.map((row) => ({ ...row, kind: 'expense' as const })),
+      ...incomeRows
+        .filter((row) => row.recurring)
+        .map((row) => ({ ...row, kind: 'income' as const, type: 'income' as const })),
+      ...expenseRows
+        .filter((row) => row.recurring)
+        .map((row) => ({ ...row, kind: 'expense' as const })),
     ];
     const historiesBySeries = new Map<string, typeof history>();
     for (const row of history) {
@@ -184,14 +191,15 @@ export class PostgresTransactionRepository implements TransactionRepository {
       series.push(row);
       historiesBySeries.set(row.recurrenceId, series);
     }
-    const actualSeries = new Set(
-      [...incomeRows, ...expenseRows]
-        .map((row) => row.recurrenceId)
-        .filter((recurrenceId): recurrenceId is string => Boolean(recurrenceId)),
-    );
+    const actualDatesBySeries = new Map<string, Set<string>>();
+    for (const row of [...incomeRows, ...expenseRows]) {
+      if (!row.recurrenceId) continue;
+      const dates = actualDatesBySeries.get(row.recurrenceId) ?? new Set<string>();
+      dates.add(row.date);
+      actualDatesBySeries.set(row.recurrenceId, dates);
+    }
     const projectedTransactions: HouseholdTransaction[] = [];
     for (const [recurrenceId, series] of historiesBySeries) {
-      if (actualSeries.has(recurrenceId)) continue;
       series.sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
       const latest = series[0]!;
       const first = series[series.length - 1]!;
@@ -201,7 +209,12 @@ export class PostgresTransactionRepository implements TransactionRepository {
         latest.expiresOn,
         latest.recurrenceInterval,
         latest.recurrenceUnit,
-      ).filter((date) => date.startsWith(`${month}-`));
+      ).filter(
+        (date) =>
+          date.startsWith(`${month}-`) &&
+          (month !== thisMonth || date >= new Date().toISOString().slice(0, 10)) &&
+          !actualDatesBySeries.get(recurrenceId)?.has(date),
+      );
       for (const projectedDate of projectedDates)
         projectedTransactions.push({
           id: latest.id,
