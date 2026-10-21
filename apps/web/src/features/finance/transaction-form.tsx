@@ -247,6 +247,20 @@ function todayDate(): string {
   ).padStart(2, '0')}`;
 }
 
+function dateInMonth(month: string, today = todayDate()): string {
+  if (today.slice(0, 7) === month) return today;
+  const [year, monthNumber] = month.split('-').map(Number);
+  const day = Math.min(Number(today.slice(8, 10)), new Date(year!, monthNumber!, 0).getDate());
+  return `${month}-${String(day).padStart(2, '0')}`;
+}
+
+function monthLabel(month: string): string {
+  const [year, monthNumber] = month.split('-').map(Number);
+  return new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(
+    new Date(year!, monthNumber! - 1, 1),
+  );
+}
+
 function editableTransactionType(
   transaction: HouseholdTransaction | undefined,
 ): CreateHouseholdTransactionRequest['type'] {
@@ -261,20 +275,24 @@ function editableTransactionType(
 
 interface TransactionFormProps {
   householdId: string;
+  selectedMonth: string;
   members: HouseholdMonthResponse['members'];
   sources: HouseholdMonthResponse['sources'];
   transactions?: HouseholdMonthResponse['transactions'];
   transaction?: HouseholdTransaction;
   onClose: () => void;
+  onSaved?: (destinationMonth: string) => void;
 }
 
 export function TransactionForm({
   householdId,
+  selectedMonth,
   members,
   sources,
   transactions = [],
   transaction,
   onClose,
+  onSaved,
 }: TransactionFormProps) {
   const iconPickerRef = useRef<HTMLDetailsElement>(null);
   const colorPickerRef = useRef<HTMLDetailsElement>(null);
@@ -309,7 +327,7 @@ export function TransactionForm({
       icon: transaction?.icon ?? Defaults.TRANSACTION_ICON,
       color: transaction?.color ?? Defaults.TRANSACTION_COLOR,
       amount: transaction?.amount ?? '',
-      date: transaction?.date ?? todayDate(),
+      date: transaction?.date ?? dateInMonth(selectedMonth),
       userId: transaction?.user.id ?? currentUser.data?.user?.id ?? members[0]?.id ?? '',
       recurring: transaction?.recurring ?? Defaults.TRANSACTION_RECURRING,
       recurrenceInterval:
@@ -330,6 +348,10 @@ export function TransactionForm({
   const recurrenceInterval = watch('recurrenceInterval');
   const recurrenceUnit = watch('recurrenceUnit');
   const expiresOn = watch('expiresOn') ?? '';
+  const destinationMonth = date ? date.slice(0, 7) : selectedMonth;
+  const isCrossMonth = destinationMonth !== selectedMonth;
+  const destinationLabel = monthLabel(destinationMonth);
+  const selectedMonthLabel = monthLabel(selectedMonth);
 
   const selectSource = (selectedSourceId: string) => {
     setValue('sourceId', selectedSourceId, { shouldValidate: true });
@@ -427,6 +449,7 @@ export function TransactionForm({
         : createHouseholdTransaction(householdId, input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: financeKeys.all });
+      onSaved?.(destinationMonth);
       onClose();
     },
   });
@@ -803,6 +826,12 @@ export function TransactionForm({
                 />
               </label>
             </div>
+            {isCrossMonth ? (
+              <p className="transactionMonthNotice" role="status">
+                This transaction will be saved to {destinationLabel}, not {selectedMonthLabel}.
+                {recurring ? ` The recurring schedule will start in ${destinationLabel}.` : ''}
+              </p>
+            ) : null}
           </div>
 
           <div className="recurringSection" data-onboarding="recurring">
@@ -983,8 +1012,10 @@ export function TransactionForm({
                   ? 'Saving…'
                   : 'Adding…'
                 : transaction
-                  ? 'Save changes'
-                  : 'Add transaction'}
+                  ? isCrossMonth
+                    ? `Save to ${destinationLabel}`
+                    : 'Save changes'
+                  : `Add to ${destinationLabel}`}
             </Button>
           </div>
         </form>

@@ -26,17 +26,17 @@ through the phases in order and keep each item small enough to implement and ver
 
 ## Phase 1: Prevent lost cross-month transactions
 
-- [ ] Pass the dashboard's selected month into the add/edit transaction form.
-- [ ] Choose a date in the viewed month by default when adding a transaction from a non-current
+- [x] Pass the dashboard's selected month into the add/edit transaction form.
+- [x] Choose a date in the viewed month by default when adding a transaction from a non-current
       month. Continue to default to today when viewing the current month.
-- [ ] When the transaction date is outside the viewed month, show a non-error inline notice below
+- [x] When the transaction date is outside the viewed month, show a non-error inline notice below
       the date field naming both months.
-- [ ] Change the submit label to include the destination month, for example `Add to November`.
-- [ ] After saving outside the viewed month, keep the user on the current dashboard and show a
+- [x] Change the submit label to include the destination month, for example `Add to November`.
+- [x] After saving outside the viewed month, keep the user on the current dashboard and show a
       persistent confirmation with a `View November` action.
-- [ ] Apply the same warning when editing a transaction into another month.
-- [ ] Include the destination month in recurring-transaction confirmation where applicable.
-- [ ] Add integration tests for current-month, past-month, future-month, edit, and recurring cases.
+- [x] Apply the same warning when editing a transaction into another month.
+- [x] Include the destination month in recurring-transaction confirmation where applicable.
+- [x] Add integration tests for current-month, past-month, future-month, edit, and recurring cases.
 
 Acceptance criteria:
 

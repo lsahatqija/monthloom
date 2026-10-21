@@ -1041,6 +1041,36 @@
   color: var(--ml-text-muted);
   font-weight: 400;
 }
+
+.transactionMonthNotice {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  background: var(--color-bg-muted);
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.transactionSavedNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  background: var(--color-bg-muted);
+}
+
+.transactionSavedNotice button {
+  min-height: 2.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
 .toggleRow input {
   width: 2.8rem;
   height: 1.5rem;

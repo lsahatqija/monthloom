@@ -30,6 +30,7 @@ function renderForm(
   transaction?: HouseholdTransaction,
   sources = [source],
   transactions: HouseholdTransaction[] = [],
+  selectedMonth = transaction?.date.slice(0, 7) ?? '2026-10',
 ) {
   const client = new QueryClient({
     defaultOptions: {
@@ -42,6 +43,7 @@ function renderForm(
   renderWithQuery(
     <TransactionForm
       householdId="home"
+      selectedMonth={selectedMonth}
       members={[member]}
       sources={sources}
       transactions={transactions}
@@ -73,6 +75,49 @@ describe('transaction form + query + HTTP client', () => {
     expect(screen.getByLabelText('Expiration date')).toBeRequired();
     await userEvent.click(expires);
     expect(screen.queryByLabelText('Expiration date')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['2026-10', '2026-10-21', 'Add to October 2026'],
+    ['2026-02', '2026-02-21', 'Add to February 2026'],
+    ['2027-01', '2027-01-21', 'Add to January 2027'],
+  ])('defaults a new transaction for viewed month %s', (month, expectedDate, buttonName) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-21T12:00:00'));
+    renderForm(undefined, [source], [], month);
+    expect(screen.getByLabelText(/Date/)).toHaveValue(expectedDate);
+    expect(screen.getByRole('button', { name: buttonName })).toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it('warns and names the destination before saving an edit into another month', async () => {
+    renderForm(
+      {
+        id: 'entry',
+        kind: 'expense',
+        type: 'groceries',
+        date: '2026-10-21',
+        icon: 'receipt',
+        color: '#123456',
+        amount: '12.34',
+        recurring: true,
+        expiresOn: null,
+        projected: false,
+        user: member,
+        source,
+      },
+      [source],
+      [],
+      '2026-10',
+    );
+    const date = screen.getByLabelText(/Date/);
+    await userEvent.clear(date);
+    await userEvent.type(date, '2027-01-05');
+    expect(screen.getByRole('status')).toHaveTextContent('saved to January 2027, not October 2026');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'recurring schedule will start in January 2027',
+    );
+    expect(screen.getByRole('button', { name: 'Save to January 2027' })).toBeInTheDocument();
   });
 
   it.each([true, false])('saves an existing expiration with Expires set to %s', async (expires) => {
@@ -123,7 +168,7 @@ describe('transaction form + query + HTTP client', () => {
     await userEvent.clear(screen.getByLabelText(/Date/));
     await userEvent.type(screen.getByLabelText(/Date/), '2026-02-01');
     await userEvent.click(screen.getByRole('switch', { name: 'Expires' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save to February 2026' }));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     expect(JSON.parse(fetch.mock.calls[0]![1].body)).toMatchObject({
@@ -218,12 +263,12 @@ describe('transaction form + query + HTTP client', () => {
     vi.stubGlobal('fetch', fetch);
     const { onClose, client } = renderForm();
     const invalidate = vi.spyOn(client, 'invalidateQueries');
-    expect(screen.getByRole('button', { name: 'Add transaction' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Add to October 2026' })).toBeDisabled();
     await userEvent.click(screen.getByRole('combobox', { name: 'Source' }));
     await userEvent.click(screen.getByRole('option', { name: source.displayName }));
     await userEvent.click(screen.getByRole('radio', { name: 'Income' }));
     await userEvent.type(screen.getByLabelText('Amount'), '12,34');
-    await userEvent.click(screen.getByRole('button', { name: 'Add transaction' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Add to October 2026' }));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     expect(JSON.parse(fetch.mock.calls[0]![1].body)).toMatchObject({
       amount: '12.34',

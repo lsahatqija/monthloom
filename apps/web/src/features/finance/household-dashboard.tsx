@@ -95,6 +95,7 @@ export function HouseholdDashboard() {
   const [addingTransaction, setAddingTransaction] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<HouseholdTransaction | null>(null);
   const [transactionToRemove, setTransactionToRemove] = useState<HouseholdTransaction | null>(null);
+  const [savedDestinationMonth, setSavedDestinationMonth] = useState<string | null>(null);
   const householdsQuery = useHouseholds();
   useEffect(() => {
     if (!householdsQuery.data) return;
@@ -258,6 +259,31 @@ export function HouseholdDashboard() {
           </div>
         </div>
       </div>
+      {savedDestinationMonth ? (
+        <div className="transactionSavedNotice" role="status">
+          <span>
+            Transaction saved to{' '}
+            {new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(
+              new Date(`${savedDestinationMonth}-01T12:00:00`),
+            )}
+            .
+          </span>
+          {savedDestinationMonth !== month ? (
+            <button
+              type="button"
+              onClick={() => {
+                setMonth(savedDestinationMonth);
+                setSavedDestinationMonth(null);
+              }}
+            >
+              View{' '}
+              {new Intl.DateTimeFormat(undefined, { month: 'long' }).format(
+                new Date(`${savedDestinationMonth}-01T12:00:00`),
+              )}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       <TransactionSummary
         currency={household.currency}
         totals={{
@@ -504,18 +530,26 @@ export function HouseholdDashboard() {
       {addingTransaction ? (
         <TransactionForm
           householdId={household.id}
+          selectedMonth={month}
           members={query.data.members}
           sources={query.data.sources}
           transactions={query.data.transactions}
+          onSaved={(destinationMonth) => {
+            if (destinationMonth !== month) setSavedDestinationMonth(destinationMonth);
+          }}
           onClose={() => setAddingTransaction(false)}
         />
       ) : null}
       {transactionToEdit ? (
         <TransactionForm
           householdId={household.id}
+          selectedMonth={month}
           members={query.data.members}
           sources={query.data.sources}
           transaction={transactionToEdit}
+          onSaved={(destinationMonth) => {
+            if (destinationMonth !== month) setSavedDestinationMonth(destinationMonth);
+          }}
           onClose={() => setTransactionToEdit(null)}
         />
       ) : null}
