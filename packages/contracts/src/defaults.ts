@@ -23,6 +23,8 @@ export class Defaults {
   static readonly INCOME_TRANSACTION_ICON = 'banknote' as const;
   static readonly TRANSACTION_COLOR = '#35675B' as const;
   static readonly TRANSACTION_RECURRING = false;
+  static readonly TRANSACTION_RECURRENCE_INTERVAL = 1;
+  static readonly TRANSACTION_RECURRENCE_UNIT = 'month' as const;
   static readonly TRANSACTION_SORT_KEY = 'date' as const;
   static readonly TRANSACTION_SORT_DIRECTION = 'descending' as const;
 }

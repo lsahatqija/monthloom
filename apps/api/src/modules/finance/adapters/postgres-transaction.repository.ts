@@ -42,6 +42,8 @@ export class PostgresTransactionRepository implements TransactionRepository {
       color: incomes.color,
       amount: incomes.amount,
       recurring: incomes.recurring,
+      recurrenceInterval: incomes.recurrenceInterval,
+      recurrenceUnit: incomes.recurrenceUnit,
       expiresOn: incomes.expiresOn,
       recurrenceId: incomes.recurrenceId,
       userId: users.id,
@@ -73,6 +75,8 @@ export class PostgresTransactionRepository implements TransactionRepository {
         color: expenses.color,
         amount: expenses.amount,
         recurring: expenses.recurring,
+        recurrenceInterval: expenses.recurrenceInterval,
+        recurrenceUnit: expenses.recurrenceUnit,
         expiresOn: expenses.expiresOn,
         recurrenceId: expenses.recurrenceId,
       })
@@ -99,6 +103,8 @@ export class PostgresTransactionRepository implements TransactionRepository {
       color: row.color,
       amount: row.amount,
       recurring: row.recurring,
+      recurrenceInterval: row.recurrenceInterval,
+      recurrenceUnit: row.recurrenceUnit,
       expiresOn: row.expiresOn,
       projected: false,
       user: {
@@ -148,6 +154,8 @@ export class PostgresTransactionRepository implements TransactionRepository {
         color: expenses.color,
         amount: expenses.amount,
         recurring: expenses.recurring,
+        recurrenceInterval: expenses.recurrenceInterval,
+        recurrenceUnit: expenses.recurrenceUnit,
         expiresOn: expenses.expiresOn,
         recurrenceId: expenses.recurrenceId,
       })
@@ -186,32 +194,41 @@ export class PostgresTransactionRepository implements TransactionRepository {
       if (actualSeries.has(recurrenceId)) continue;
       series.sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
       const latest = series[0]!;
-      const projectedDate = alignOccurrenceDate(`${month}-01`, latest.date);
-      if (latest.expiresOn && projectedDate > latest.expiresOn) continue;
-      projectedTransactions.push({
-        id: latest.id,
-        kind: latest.kind,
-        type: latest.type,
-        date: projectedDate,
-        icon: latest.icon,
-        color: latest.color,
-        amount: averageAmounts(series.slice(0, 6).map((row) => row.amount)),
-        recurring: true,
-        expiresOn: latest.expiresOn,
-        projected: true,
-        user: {
-          id: latest.userId,
-          displayName: latest.userDisplayName,
-          profileImage: latest.userProfileImage,
-          desiredColor: latest.userDesiredColor,
-        },
-        source: {
-          id: latest.sourceId,
-          displayName: latest.sourceDisplayName,
-          key: latest.sourceKey,
-          aliases: latest.sourceAliases,
-        },
-      });
+      const first = series[series.length - 1]!;
+      const projectedDates = recurringOccurrenceDates(
+        first.date,
+        month,
+        latest.expiresOn,
+        latest.recurrenceInterval,
+        latest.recurrenceUnit,
+      ).filter((date) => date.startsWith(`${month}-`));
+      for (const projectedDate of projectedDates)
+        projectedTransactions.push({
+          id: latest.id,
+          kind: latest.kind,
+          type: latest.type,
+          date: projectedDate,
+          icon: latest.icon,
+          color: latest.color,
+          amount: averageAmounts(series.slice(0, 6).map((row) => row.amount)),
+          recurring: true,
+          recurrenceInterval: latest.recurrenceInterval,
+          recurrenceUnit: latest.recurrenceUnit,
+          expiresOn: latest.expiresOn,
+          projected: true,
+          user: {
+            id: latest.userId,
+            displayName: latest.userDisplayName,
+            profileImage: latest.userProfileImage,
+            desiredColor: latest.userDesiredColor,
+          },
+          source: {
+            id: latest.sourceId,
+            displayName: latest.sourceDisplayName,
+            key: latest.sourceKey,
+            aliases: latest.sourceAliases,
+          },
+        });
     }
 
     return [...actualTransactions, ...projectedTransactions].sort(
@@ -239,8 +256,14 @@ export class PostgresTransactionRepository implements TransactionRepository {
 
       const recurrenceId = input.recurring ? randomUUID() : null;
       const occurrenceDates =
-        input.recurring && input.date.slice(0, 7) < currentMonth()
-          ? recurringOccurrenceDates(input.date, currentMonth(), input.expiresOn)
+        input.recurring && input.date.slice(0, 7) <= currentMonth()
+          ? recurringOccurrenceDates(
+              input.date,
+              currentMonth(),
+              input.expiresOn,
+              input.recurrenceInterval,
+              input.recurrenceUnit,
+            )
           : [input.date];
       const values = {
         householdId,
@@ -250,6 +273,8 @@ export class PostgresTransactionRepository implements TransactionRepository {
         color: input.color,
         amount: input.amount,
         recurring: input.recurring,
+        recurrenceInterval: input.recurrenceInterval,
+        recurrenceUnit: input.recurrenceUnit,
         expiresOn: input.recurring ? input.expiresOn : null,
         recurrenceId,
       };
@@ -293,6 +318,8 @@ export class PostgresTransactionRepository implements TransactionRepository {
         color: record.color,
         amount: record.amount,
         recurring: record.recurring,
+        recurrenceInterval: record.recurrenceInterval,
+        recurrenceUnit: record.recurrenceUnit,
         expiresOn: record.expiresOn,
         projected: false,
         user,
@@ -395,6 +422,8 @@ export class PostgresTransactionRepository implements TransactionRepository {
               ? input.transaction.date
               : alignOccurrenceDate(occurrence.date, input.transaction.date),
           recurring: input.transaction.recurring,
+          recurrenceInterval: input.transaction.recurrenceInterval,
+          recurrenceUnit: input.transaction.recurrenceUnit,
           expiresOn: input.transaction.recurring ? input.transaction.expiresOn : null,
           recurrenceId,
           updatedAt: new Date(),
@@ -443,6 +472,8 @@ export class PostgresTransactionRepository implements TransactionRepository {
         color: input.transaction.color,
         amount: input.transaction.amount,
         recurring: input.transaction.recurring,
+        recurrenceInterval: input.transaction.recurrenceInterval,
+        recurrenceUnit: input.transaction.recurrenceUnit,
         expiresOn: input.transaction.recurring ? input.transaction.expiresOn : null,
         projected: false,
         user,

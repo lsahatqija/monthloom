@@ -57,6 +57,9 @@ describe('transaction form + query + HTTP client', () => {
   it('starts recurring transactions without expiration and reveals a required date when enabled', async () => {
     renderForm();
     await userEvent.click(screen.getByRole('switch', { name: /Recurring transaction/ }));
+    expect(screen.getByLabelText('Recurrence interval')).toHaveValue('1');
+    expect(screen.getByLabelText('Recurrence unit')).toHaveValue('month');
+    expect(screen.getByText('Every 1 month')).toBeInTheDocument();
     const expires = screen.getByRole('switch', { name: 'Expires' });
     expect(expires).not.toBeChecked();
     expect(screen.queryByLabelText('Expiration date')).not.toBeInTheDocument();

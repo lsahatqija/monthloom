@@ -235,8 +235,10 @@ describe('household dashboard', () => {
     await screen.findByRole('heading', { name: 'Our Home' });
 
     const table = screen.getByRole('table');
-    const recurring = within(table).getByRole('img', { name: 'Recurring indefinitely' });
-    const expiring = within(table).getByRole('img', { name: 'Recurring until 2026-12-31' });
+    const recurring = within(table).getByRole('img', { name: 'Every 1 month' });
+    const expiring = within(table).getByRole('img', {
+      name: 'Every 1 month, until 2026-12-31',
+    });
     expect(recurring.querySelector('.transactionRecurringEndpoint')).toBeNull();
     expect(expiring.querySelector('.transactionRecurringEndpoint')).toBeInTheDocument();
 
@@ -247,7 +249,7 @@ describe('household dashboard', () => {
     }
 
     const oneOffRow = table.querySelector('time[datetime="2026-01-03"]')!.closest('tr')!;
-    expect(within(oneOffRow).queryByLabelText(/^Recurring/)).not.toBeInTheDocument();
+    expect(within(oneOffRow).queryByLabelText(/^Every/)).not.toBeInTheDocument();
   });
 
   it('confirms transaction removal before making the DELETE request', async () => {

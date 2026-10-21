@@ -1,12 +1,27 @@
 import { Constants } from '@monthloom/contracts';
 import { sql } from 'drizzle-orm';
-import { boolean, check, date, foreignKey, index, numeric, pgEnum, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  check,
+  date,
+  foreignKey,
+  index,
+  integer,
+  numeric,
+  pgEnum,
+  pgTable,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 
 import { households } from './households.js';
 import { users } from './identity.js';
 
 export const financialIconEnum = pgEnum('financial_icon', [...Constants.FINANCIAL_ICONS]);
 export const expenseTypeEnum = pgEnum('expense_type', [...Constants.EXPENSE_TYPES]);
+export const recurrenceUnitEnum = pgEnum('recurrence_unit', [...Constants.RECURRENCE_UNITS]);
 
 export const sources = pgTable(
   'sources',
@@ -57,6 +72,8 @@ export const incomes = pgTable(
     amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
     date: date('date', { mode: 'string' }).notNull(),
     recurring: boolean('recurring').notNull().default(false),
+    recurrenceInterval: integer('recurrence_interval').notNull().default(1),
+    recurrenceUnit: recurrenceUnitEnum('recurrence_unit').notNull().default('month'),
     expiresOn: date('expires_on', { mode: 'string' }),
     recurrenceId: uuid('recurrence_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -68,6 +85,10 @@ export const incomes = pgTable(
     sourceIdIdx: index('incomes_source_id_idx').on(table.sourceId),
     recurrenceIdIdx: index('incomes_recurrence_id_idx').on(table.recurrenceId),
     positiveAmountCheck: check('incomes_positive_amount_check', sql`${table.amount} > 0`),
+    recurrenceIntervalCheck: check(
+      'incomes_recurrence_interval_check',
+      sql`${table.recurrenceInterval} BETWEEN 1 AND 99`,
+    ),
     colorFormatCheck: check(
       'incomes_color_format_check',
       sql`${table.color} ~ '^#[0-9A-Fa-f]{6}$'`,
@@ -97,6 +118,8 @@ export const expenses = pgTable(
     amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
     date: date('date', { mode: 'string' }).notNull(),
     recurring: boolean('recurring').notNull().default(false),
+    recurrenceInterval: integer('recurrence_interval').notNull().default(1),
+    recurrenceUnit: recurrenceUnitEnum('recurrence_unit').notNull().default('month'),
     expiresOn: date('expires_on', { mode: 'string' }),
     recurrenceId: uuid('recurrence_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -109,6 +132,10 @@ export const expenses = pgTable(
     sourceIdIdx: index('expenses_source_id_idx').on(table.sourceId),
     recurrenceIdIdx: index('expenses_recurrence_id_idx').on(table.recurrenceId),
     positiveAmountCheck: check('expenses_positive_amount_check', sql`${table.amount} > 0`),
+    recurrenceIntervalCheck: check(
+      'expenses_recurrence_interval_check',
+      sql`${table.recurrenceInterval} BETWEEN 1 AND 99`,
+    ),
     colorFormatCheck: check(
       'expenses_color_format_check',
       sql`${table.color} ~ '^#[0-9A-Fa-f]{6}$'`,
@@ -120,4 +147,3 @@ export const expenses = pgTable(
     }).onDelete('no action'),
   }),
 );
-

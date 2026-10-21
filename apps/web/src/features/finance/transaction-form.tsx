@@ -159,6 +159,9 @@ export function TransactionForm({
       date: transaction?.date ?? todayDate(),
       userId: transaction?.user.id ?? currentUser.data?.user?.id ?? members[0]?.id ?? '',
       recurring: transaction?.recurring ?? Defaults.TRANSACTION_RECURRING,
+      recurrenceInterval:
+        transaction?.recurrenceInterval ?? Defaults.TRANSACTION_RECURRENCE_INTERVAL,
+      recurrenceUnit: transaction?.recurrenceUnit ?? Defaults.TRANSACTION_RECURRENCE_UNIT,
       expiresOn: transaction?.expiresOn ?? null,
     },
   });
@@ -171,6 +174,8 @@ export function TransactionForm({
   const date = watch('date');
   const userId = watch('userId');
   const recurring = watch('recurring');
+  const recurrenceInterval = watch('recurrenceInterval');
+  const recurrenceUnit = watch('recurrenceUnit');
   const expiresOn = watch('expiresOn') ?? '';
 
   const selectSource = (selectedSourceId: string) => {
@@ -649,7 +654,7 @@ export function TransactionForm({
             <label className="toggleRow">
               <span>
                 <strong>Recurring transaction</strong>
-                <small>Repeat this entry each month</small>
+                <small>Repeat this entry on a schedule</small>
               </span>
               <input
                 type="checkbox"
@@ -671,39 +676,94 @@ export function TransactionForm({
               />
             </label>
             {recurring ? (
-              <div className="expirationControls" data-onboarding="expiration">
-                <label className="toggleRow">
-                  <span>
-                    <strong>Expires</strong>
-                  </span>
-                  <input
-                    type="checkbox"
-                    role="switch"
-                    checked={expires}
-                    disabled={mutation.isPending}
-                    onChange={(event) => {
-                      const isExpiring = event.target.checked;
-                      setExpires(isExpiring);
-                      if (!isExpiring) {
-                        setValue('expiresOn', null, { shouldValidate: true });
-                      }
-                    }}
-                  />
-                </label>
-                {expires ? (
-                  <label className="transactionField expirationField">
-                    <span>Expiration date</span>
-                    <input
-                      type="date"
-                      required
-                      value={expiresOn}
-                      min={date || todayDate()}
+              <>
+                <fieldset className="recurrenceControls">
+                  <legend>Repeat every</legend>
+                  <label>
+                    <span className="srOnly">Recurrence interval</span>
+                    <select
+                      className="recurrenceWheel"
+                      size={3}
+                      value={recurrenceInterval}
                       disabled={mutation.isPending}
-                      onChange={(event) => setValue('expiresOn', event.target.value)}
+                      onChange={(event) =>
+                        setValue('recurrenceInterval', Number(event.target.value), {
+                          shouldValidate: true,
+                        })
+                      }
+                    >
+                      {Array.from(
+                        { length: Constants.RECURRENCE_INTERVAL_MAX },
+                        (_, index) => index + 1,
+                      ).map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="srOnly">Recurrence unit</span>
+                    <select
+                      className="recurrenceWheel recurrenceUnitWheel"
+                      size={3}
+                      value={recurrenceUnit}
+                      disabled={mutation.isPending}
+                      onChange={(event) =>
+                        setValue(
+                          'recurrenceUnit',
+                          event.target.value as CreateHouseholdTransactionRequest['recurrenceUnit'],
+                          { shouldValidate: true },
+                        )
+                      }
+                    >
+                      {Constants.RECURRENCE_UNITS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                          {recurrenceInterval === 1 ? '' : 's'}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p aria-live="polite">
+                    Every {recurrenceInterval} {recurrenceUnit}
+                    {recurrenceInterval === 1 ? '' : 's'}
+                  </p>
+                </fieldset>
+                <div className="expirationControls" data-onboarding="expiration">
+                  <label className="toggleRow">
+                    <span>
+                      <strong>Expires</strong>
+                    </span>
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={expires}
+                      disabled={mutation.isPending}
+                      onChange={(event) => {
+                        const isExpiring = event.target.checked;
+                        setExpires(isExpiring);
+                        if (!isExpiring) {
+                          setValue('expiresOn', null, { shouldValidate: true });
+                        }
+                      }}
                     />
                   </label>
-                ) : null}
-              </div>
+                  {expires ? (
+                    <label className="transactionField expirationField">
+                      <span>Expiration date</span>
+                      <input
+                        type="date"
+                        required
+                        value={expiresOn}
+                        min={date || todayDate()}
+                        disabled={mutation.isPending}
+                        onChange={(event) => setValue('expiresOn', event.target.value)}
+                      />
+                    </label>
+                  ) : null}
+                </div>
+              </>
             ) : null}
           </div>
 

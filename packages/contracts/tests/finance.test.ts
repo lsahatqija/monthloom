@@ -22,6 +22,8 @@ const transaction = {
   color: '#123456',
   amount: '12.34',
   recurring: false,
+  recurrenceInterval: 1,
+  recurrenceUnit: 'month',
   expiresOn: null,
 };
 
@@ -73,6 +75,23 @@ describe('finance contracts', () => {
       ).toBe(false);
     },
   );
+  it('validates recurrence periods and defaults legacy requests to monthly', () => {
+    const { recurrenceInterval, recurrenceUnit } = createHouseholdTransactionRequestSchema.parse({
+      ...transaction,
+      recurrenceInterval: undefined,
+      recurrenceUnit: undefined,
+    });
+    expect({ recurrenceInterval, recurrenceUnit }).toEqual({
+      recurrenceInterval: 1,
+      recurrenceUnit: 'month',
+    });
+    expect(
+      createHouseholdTransactionRequestSchema.safeParse({
+        ...transaction,
+        recurrenceInterval: 0,
+      }).success,
+    ).toBe(false);
+  });
   it.each([{ type: null }, { type: 'income' }, { expiresOn: '2026-01-14' }])(
     'rejects invalid transaction %j',
     (change) => {

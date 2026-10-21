@@ -11,6 +11,7 @@ export const financialIconSchema = z.enum(Constants.FINANCIAL_ICONS);
 export const householdIconSchema = z.enum(Constants.HOUSEHOLD_ICONS);
 export const expenseTypeSchema = z.enum(Constants.EXPENSE_TYPES);
 export const transactionTypeSchema = z.union([z.literal('income'), expenseTypeSchema]);
+export const recurrenceUnitSchema = z.enum(Constants.RECURRENCE_UNITS);
 const calendarDateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must use YYYY-MM-DD format');
@@ -120,6 +121,8 @@ const householdTransactionFields = {
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
   amount: z.string(),
   recurring: z.boolean(),
+  recurrenceInterval: z.number().int().min(1).max(Constants.RECURRENCE_INTERVAL_MAX).optional(),
+  recurrenceUnit: recurrenceUnitSchema.optional(),
   expiresOn: calendarDateSchema.nullable(),
   projected: z.boolean(),
   user: publicUserSchema.pick({
@@ -168,6 +171,13 @@ const householdTransactionInputFields = {
   amount: transactionAmountSchema,
   userId: idSchema,
   recurring: z.boolean(),
+  recurrenceInterval: z
+    .number()
+    .int()
+    .min(1)
+    .max(Constants.RECURRENCE_INTERVAL_MAX)
+    .default(Defaults.TRANSACTION_RECURRENCE_INTERVAL),
+  recurrenceUnit: recurrenceUnitSchema.default(Defaults.TRANSACTION_RECURRENCE_UNIT),
   expiresOn: calendarDateSchema.nullable(),
 };
 
