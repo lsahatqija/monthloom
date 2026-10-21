@@ -70,17 +70,17 @@ Acceptance criteria:
 
 ## Phase 3: Improve transaction appearance defaults and controls
 
-- [ ] Keep icon and color as separate transaction fields.
-- [ ] Remove the visible icon name from the selected icon control.
-- [ ] Remove the visible color hex value from the selected color control.
-- [ ] Retain accessible names for icon and color choices.
-- [ ] Keep both controls visible in the main form rather than placing them behind a disclosure.
-- [ ] When a source is selected, reuse the most recent transaction's icon/color if history exists.
-- [ ] When no history exists, choose a random icon/color pair.
-- [ ] Avoid regenerating the random pair on rerender or unrelated field changes.
-- [ ] Stop applying automatic values after the user manually changes either field.
-- [ ] Preserve existing values when editing a transaction.
-- [ ] Add tests for historical reuse, first-use randomization, manual overrides, source changes, and
+- [x] Keep icon and color as separate transaction fields.
+- [x] Remove the visible icon name from the selected icon control.
+- [x] Remove the visible color hex value from the selected color control.
+- [x] Retain accessible names for icon and color choices.
+- [x] Keep both controls visible in the main form rather than placing them behind a disclosure.
+- [x] When a source is selected, reuse the most recent transaction's icon/color if history exists.
+- [x] When no history exists, choose a random icon/color pair.
+- [x] Avoid regenerating the random pair on rerender or unrelated field changes.
+- [x] Stop applying automatic values after the user manually changes either field.
+- [x] Preserve existing values when editing a transaction.
+- [x] Add tests for historical reuse, first-use randomization, manual overrides, source changes, and
       editing.
 
 Acceptance criteria:

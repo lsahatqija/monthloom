@@ -313,8 +313,52 @@ describe('transaction form + query + HTTP client', () => {
 
     expect(screen.getByRole('radio', { name: 'Income' })).toBeChecked();
     expect(screen.getByLabelText('Type')).toHaveValue('income');
-    expect(screen.getByText('Banknote')).toBeInTheDocument();
-    expect(screen.getByText('#ABCDEF')).toBeInTheDocument();
+    expect(screen.getByLabelText('Icon: Banknote')).toBeInTheDocument();
+    expect(screen.getByLabelText('Color: #ABCDEF')).toBeInTheDocument();
+  });
+
+  it('randomizes a first-use source once and reuses that pair when it is selected again', async () => {
+    vi.spyOn(Math, 'random')
+      .mockReturnValueOnce(0.25)
+      .mockReturnValueOnce(0.25)
+      .mockReturnValueOnce(0.75)
+      .mockReturnValueOnce(0.75);
+    renderForm(undefined, [source, salarySource]);
+    const sourceInput = screen.getByRole('combobox', { name: 'Source' });
+
+    await userEvent.click(sourceInput);
+    await userEvent.click(screen.getByRole('option', { name: source.displayName }));
+    const firstIcon = screen.getByLabelText(/^Icon:/).getAttribute('aria-label');
+    const firstColor = screen.getByLabelText(/^Color:/).getAttribute('aria-label');
+
+    await userEvent.clear(sourceInput);
+    await userEvent.type(sourceInput, salarySource.displayName);
+    await userEvent.click(screen.getByRole('option', { name: salarySource.displayName }));
+    expect(screen.getByLabelText(/^Icon:/)).not.toHaveAttribute('aria-label', firstIcon);
+
+    await userEvent.clear(sourceInput);
+    await userEvent.type(sourceInput, source.displayName);
+    await userEvent.click(screen.getByRole('option', { name: source.displayName }));
+    expect(screen.getByLabelText(/^Icon:/)).toHaveAttribute('aria-label', firstIcon);
+    expect(screen.getByLabelText(/^Color:/)).toHaveAttribute('aria-label', firstColor);
+  });
+
+  it('does not overwrite a manual appearance when the source changes', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    renderForm(undefined, [source, salarySource]);
+    const sourceInput = screen.getByRole('combobox', { name: 'Source' });
+    await userEvent.click(sourceInput);
+    await userEvent.click(screen.getByRole('option', { name: source.displayName }));
+
+    await userEvent.click(screen.getByLabelText(/^Icon:/));
+    await userEvent.click(screen.getByRole('radio', { name: 'House' }));
+    const manualColor = screen.getByLabelText(/^Color:/).getAttribute('aria-label');
+
+    await userEvent.clear(sourceInput);
+    await userEvent.type(sourceInput, salarySource.displayName);
+    await userEvent.click(screen.getByRole('option', { name: salarySource.displayName }));
+    expect(screen.getByLabelText('Icon: House')).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Color:/)).toHaveAttribute('aria-label', manualColor);
   });
 
   it('filters sources live and always offers adding a new source', async () => {
@@ -398,18 +442,18 @@ describe('transaction form + query + HTTP client', () => {
   it('renders icon and color pickers outside the scrolling dialog', async () => {
     renderForm();
 
-    await userEvent.click(screen.getByText('Receipt').closest('summary')!);
+    await userEvent.click(screen.getByLabelText('Icon: Receipt'));
     const iconGrid = screen.getByRole('group', { name: 'Choose an icon' });
     expect(iconGrid.closest('[role="dialog"]')).toBeNull();
     await userEvent.click(screen.getByRole('radio', { name: 'House' }));
     expect(screen.queryByRole('group', { name: 'Choose an icon' })).not.toBeInTheDocument();
-    expect(screen.getByText('House')).toBeInTheDocument();
+    expect(screen.getByLabelText('Icon: House')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByText('#35675B').closest('summary')!);
+    await userEvent.click(screen.getByLabelText('Color: #35675B'));
     const colorOption = screen.getByRole('radio', { name: '#33805C' });
     expect(colorOption.closest('[role="dialog"]')).toBeNull();
     await userEvent.click(colorOption);
     expect(screen.queryByRole('radio', { name: '#33805C' })).not.toBeInTheDocument();
-    expect(screen.getByText('#33805C')).toBeInTheDocument();
+    expect(screen.getByLabelText('Color: #33805C')).toBeInTheDocument();
   });
 });

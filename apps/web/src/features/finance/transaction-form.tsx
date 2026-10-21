@@ -40,6 +40,15 @@ const COLOR_OPTIONS = [
   '#6B7280',
 ];
 
+type TransactionAppearance = Pick<CreateHouseholdTransactionRequest, 'icon' | 'color'>;
+
+function randomAppearance(): TransactionAppearance {
+  return {
+    icon: Constants.FINANCIAL_ICONS[Math.floor(Math.random() * Constants.FINANCIAL_ICONS.length)]!,
+    color: COLOR_OPTIONS[Math.floor(Math.random() * COLOR_OPTIONS.length)]!,
+  };
+}
+
 interface RecurrenceWheelProps<T extends string | number> {
   label: string;
   options: readonly T[];
@@ -299,6 +308,8 @@ export function TransactionForm({
   const iconPickerPopoverRef = useRef<HTMLDivElement>(null);
   const colorPickerPopoverRef = useRef<HTMLDivElement>(null);
   const sourcePickerRef = useRef<HTMLDivElement>(null);
+  const appearanceLockedRef = useRef(false);
+  const randomAppearanceBySourceRef = useRef(new Map<string, TransactionAppearance>());
   const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const [availableSources, setAvailableSources] = useState(sources);
@@ -362,12 +373,18 @@ export function TransactionForm({
       .sort(
         (left, right) => right.date.localeCompare(left.date) || right.id.localeCompare(left.id),
       )[0];
-    if (!mostRecentTransaction) return;
+    if (mostRecentTransaction) {
+      setValue('kind', mostRecentTransaction.kind);
+      setValue('type', editableTransactionType(mostRecentTransaction));
+    }
+    if (appearanceLockedRef.current) return;
 
-    setValue('kind', mostRecentTransaction.kind);
-    setValue('type', editableTransactionType(mostRecentTransaction));
-    setValue('icon', mostRecentTransaction.icon);
-    setValue('color', mostRecentTransaction.color);
+    const appearance = mostRecentTransaction
+      ? { icon: mostRecentTransaction.icon, color: mostRecentTransaction.color }
+      : (randomAppearanceBySourceRef.current.get(selectedSourceId) ?? randomAppearance());
+    randomAppearanceBySourceRef.current.set(selectedSourceId, appearance);
+    setValue('icon', appearance.icon);
+    setValue('color', appearance.color);
   };
   const iconPickerPosition = usePickerPosition(
     iconPickerOpen,
@@ -481,7 +498,7 @@ export function TransactionForm({
                 left.id.localeCompare(right.id),
             ),
           );
-          setValue('sourceId', source.id);
+          selectSource(source.id);
           setSourceQuery(source.displayName);
           setIsAddingSource(false);
         }}
@@ -537,7 +554,7 @@ export function TransactionForm({
                 onChange={() => {
                   setValue('kind', 'expense');
                   if (!type) setValue('type', Defaults.TRANSACTION_TYPE);
-                  if (icon === Defaults.INCOME_TRANSACTION_ICON) {
+                  if (!appearanceLockedRef.current && icon === Defaults.INCOME_TRANSACTION_ICON) {
                     setValue('icon', Defaults.TRANSACTION_ICON);
                   }
                 }}
@@ -553,7 +570,7 @@ export function TransactionForm({
                 onChange={() => {
                   setValue('kind', 'income');
                   setValue('type', Defaults.INCOME_TRANSACTION_TYPE);
-                  if (icon === Defaults.TRANSACTION_ICON) {
+                  if (!appearanceLockedRef.current && icon === Defaults.TRANSACTION_ICON) {
                     setValue('icon', Defaults.INCOME_TRANSACTION_ICON);
                   }
                 }}
@@ -574,6 +591,7 @@ export function TransactionForm({
                   onToggle={(event) => setIconPickerOpen(event.currentTarget.open)}
                 >
                   <summary
+                    aria-label={`Icon: ${financialIconLabel(icon)}`}
                     onClick={(event) => {
                       if (mutation.isPending) event.preventDefault();
                     }}
@@ -581,7 +599,6 @@ export function TransactionForm({
                     <span className="selectedIconPreview" style={{ backgroundColor: color }}>
                       <FinancialIcon name={icon} size={20} />
                     </span>
-                    <span>{financialIconLabel(icon)}</span>
                   </summary>
                 </details>
                 {iconPickerOpen && typeof document !== 'undefined'
@@ -607,6 +624,7 @@ export function TransactionForm({
                                   checked={icon === option}
                                   disabled={mutation.isPending}
                                   onChange={() => {
+                                    appearanceLockedRef.current = true;
                                     setValue('icon', option);
                                     setIconPickerOpen(false);
                                   }}
@@ -633,12 +651,12 @@ export function TransactionForm({
                   onToggle={(event) => setColorPickerOpen(event.currentTarget.open)}
                 >
                   <summary
+                    aria-label={`Color: ${color.toUpperCase()}`}
                     onClick={(event) => {
                       if (mutation.isPending) event.preventDefault();
                     }}
                   >
                     <span className="selectedColorPreview" style={{ backgroundColor: color }} />
-                    <span>{color.toUpperCase()}</span>
                   </summary>
                 </details>
                 {colorPickerOpen && typeof document !== 'undefined'
@@ -658,6 +676,7 @@ export function TransactionForm({
                                 checked={color === option}
                                 disabled={mutation.isPending}
                                 onChange={() => {
+                                  appearanceLockedRef.current = true;
                                   setValue('color', option);
                                   setColorPickerOpen(false);
                                 }}
@@ -671,6 +690,7 @@ export function TransactionForm({
                               value={color}
                               disabled={mutation.isPending}
                               onChange={(event) => {
+                                appearanceLockedRef.current = true;
                                 setValue('color', event.target.value);
                                 setColorPickerOpen(false);
                               }}
