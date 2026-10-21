@@ -1176,12 +1176,13 @@
 .transactionScroll {
   min-height: 0;
   flex: 1;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 .transactionTable {
   width: 100%;
-  min-width: 42rem;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 .transactionTable th {
   position: sticky;
@@ -1197,6 +1198,7 @@
 }
 .transactionSortButton {
   display: inline-flex;
+  width: 100%;
   align-items: center;
   gap: 0.35rem;
   padding: 0;
@@ -1213,6 +1215,17 @@
 .transactionSortButton:focus-visible {
   color: var(--ml-text);
 }
+.transactionHeaderIcon {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: 0 0 auto;
+  stroke-width: 1.8;
+}
+.transactionSortButton.isCompact .transactionHeaderLabel {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
 .transactionSortIndicator {
   width: 0.75rem;
   color: var(--ml-primary);
@@ -1220,33 +1233,59 @@
   line-height: 1;
 }
 .transactionTable td {
+  min-width: 0;
   padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--ml-divider);
   font-size: 0.9rem;
+  white-space: nowrap;
 }
-.transactionTable th:nth-child(2),
-.transactionTable td:nth-child(2) {
+.transactionIconColumn {
+  width: 3.5rem;
+  padding-inline: var(--space-3) 0 !important;
+}
+.transactionRecurringColumn {
   width: 2rem;
-  padding-inline: 0;
+  padding-inline: 0 !important;
   text-align: center;
 }
-.transactionTable th:nth-child(3),
-.transactionTable td:nth-child(3) {
-  width: 3rem;
-  padding-inline: 0;
+.transactionDateColumn {
+  width: 5.25rem;
+}
+.transactionAmountColumn {
+  width: 7.25rem;
+}
+.transactionSourceColumn {
+  width: auto;
+  overflow: hidden;
+}
+.transactionSourceName {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.transactionTypeColumn {
+  width: 7.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.transactionUserColumn {
+  width: 9rem;
 }
 .transactionTable .transactionAmountColumn {
   text-align: right;
+}
+.transactionAmountColumn .transactionSortButton {
+  justify-content: flex-end;
 }
 .transactionTable td.transactionAmountColumn {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.transactionTable th:last-child,
-.transactionTable td:last-child {
+.transactionActionsColumn {
   width: 3.25rem;
-  padding-inline: var(--space-2);
+  padding-inline: var(--space-2) !important;
   text-align: center;
 }
 .transactionTable tbody tr:hover {
@@ -1262,6 +1301,7 @@
   white-space: nowrap;
 }
 .transactionUser .profileImage {
+  flex: 0 0 auto;
   border: 1px solid color-mix(in srgb, var(--ml-text) 10%, transparent);
   border-radius: 7px;
 }
@@ -1374,9 +1414,75 @@
   color: var(--ml-text-muted);
   text-align: center;
 }
+@media (max-width: 880px) {
+  .transactionTypeColumn {
+    display: none;
+  }
+  .transactionTable th,
+  .transactionTable td {
+    padding-inline: var(--space-2);
+  }
+  .transactionIconColumn {
+    width: 3rem;
+    padding-left: var(--space-2) !important;
+  }
+  .transactionDateColumn {
+    width: 4.75rem;
+  }
+  .transactionAmountColumn {
+    width: 6.5rem;
+  }
+  .transactionUserColumn {
+    width: 7rem;
+  }
+}
 @media (max-width: 620px) {
   .householdDashboard {
     padding-inline: var(--space-3);
+  }
+  .transactionTable {
+    table-layout: auto;
+  }
+  .transactionTable th,
+  .transactionTable td {
+    padding-inline: var(--space-1);
+    font-size: 0.78rem;
+  }
+  .transactionTable th {
+    font-size: 0.68rem;
+  }
+  .transactionIconColumn {
+    width: 2.5rem;
+    padding-left: var(--space-1) !important;
+  }
+  .transactionRecurringColumn {
+    width: 1.6rem;
+  }
+  .transactionDateColumn {
+    width: 1%;
+  }
+  .transactionAmountColumn {
+    width: 1%;
+    min-width: 4.75rem;
+  }
+  .transactionSourceColumn {
+    width: 100%;
+    max-width: 0;
+  }
+  .transactionUserColumn {
+    width: 2.5rem;
+  }
+  .transactionUserName {
+    display: none;
+  }
+  .transactionActionsColumn {
+    width: 2.75rem;
+    padding-inline: 0 !important;
+  }
+  .transactionIcon,
+  .transactionUser .profileImage {
+    width: 1.75rem;
+    height: 1.75rem;
   }
   .dashboardSelectors {
     width: 100%;

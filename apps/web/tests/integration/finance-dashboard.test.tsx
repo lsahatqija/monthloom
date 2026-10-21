@@ -201,9 +201,9 @@ describe('household dashboard', () => {
       within(table)
         .getAllByRole('columnheader')
         .map((header) => header.textContent),
-    ).toEqual(['Date↓', '', '', 'Amount↕', 'Source↕', 'Type↕', 'User↕', '']);
+    ).toEqual(['', '', 'Date↓', 'Amount↕', 'Source↕', 'Type↕', 'User↕', '']);
     expect(within(table).getAllByRole('row')[1]).toHaveTextContent('Grocer');
-    await userEvent.click(screen.getByRole('button', { name: 'Amount' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Sort by Amount' }));
     expect(within(table).getAllByRole('row')[1]).toHaveTextContent('Grocer');
     await userEvent.click(screen.getByText('Filters', { exact: true }));
     await userEvent.selectOptions(screen.getByLabelText('Type'), 'expense');
@@ -244,12 +244,38 @@ describe('household dashboard', () => {
 
     for (const indicator of [recurring, expiring]) {
       const cells = within(indicator.closest('tr')!).getAllByRole('cell');
+      expect(cells[0]?.querySelector('.transactionIcon')).toBeInTheDocument();
       expect(cells[1]).toContainElement(indicator);
-      expect(cells[2]?.querySelector('.transactionIcon')).toBeInTheDocument();
     }
 
     const oneOffRow = table.querySelector('time[datetime="2026-01-03"]')!.closest('tr')!;
     expect(within(oneOffRow).queryByLabelText(/^Every/)).not.toBeInTheDocument();
+  });
+
+  it('uses the responsive single-line transaction column contract', async () => {
+    mockDashboard();
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+
+    const row = within(screen.getByRole('table')).getAllByRole('row')[1]!;
+    const cells = within(row).getAllByRole('cell');
+    expect(cells.map((cell) => cell.className)).toEqual([
+      'transactionIconColumn',
+      'transactionRecurringColumn',
+      'transactionDateColumn',
+      expect.stringContaining('transactionAmountColumn'),
+      'transactionSourceColumn',
+      'transactionTypeColumn',
+      'transactionUserColumn',
+      'transactionActionsColumn',
+    ]);
+    expect(within(row).getByTitle('Grocer')).toHaveClass('transactionSourceName');
+    expect(within(row).getByText('Person')).toHaveClass('transactionUserName');
+    for (const label of ['Date', 'Amount', 'Source', 'Type', 'User']) {
+      expect(
+        screen.getByRole('button', { name: `Sort by ${label}` }).querySelector('svg'),
+      ).toBeInTheDocument();
+    }
   });
 
   it('confirms transaction removal before making the DELETE request', async () => {

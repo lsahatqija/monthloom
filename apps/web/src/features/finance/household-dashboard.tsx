@@ -1,9 +1,9 @@
 'use client';
 
 import { Defaults, type HouseholdTransaction } from '@monthloom/contracts';
-import { RefreshCw } from 'lucide-react';
+import { Banknote, CalendarDays, RefreshCw, Store, Tags, UserRound } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { ProfileImage } from '../../components/profile-image';
 import { Alert, LoadingIndicator } from '../../components/ui/index';
@@ -88,6 +88,74 @@ function RecurringIcon({ entry }: { entry: HouseholdTransaction }) {
   );
 }
 
+const transactionHeaderIcons = {
+  date: CalendarDays,
+  amount: Banknote,
+  source: Store,
+  type: Tags,
+  user: UserRound,
+};
+
+function SortableHeader({
+  column,
+  label,
+  className,
+  activeColumn,
+  direction,
+  onSort,
+}: {
+  column: TransactionSortKey;
+  label: string;
+  className?: string;
+  activeColumn: TransactionSortKey;
+  direction: 'ascending' | 'descending';
+  onSort: (column: TransactionSortKey) => void;
+}) {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [compact, setCompact] = useState(false);
+  const HeaderIcon = transactionHeaderIcons[column];
+
+  useLayoutEffect(() => {
+    const button = buttonRef.current;
+    if (!button || typeof ResizeObserver === 'undefined') return;
+
+    const measure = () => {
+      const [icon, title, indicator] = Array.from(button.children) as HTMLElement[];
+      const gap = Number.parseFloat(getComputedStyle(button).columnGap) || 0;
+      const requiredWidth =
+        (icon?.getBoundingClientRect().width ?? 0) +
+        Math.max(title?.scrollWidth ?? 0, title?.getBoundingClientRect().width ?? 0) +
+        (indicator?.getBoundingClientRect().width ?? 0) +
+        gap * 2;
+      setCompact(requiredWidth > button.clientWidth);
+    };
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(button);
+    measure();
+    void document.fonts?.ready.then(measure);
+    return () => observer.disconnect();
+  }, [label]);
+
+  return (
+    <th className={className} aria-sort={activeColumn === column ? direction : 'none'}>
+      <button
+        ref={buttonRef}
+        type="button"
+        className={`transactionSortButton${compact ? ' isCompact' : ''}`}
+        aria-label={`Sort by ${label}`}
+        onClick={() => onSort(column)}
+      >
+        <HeaderIcon className="transactionHeaderIcon" aria-hidden="true" />
+        <span className="transactionHeaderLabel">{label}</span>
+        <span className="transactionSortIndicator" aria-hidden="true">
+          {activeColumn === column ? (direction === 'ascending' ? '↑' : '↓') : '↕'}
+        </span>
+      </button>
+    </th>
+  );
+}
+
 export function HouseholdDashboard() {
   const months = useMemo(monthOptions, []);
   const { month, setMonth, householdId, setHouseholdId } = useDashboardSelection();
@@ -169,14 +237,14 @@ export function HouseholdDashboard() {
   const filteredTransactions = sortedTransactions;
   const savings = summarizeTransactions(transactions).savings;
   const sortableHeader = (key: TransactionSortKey, label: string, className?: string) => (
-    <th className={className} aria-sort={sortKey === key ? sortDirection : 'none'}>
-      <button type="button" className="transactionSortButton" onClick={() => sortBy(key)}>
-        {label}
-        <span className="transactionSortIndicator" aria-hidden="true">
-          {sortKey === key ? (sortDirection === 'ascending' ? '↑' : '↓') : '↕'}
-        </span>
-      </button>
-    </th>
+    <SortableHeader
+      column={key}
+      label={label}
+      className={className}
+      activeColumn={sortKey}
+      direction={sortDirection}
+      onSort={sortBy}
+    />
   );
   const money = new Intl.NumberFormat(undefined, {
     style: 'currency',
@@ -447,14 +515,14 @@ export function HouseholdDashboard() {
             <table className="transactionTable">
               <thead>
                 <tr>
-                  {sortableHeader('date', 'Date')}
-                  <th aria-label="Recurring status" />
-                  <th aria-label="Icon" />
+                  <th className="transactionIconColumn" aria-label="Icon and color" />
+                  <th className="transactionRecurringColumn" aria-label="Recurring status" />
+                  {sortableHeader('date', 'Date', 'transactionDateColumn')}
                   {sortableHeader('amount', 'Amount', 'transactionAmountColumn')}
-                  {sortableHeader('source', 'Source')}
-                  {sortableHeader('type', 'Type')}
-                  {sortableHeader('user', 'User')}
-                  <th aria-label="Actions" />
+                  {sortableHeader('source', 'Source', 'transactionSourceColumn')}
+                  {sortableHeader('type', 'Type', 'transactionTypeColumn')}
+                  {sortableHeader('user', 'User', 'transactionUserColumn')}
+                  <th className="transactionActionsColumn" aria-label="Actions" />
                 </tr>
               </thead>
               <tbody>
@@ -467,16 +535,16 @@ export function HouseholdDashboard() {
                         : undefined
                     }
                   >
-                    <td>
+                    <td className="transactionIconColumn">
+                      <EntryIcon entry={entry} />
+                    </td>
+                    <td className="transactionRecurringColumn">
+                      <RecurringIcon entry={entry} />
+                    </td>
+                    <td className="transactionDateColumn">
                       <time dateTime={entry.date}>
                         {date.format(new Date(`${entry.date}T12:00:00`))}
                       </time>
-                    </td>
-                    <td>
-                      <RecurringIcon entry={entry} />
-                    </td>
-                    <td>
-                      <EntryIcon entry={entry} />
                     </td>
                     <td
                       className={`transactionAmountColumn ${
@@ -486,22 +554,24 @@ export function HouseholdDashboard() {
                       {entry.kind === 'income' ? '+' : '−'}
                       {money.format(Number(entry.amount))}
                     </td>
-                    <td>
+                    <td className="transactionSourceColumn">
                       {entry.projected ? <span className="srOnly">Projected: </span> : null}
-                      {entry.source.displayName}
+                      <span className="transactionSourceName" title={entry.source.displayName}>
+                        {entry.source.displayName}
+                      </span>
                     </td>
-                    <td>{transactionTypeLabel(entry)}</td>
-                    <td>
+                    <td className="transactionTypeColumn">{transactionTypeLabel(entry)}</td>
+                    <td className="transactionUserColumn">
                       <span className="transactionUser">
                         <ProfileImage
                           image={entry.user.profileImage}
                           color={entry.user.desiredColor}
                           size={32}
                         />
-                        <span>{entry.user.displayName}</span>
+                        <span className="transactionUserName">{entry.user.displayName}</span>
                       </span>
                     </td>
-                    <td>
+                    <td className="transactionActionsColumn">
                       {entry.projected ? null : (
                         <TransactionMenu
                           entry={entry}

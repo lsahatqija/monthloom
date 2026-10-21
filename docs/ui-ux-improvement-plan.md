@@ -47,18 +47,18 @@ Acceptance criteria:
 
 ## Phase 2: Make the transaction table single-line and responsive
 
-- [ ] Reorder columns to icon/color, recurring state, date, amount, source, type, user, actions.
-- [ ] Give icon, recurring state, date, amount, avatar, and actions fixed or content-sized columns.
-- [ ] Give source the remaining width and truncate it with an ellipsis.
-- [ ] Keep the full source available through an accessible title or tooltip when truncated.
-- [ ] Right-align amount, use tabular figures, include the household currency, and prevent wrapping.
-- [ ] Keep date compact, readable, and visually quieter than amount.
-- [ ] Remove the table's fixed `42rem` minimum width and eliminate horizontal scrolling.
-- [ ] Hide transaction type at the first constrained-width breakpoint.
-- [ ] Hide the user name at the next breakpoint while keeping the avatar.
-- [ ] Keep every row single-line; do not convert rows to cards or stacked mobile layouts.
-- [ ] Keep recurring/projected meaning accessible without relying on color, italics, or hover alone.
-- [ ] Add responsive tests for full desktop data and reduced tablet/mobile data.
+- [x] Reorder columns to icon/color, recurring state, date, amount, source, type, user, actions.
+- [x] Give icon, recurring state, date, amount, avatar, and actions fixed or content-sized columns.
+- [x] Give source the remaining width and truncate it with an ellipsis.
+- [x] Keep the full source available through an accessible title or tooltip when truncated.
+- [x] Right-align amount, use tabular figures, include the household currency, and prevent wrapping.
+- [x] Keep date compact, readable, and visually quieter than amount.
+- [x] Remove the table's fixed `42rem` minimum width and eliminate horizontal scrolling.
+- [x] Hide transaction type at the first constrained-width breakpoint.
+- [x] Hide the user name at the next breakpoint while keeping the avatar.
+- [x] Keep every row single-line; do not convert rows to cards or stacked mobile layouts.
+- [x] Keep recurring/projected meaning accessible without relying on color, italics, or hover alone.
+- [x] Add responsive tests for full desktop data and reduced tablet/mobile data.
 
 Acceptance criteria:
 
