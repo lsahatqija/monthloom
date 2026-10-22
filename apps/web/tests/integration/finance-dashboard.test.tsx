@@ -183,7 +183,9 @@ describe('household dashboard', () => {
     expect(screen.getByRole('button', { name: /Choose month/i })).toHaveTextContent(
       new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(new Date()),
     );
-    expect(screen.getByRole('button', { name: 'Previous month' }).querySelector('svg')).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Previous month' }).querySelector('svg'),
+    ).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Next month' }).querySelector('svg')).toBeTruthy();
 
     const startingMonth = new URL(window.location.href).searchParams.get('month');
@@ -201,6 +203,43 @@ describe('household dashboard', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /Choose month/i }));
     expect(screen.getByRole('group', { name: 'Choose month' })).toBeVisible();
+  });
+
+  it('keeps the dashboard mounted while the next month loads', async () => {
+    let monthRequest = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) => {
+        const url = new URL(String(input));
+        if (url.pathname === '/api/v1/households') {
+          return Response.json({ households: [household] });
+        }
+        if (url.pathname === '/api/v1/households/home/month') {
+          monthRequest += 1;
+          if (monthRequest > 1) return new Promise<Response>(() => undefined);
+          return Response.json({
+            household,
+            month: url.searchParams.get('month'),
+            summary: { income: '100.00', expenses: '20.00', leftover: '80.00' },
+            members: [member],
+            sources: [shop, work],
+            transactions,
+          });
+        }
+        throw new Error(`Unexpected test request: ${url}`);
+      }),
+    );
+
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+    await userEvent.click(screen.getByRole('button', { name: 'Previous month' }));
+
+    expect(screen.getByRole('heading', { name: 'Our Home' })).toBeVisible();
+    expect(screen.queryByText('Loading householdâ€¦')).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Household dashboard' })).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
   });
 
   it('shows latest transactions first, sorts by signed amount, and filters expenses', async () => {
@@ -262,6 +301,63 @@ describe('household dashboard', () => {
     expect(screen.getByLabelText('Active filters')).toHaveTextContent('Expenses');
     expect(screen.getByText('Filters', { exact: true }).closest('details')).not.toHaveAttribute(
       'open',
+    );
+  });
+
+  it('settles rapid filter toggles in the latest requested state', async () => {
+    mockDashboard();
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+    const trigger = screen.getByText('Filters', { exact: true });
+
+    await userEvent.click(trigger);
+    await userEvent.click(trigger);
+    await userEvent.click(trigger);
+
+    expect(trigger.closest('details')).toHaveAttribute('open');
+    expect(screen.getByLabelText('Type')).toBeVisible();
+    expect(screen.getByLabelText('Type').closest('[data-motion]')).toHaveAttribute(
+      'data-motion',
+      'entered',
+    );
+  });
+
+  it('restores focus as a transaction dialog begins its exit', async () => {
+    mockDashboard();
+    const { container } = renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+    const trigger = screen.getByRole('button', { name: 'Add transaction' });
+
+    await userEvent.click(trigger);
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    expect(trigger).toHaveFocus();
+    expect(screen.queryByRole('dialog', { name: 'Add transaction' })).not.toBeInTheDocument();
+    expect(container.querySelector('.transactionModalBackdrop')).toHaveAttribute('inert');
+  });
+
+  it('keeps reduced-motion exits brief and semantically hidden', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(prefers-reduced-motion: reduce)',
+      })),
+    );
+    mockDashboard();
+    const { container } = renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+    const trigger = screen.getByText('Filters', { exact: true });
+
+    await userEvent.click(trigger);
+    await userEvent.click(trigger);
+
+    expect(container.querySelector('.transactionFilterDrawer')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+    await waitFor(
+      () => expect(container.querySelector('.transactionFilterDrawer')).not.toBeVisible(),
+      { timeout: 160 },
     );
   });
 

@@ -232,6 +232,17 @@
   --radius-overlay: 16px;
   --profile-image-shape-radius: 20%;
   --max-content-width: 42rem;
+  --motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
+  --motion-ease-exit: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  --motion-press: 140ms;
+  --motion-hover: 180ms;
+  --motion-popover: 220ms;
+  --motion-content: 280ms;
+  --motion-content-slow: 350ms;
+  --motion-modal: 320ms;
+  --motion-modal-slow: 400ms;
+  --motion-exit: 180ms;
 }
 
 :root[data-mode='dark'] {
@@ -247,6 +258,19 @@ body {
   min-height: 100%;
   margin: 0;
   padding: 0;
+}
+button,
+[role='button'],
+summary {
+  transition:
+    background-color var(--motion-hover) ease,
+    border-color var(--motion-hover) ease,
+    color var(--motion-hover) ease,
+    opacity var(--motion-press) ease;
+}
+button:active:not(:disabled),
+[role='button']:active {
+  opacity: 0.82;
 }
 body {
   min-height: 100vh;
@@ -280,9 +304,9 @@ p {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
+    animation-duration: 80ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 80ms !important;
     scroll-behavior: auto !important;
   }
 }

@@ -18,6 +18,7 @@ import {
 import Link from 'next/link';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { useMotionPresence } from '../../components/motion/use-motion-presence';
 import { ProfileImage } from '../../components/profile-image';
 import { Alert, LoadingIndicator } from '../../components/ui/index';
 import { isApiClientError } from '../../lib/api/errors';
@@ -184,6 +185,13 @@ export function HouseholdDashboard() {
     return years.sort((a, b) => a - b);
   }, [selectedYear]);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const previousMonthRef = useRef(month);
+  const monthDirection =
+    month === previousMonthRef.current
+      ? 'none'
+      : month > previousMonthRef.current
+        ? 'forward'
+        : 'backward';
   const [compactMonth, setCompactMonth] = useState(false);
   const [monthLabelWidth, setMonthLabelWidth] = useState<number>();
   const dashboardSelectorsRef = useRef<HTMLDivElement>(null);
@@ -194,6 +202,7 @@ export function HouseholdDashboard() {
   const compactMonthLabelMeasureRef = useRef<HTMLSpanElement>(null);
   const monthPickerRef = useRef<HTMLDivElement>(null);
   const monthPickerTriggerRef = useRef<HTMLButtonElement>(null);
+  const addTransactionTriggerRef = useRef<HTMLButtonElement>(null);
   const [addingTransaction, setAddingTransaction] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<HouseholdTransaction | null>(null);
   const [transactionToRemove, setTransactionToRemove] = useState<HouseholdTransaction | null>(null);
@@ -202,7 +211,18 @@ export function HouseholdDashboard() {
   const filterDetailsRef = useRef<HTMLDetailsElement>(null);
   const filterSummaryRef = useRef<HTMLElement>(null);
   const filterSheetRef = useRef<HTMLDivElement>(null);
+  const addingTransactionPresence = useMotionPresence(addingTransaction);
+  const editingTransactionPresence = useMotionPresence(Boolean(transactionToEdit));
+  const removingTransactionPresence = useMotionPresence(Boolean(transactionToRemove));
+  const filtersPresence = useMotionPresence(filtersExpanded);
+  const lastTransactionToEditRef = useRef<HouseholdTransaction | null>(null);
+  const lastTransactionToRemoveRef = useRef<HouseholdTransaction | null>(null);
+  if (transactionToEdit) lastTransactionToEditRef.current = transactionToEdit;
+  if (transactionToRemove) lastTransactionToRemoveRef.current = transactionToRemove;
   const householdsQuery = useHouseholds();
+  useEffect(() => {
+    previousMonthRef.current = month;
+  }, [month]);
   useLayoutEffect(() => {
     const container = dashboardSelectorsRef.current;
     const householdControl = householdControlRef.current;
@@ -233,8 +253,7 @@ export function HouseholdDashboard() {
         navigation.getBoundingClientRect().width -
         visibleLabel.getBoundingClientRect().width +
         fullLabelWidth;
-      const shouldCompact =
-        householdWidth + fullNavigationWidth + gap > container.clientWidth;
+      const shouldCompact = householdWidth + fullNavigationWidth + gap > container.clientWidth;
       setCompactMonth(shouldCompact);
       setMonthLabelWidth(shouldCompact ? compactLabelWidth : fullLabelWidth);
     };
@@ -276,8 +295,17 @@ export function HouseholdDashboard() {
   }, [householdsQuery.data, setHouseholdId]);
   const query = useHouseholdMonth(householdId, month);
   const transactionView = useTransactionView(query.data?.transactions ?? []);
+  const filteredRecapPresence = useMotionPresence(transactionView.activeFilterCount > 0);
+  const filterChipsPresence = useMotionPresence(
+    transactionView.activeFilterCount > 0 && !filtersExpanded,
+  );
+  const lastFilteredSummaryRef = useRef(transactionView.filteredSummary);
+  const lastActiveFiltersRef = useRef<Array<{ key: keyof TransactionFilters; label: string }>>([]);
+  if (transactionView.activeFilterCount) {
+    lastFilteredSummaryRef.current = transactionView.filteredSummary;
+  }
   useEffect(() => {
-    if (!filtersExpanded || !isMobileFilterSheet()) return;
+    if (!filtersExpanded || !filtersPresence.visible || !isMobileFilterSheet()) return;
 
     const sheet = filterSheetRef.current;
     const focusable = () =>
@@ -310,7 +338,7 @@ export function HouseholdDashboard() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [filtersExpanded]);
+  }, [filtersExpanded, filtersPresence.visible]);
   if (householdsQuery.isPending || (householdsQuery.data?.length && query.isPending)) {
     return (
       <div className="dashboardState">
@@ -358,7 +386,6 @@ export function HouseholdDashboard() {
   const { household, summary, transactions } = query.data;
   const {
     activeFilterCount,
-    filteredSummary,
     filters,
     resetFilters,
     setFilters,
@@ -459,6 +486,7 @@ export function HouseholdDashboard() {
       ? { key: 'amountUnder', label: `Under ${money.format(Number(filters.amountUnder))}` }
       : null,
   ].filter((filter): filter is { key: keyof TransactionFilters; label: string } => Boolean(filter));
+  if (activeFilters.length) lastActiveFiltersRef.current = activeFilters;
   const removeFilter = (key: keyof TransactionFilters) =>
     updateFilter(
       key,
@@ -466,7 +494,11 @@ export function HouseholdDashboard() {
     );
 
   return (
-    <section className="householdDashboard" aria-label="Household dashboard">
+    <section
+      className="householdDashboard"
+      aria-label="Household dashboard"
+      aria-busy={query.isFetching}
+    >
       <div className="dashboardHeading">
         <div
           ref={dashboardSelectorsRef}
@@ -501,11 +533,7 @@ export function HouseholdDashboard() {
               </h1>
             )}
           </div>
-          <div
-            ref={monthNavigationRef}
-            className="monthNavigation"
-            aria-label="Month navigation"
-          >
+          <div ref={monthNavigationRef} className="monthNavigation" aria-label="Month navigation">
             <button
               type="button"
               className={`currentMonthButton${month === currentMonthKey ? ' isHidden' : ''}`}
@@ -537,8 +565,10 @@ export function HouseholdDashboard() {
                   onClick={() => setMonthPickerOpen((open) => !open)}
                 >
                   <span
+                    key={month}
                     ref={monthLabelRef}
                     className="monthLabelText"
+                    data-direction={monthDirection}
                     style={monthLabelWidth ? { width: `${monthLabelWidth}px` } : undefined}
                   >
                     {compactMonth ? compactMonthLabel : monthLabel}
@@ -647,8 +677,13 @@ export function HouseholdDashboard() {
           balance: summary.leftover,
         }}
       />
-      {activeFilterCount ? (
-        <TransactionSummary currency={household.currency} totals={filteredSummary} filtered />
+      {filteredRecapPresence.visible ? (
+        <TransactionSummary
+          currency={household.currency}
+          totals={lastFilteredSummaryRef.current}
+          filtered
+          motionState={filteredRecapPresence.state}
+        />
       ) : null}
 
       <div className="transactionPanel">
@@ -657,6 +692,7 @@ export function HouseholdDashboard() {
           <div className="transactionPanelActions">
             <span>{transactions.length} entries</span>
             <button
+              ref={addTransactionTriggerRef}
               type="button"
               className="addTransactionButton"
               data-onboarding="add-transaction"
@@ -666,25 +702,31 @@ export function HouseholdDashboard() {
             </button>
           </div>
         </div>
-        <details
-          ref={filterDetailsRef}
-          className="transactionFilters"
-          onToggle={(event) => setFiltersExpanded(event.currentTarget.open)}
-        >
-          <summary ref={filterSummaryRef}>
-            <span className="transactionFilterTitle">
-              <SlidersHorizontal aria-hidden="true" />
-              Filters
-              {activeFilterCount ? (
-                <span className="transactionFilterCount">{activeFilterCount}</span>
-              ) : null}
-            </span>
-            <span className="transactionFilterHint">
-              {activeFilterCount ? `${filteredTransactions.length} matching` : 'Show options'}
-            </span>
-          </summary>
+        <div className="transactionFiltersRegion">
+          <details
+            ref={filterDetailsRef}
+            className="transactionFilters"
+            onToggle={(event) => setFiltersExpanded(event.currentTarget.open)}
+          >
+            <summary ref={filterSummaryRef}>
+              <span className="transactionFilterTitle">
+                <SlidersHorizontal aria-hidden="true" />
+                Filters
+                {activeFilterCount ? (
+                  <span className="transactionFilterCount">{activeFilterCount}</span>
+                ) : null}
+              </span>
+              <span className="transactionFilterHint">
+                {activeFilterCount ? `${filteredTransactions.length} matching` : 'Show options'}
+              </span>
+            </summary>
+          </details>
           <div
             className="transactionFilterDrawer"
+            data-motion={filtersPresence.state}
+            aria-hidden={filtersPresence.state === 'exiting' ? 'true' : undefined}
+            inert={filtersPresence.state === 'exiting' ? ('' as unknown as boolean) : undefined}
+            hidden={!filtersPresence.visible}
             onMouseDown={(event) => {
               if (event.target === event.currentTarget && isMobileFilterSheet()) closeFilters();
             }}
@@ -875,10 +917,15 @@ export function HouseholdDashboard() {
               </div>
             </div>
           </div>
-        </details>
-        {activeFilters.length && !filtersExpanded ? (
-          <div className="transactionFilterChips" aria-label="Active filters">
-            {activeFilters.map((filter) => (
+        </div>
+        {filterChipsPresence.visible ? (
+          <div
+            className="transactionFilterChips"
+            aria-label="Active filters"
+            aria-hidden={filterChipsPresence.state === 'exiting' ? 'true' : undefined}
+            data-motion={filterChipsPresence.state}
+          >
+            {lastActiveFiltersRef.current.map((filter) => (
               <button
                 key={filter.key}
                 type="button"
@@ -978,8 +1025,10 @@ export function HouseholdDashboard() {
         </div>
       </div>
 
-      {addingTransaction ? (
+      {addingTransactionPresence.visible ? (
         <TransactionForm
+          motionState={addingTransactionPresence.state}
+          returnFocusTo={addTransactionTriggerRef.current}
           householdId={household.id}
           currency={household.currency}
           selectedMonth={month}
@@ -989,27 +1038,32 @@ export function HouseholdDashboard() {
           onSaved={(destinationMonth) => {
             if (destinationMonth !== month) setSavedDestinationMonth(destinationMonth);
           }}
-          onClose={() => setAddingTransaction(false)}
+          onClose={() => {
+            setAddingTransaction(false);
+            addTransactionTriggerRef.current?.focus();
+          }}
         />
       ) : null}
-      {transactionToEdit ? (
+      {editingTransactionPresence.visible && lastTransactionToEditRef.current ? (
         <TransactionForm
+          motionState={editingTransactionPresence.state}
           householdId={household.id}
           currency={household.currency}
           selectedMonth={month}
           members={query.data.members}
           sources={query.data.sources}
-          transaction={transactionToEdit}
+          transaction={lastTransactionToEditRef.current}
           onSaved={(destinationMonth) => {
             if (destinationMonth !== month) setSavedDestinationMonth(destinationMonth);
           }}
           onClose={() => setTransactionToEdit(null)}
         />
       ) : null}
-      {transactionToRemove ? (
+      {removingTransactionPresence.visible && lastTransactionToRemoveRef.current ? (
         <RemoveTransactionDialog
+          motionState={removingTransactionPresence.state}
           householdId={household.id}
-          transaction={transactionToRemove}
+          transaction={lastTransactionToRemoveRef.current}
           onClose={() => setTransactionToRemove(null)}
         />
       ) : null}

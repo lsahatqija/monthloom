@@ -4,6 +4,7 @@ import type { HouseholdTransaction, TransactionEditScope } from '@monthloom/cont
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
+import type { MotionState } from '../../../components/motion/use-motion-presence';
 import { Alert, Button } from '../../../components/ui/index';
 import { financeErrorMessage } from '../api/errors';
 import { financeKeys, removeHouseholdTransaction } from '../finance.api';
@@ -12,10 +13,12 @@ export function RemoveTransactionDialog({
   householdId,
   transaction,
   onClose,
+  motionState = 'entered',
 }: {
   householdId: string;
   transaction: HouseholdTransaction;
   onClose: () => void;
+  motionState?: MotionState;
 }) {
   const queryClient = useQueryClient();
   const [scope, setScope] = useState<TransactionEditScope>(
@@ -32,6 +35,9 @@ export function RemoveTransactionDialog({
   return (
     <div
       className="transactionModalBackdrop"
+      data-motion={motionState}
+      aria-hidden={motionState === 'exiting' ? 'true' : undefined}
+      inert={motionState === 'exiting' ? ('' as unknown as boolean) : undefined}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -97,4 +103,3 @@ export function RemoveTransactionDialog({
     </div>
   );
 }
-

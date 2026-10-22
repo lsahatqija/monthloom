@@ -57,6 +57,21 @@ function renderForm(
 }
 
 describe('transaction form + query + HTTP client', () => {
+  it('keeps focus on the kind control while its dependent field crossfades', async () => {
+    renderForm();
+    const income = screen.getByRole('radio', { name: 'Income' });
+    await userEvent.click(income);
+    expect(income).toHaveFocus();
+    expect(income.closest('fieldset')).toHaveAttribute('data-kind', 'income');
+    expect(screen.getByLabelText('Type')).toBeDisabled();
+
+    const expense = screen.getByRole('radio', { name: 'Expense' });
+    await userEvent.click(expense);
+    expect(expense).toHaveFocus();
+    expect(expense.closest('fieldset')).toHaveAttribute('data-kind', 'expense');
+    expect(screen.getByLabelText('Type')).toBeEnabled();
+  });
+
   it('starts recurring transactions without expiration and reveals a required date when enabled', async () => {
     renderForm();
     await userEvent.click(screen.getByRole('switch', { name: /Recurring transaction/ }));

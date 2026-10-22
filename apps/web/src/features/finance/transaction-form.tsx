@@ -16,6 +16,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 
+import type { MotionState } from '../../components/motion/use-motion-presence';
 import { ProfileImage } from '../../components/profile-image';
 import { Alert, Button } from '../../components/ui/index';
 import { useCurrentUser } from '../auth/use-current-user';
@@ -293,6 +294,8 @@ interface TransactionFormProps {
   transaction?: HouseholdTransaction;
   onClose: () => void;
   onSaved?: (destinationMonth: string) => void;
+  motionState?: MotionState;
+  returnFocusTo?: HTMLElement | null;
 }
 
 export function TransactionForm({
@@ -305,6 +308,8 @@ export function TransactionForm({
   transaction,
   onClose,
   onSaved,
+  motionState = 'entered',
+  returnFocusTo,
 }: TransactionFormProps) {
   const dialogRef = useRef<HTMLElement>(null);
   const errorSummaryRef = useRef<HTMLDivElement>(null);
@@ -456,14 +461,19 @@ export function TransactionForm({
   }, [colorPickerOpen, iconPickerOpen, isAddingSource, requestClose, sourcePickerOpen]);
 
   useEffect(() => {
-    restoreFocusRef.current = document.activeElement as HTMLElement | null;
+    const restoreFocusTo = returnFocusTo ?? (document.activeElement as HTMLElement | null);
+    restoreFocusRef.current = restoreFocusTo;
     const dialog = dialogRef.current;
     const focusable = dialog?.querySelector<HTMLElement>(
       'input:not([disabled]), button:not([disabled]), select:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
     );
     focusable?.focus();
-    return () => restoreFocusRef.current?.focus();
-  }, []);
+    return () => restoreFocusTo?.focus();
+  }, [returnFocusTo]);
+
+  useEffect(() => {
+    if (motionState === 'exiting') restoreFocusRef.current?.focus();
+  }, [motionState]);
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -542,6 +552,9 @@ export function TransactionForm({
   return (
     <div
       className="transactionModalBackdrop"
+      data-motion={motionState}
+      aria-hidden={motionState === 'exiting' ? 'true' : undefined}
+      inert={motionState === 'exiting' ? ('' as unknown as boolean) : undefined}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) requestClose();
       }}
@@ -598,6 +611,7 @@ export function TransactionForm({
         >
           <fieldset
             className="transactionKind"
+            data-kind={kind}
             data-onboarding="transaction-kind"
             disabled={mutation.isPending}
           >
@@ -842,7 +856,7 @@ export function TransactionForm({
               ) : null}
             </div>
 
-            <label className="transactionField transactionTypeField">
+            <label className="transactionField transactionTypeField" data-kind={kind}>
               <span>Type</span>
               <select
                 value={kind === 'expense' ? type : 'income'}

@@ -158,6 +158,12 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+.monthLabelText[data-direction='forward'] {
+  animation: month-label-forward var(--motion-content-slow) var(--motion-ease-out) both;
+}
+.monthLabelText[data-direction='backward'] {
+  animation: month-label-backward var(--motion-content-slow) var(--motion-ease-out) both;
+}
 .monthLabelMeasure {
   position: absolute;
   display: grid;
@@ -180,6 +186,8 @@
   border-radius: 10px;
   background: var(--ml-surface);
   box-shadow: 0 12px 32px var(--ml-shadow);
+  transform-origin: top center;
+  animation: popover-from-top var(--motion-popover) var(--motion-ease-out) both;
 }
 .monthPickerPopover label {
   display: grid;
@@ -280,6 +288,13 @@
   border-radius: 12px;
   background: color-mix(in srgb, var(--ml-background) 55%, var(--ml-surface));
 }
+.filteredRecap[data-motion='entered'] {
+  animation: recap-in var(--motion-content-slow) var(--motion-ease-out) both;
+}
+.filteredRecap[data-motion='exiting'] {
+  pointer-events: none;
+  animation: recap-out var(--motion-exit) var(--motion-ease-exit) both;
+}
 .filteredRecap.hasSavings {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -347,8 +362,19 @@
   background: var(--ml-primary-hover);
 }
 
+.transactionFiltersRegion,
 .transactionFilters {
   border-bottom: 1px solid var(--ml-divider);
+}
+.transactionFiltersRegion .transactionFilters {
+  border-bottom: 0;
+}
+.transactionFilterDrawer[data-motion='entered'] {
+  animation: compact-reveal var(--motion-content-slow) var(--motion-ease-out) both;
+}
+.transactionFilterDrawer[data-motion='exiting'] {
+  pointer-events: none;
+  animation: compact-dismiss var(--motion-exit) var(--motion-ease-exit) both;
 }
 .transactionFilters > summary {
   display: flex;
@@ -413,6 +439,9 @@
 .transactionFilterDrawer {
   padding: var(--space-6) var(--space-8) var(--space-8);
   background: color-mix(in srgb, var(--ml-background) 55%, var(--ml-surface));
+}
+.transactionFilterDrawer[hidden] {
+  display: none;
 }
 .transactionFilterSheet {
   display: grid;
@@ -600,6 +629,13 @@
   padding: 0 var(--space-6) var(--space-4);
   border-bottom: 1px solid var(--ml-divider);
 }
+.transactionFilterChips[data-motion='entered'] {
+  animation: recap-in var(--motion-content) var(--motion-ease-out) both;
+}
+.transactionFilterChips[data-motion='exiting'] {
+  pointer-events: none;
+  animation: recap-out var(--motion-exit) var(--motion-ease-exit) both;
+}
 .transactionFilterChips button {
   display: inline-flex;
   min-height: 2.75rem;
@@ -676,6 +712,7 @@
   place-items: center;
   background: color-mix(in srgb, var(--ml-text) 48%, transparent);
   backdrop-filter: blur(3px);
+  animation: modal-backdrop-in var(--motion-modal) ease both;
 }
 .transactionModal {
   display: flex;
@@ -687,6 +724,15 @@
   border-radius: var(--radius-overlay);
   background: var(--ml-surface);
   box-shadow: 0 24px 70px color-mix(in srgb, var(--ml-text) 30%, transparent);
+  transform-origin: center;
+  animation: modal-in var(--motion-modal) var(--motion-ease-out) both;
+}
+.transactionModalBackdrop[data-motion='exiting'] {
+  pointer-events: none;
+  animation: modal-backdrop-out var(--motion-exit) ease both;
+}
+.transactionModalBackdrop[data-motion='exiting'] .transactionModal {
+  animation: modal-out var(--motion-exit) var(--motion-ease-exit) both;
 }
 .transactionModalHeader {
   display: flex;
@@ -755,12 +801,28 @@
   letter-spacing: 0.02em;
 }
 .transactionKind {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   padding: 0.25rem;
   border: 1px solid var(--ml-border);
   border-radius: 14px;
   background: var(--ml-background);
+}
+.transactionKind::before {
+  position: absolute;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  left: 0.25rem;
+  width: calc(50% - 0.25rem);
+  border-radius: 10px;
+  background: var(--ml-primary);
+  box-shadow: 0 2px 8px var(--ml-shadow);
+  content: '';
+  transition: transform var(--motion-content) var(--motion-ease-in-out);
+}
+.transactionKind[data-kind='income']::before {
+  transform: translateX(100%);
 }
 .transactionKind legend {
   position: absolute;
@@ -770,16 +832,19 @@
   clip: rect(0, 0, 0, 0);
 }
 .transactionKind label {
+  position: relative;
+  z-index: 1;
   padding: 0.65rem var(--space-4);
   border-radius: 10px;
   cursor: pointer;
   font-weight: 700;
   text-align: center;
+  transition:
+    background-color var(--motion-hover) ease,
+    color var(--motion-hover) ease;
 }
 .transactionKind label.isSelected {
-  background: var(--ml-primary);
   color: var(--ml-on-primary);
-  box-shadow: 0 2px 8px var(--ml-shadow);
 }
 .transactionKind input,
 .colorOptions input[type='radio'] {
@@ -874,6 +939,12 @@
 .transactionTypeField {
   grid-column: 3 / 5;
   grid-row: 1;
+}
+.transactionTypeField[data-kind='expense'] {
+  animation: field-crossfade-expense var(--motion-content) ease both;
+}
+.transactionTypeField[data-kind='income'] {
+  animation: field-crossfade-income var(--motion-content) ease both;
 }
 .transactionMemberField {
   grid-column: 3 / 5;
@@ -1028,6 +1099,8 @@
   border-radius: 14px;
   background: var(--ml-surface);
   box-shadow: 0 14px 36px var(--ml-shadow);
+  transform-origin: top left;
+  animation: popover-from-top-left var(--motion-popover) var(--motion-ease-out) both;
 }
 .iconPickerGrid {
   display: grid;
@@ -1143,12 +1216,17 @@
   background: var(--ml-surface);
   box-shadow: 0 14px 36px var(--ml-shadow);
   transform: translateX(-50%);
+  transform-origin: top center;
+  animation: color-popover-in var(--motion-popover) var(--motion-ease-out) both;
 }
 .iconPickerPopover.isPortaled,
 .colorPickerPopover.isPortaled {
   position: fixed;
   z-index: 120;
   transform: none;
+}
+.colorPickerPopover.isPortaled {
+  animation-name: popover-from-top;
 }
 .colorOptions label {
   display: grid;
@@ -1217,31 +1295,17 @@
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--ml-border) 82%, var(--ml-text));
   border-radius: var(--radius);
-  background: var(--ml-text);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--ml-text) 88%, var(--ml-background)),
+    var(--ml-text) 38%,
+    var(--ml-text) 62%,
+    color-mix(in srgb, var(--ml-text) 88%, var(--ml-background))
+  );
   color: var(--ml-background);
   cursor: ns-resize;
   touch-action: pan-x;
   user-select: none;
-}
-.recurrenceWindow::before,
-.recurrenceWindow::after {
-  position: absolute;
-  z-index: 1;
-  right: 0;
-  left: 0;
-  height: 32%;
-  pointer-events: none;
-  content: '';
-}
-.recurrenceWindow::before {
-  top: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--ml-background) 28%, transparent);
-  background: color-mix(in srgb, var(--ml-text) 92%, var(--ml-background));
-}
-.recurrenceWindow::after {
-  bottom: 0;
-  border-top: 1px solid color-mix(in srgb, var(--ml-background) 28%, transparent);
-  background: color-mix(in srgb, var(--ml-text) 92%, var(--ml-background));
 }
 .recurrenceWindowTrack {
   position: absolute;
@@ -1257,9 +1321,9 @@
   place-items: center;
   padding-inline: var(--space-2);
   color: var(--ml-background);
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   font-variant-numeric: tabular-nums;
-  opacity: 0.38;
+  opacity: 0.58;
   transition:
     transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 160ms ease;
@@ -1756,6 +1820,99 @@
   border-radius: 11px;
   background: var(--ml-surface);
   box-shadow: 0 10px 28px var(--ml-shadow);
+  transform-origin: top right;
+  animation: popover-from-top-right var(--motion-popover) var(--motion-ease-out) both;
+}
+
+@keyframes modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@keyframes modal-backdrop-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes modal-out {
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+@keyframes popover-from-top {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35rem) scale(0.98);
+  }
+}
+@keyframes popover-from-top-left {
+  from {
+    opacity: 0;
+    transform: translate(-0.25rem, -0.35rem) scale(0.98);
+  }
+}
+@keyframes popover-from-top-right {
+  from {
+    opacity: 0;
+    transform: translate(0.25rem, -0.35rem) scale(0.98);
+  }
+}
+@keyframes color-popover-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -0.35rem) scale(0.98);
+  }
+}
+@keyframes compact-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35rem);
+  }
+}
+@keyframes compact-dismiss {
+  to {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+}
+@keyframes recap-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes recap-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes field-crossfade-expense {
+  from {
+    opacity: 0.45;
+  }
+}
+@keyframes field-crossfade-income {
+  from {
+    opacity: 0.45;
+  }
+}
+@keyframes month-label-forward {
+  from {
+    opacity: 0;
+    transform: translateX(0.5rem);
+  }
+}
+@keyframes month-label-backward {
+  from {
+    opacity: 0;
+    transform: translateX(-0.5rem);
+  }
 }
 .transactionMenuPopover button {
   padding: var(--space-2) var(--space-3);
@@ -1919,6 +2076,12 @@
     padding: 0;
     background: color-mix(in srgb, var(--ml-text) 48%, transparent);
   }
+  .transactionFilterDrawer[data-motion='entered'] {
+    animation: mobile-filter-scrim-in var(--motion-modal-slow) ease both;
+  }
+  .transactionFilterDrawer[data-motion='exiting'] {
+    animation: mobile-filter-scrim-out var(--motion-exit) ease both;
+  }
   .transactionFilterHint {
     display: none;
   }
@@ -1939,6 +2102,10 @@
     border-radius: var(--radius-overlay) var(--radius-overlay) 0 0;
     background: var(--ml-surface);
     box-shadow: 0 -18px 50px color-mix(in srgb, var(--ml-text) 24%, transparent);
+    animation: mobile-filter-sheet-in var(--motion-modal-slow) var(--motion-ease-out) both;
+  }
+  .transactionFilterDrawer[data-motion='exiting'] .transactionFilterSheet {
+    animation: mobile-filter-sheet-out var(--motion-exit) var(--motion-ease-exit) both;
   }
   .transactionFilterSheetHeader {
     display: flex;
@@ -1997,6 +2164,57 @@
   }
   .transactionFilterChips {
     padding-inline: var(--space-4);
+  }
+}
+
+@keyframes mobile-filter-scrim-in {
+  from {
+    background-color: transparent;
+  }
+}
+@keyframes mobile-filter-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+}
+@keyframes mobile-filter-scrim-out {
+  to {
+    background-color: transparent;
+  }
+}
+@keyframes mobile-filter-sheet-out {
+  to {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .monthLabelText,
+  .monthPickerPopover,
+  .filteredRecap,
+  .transactionFilterDrawer,
+  .transactionFilterSheet,
+  .transactionFilterChips,
+  .transactionModalBackdrop,
+  .transactionModal,
+  .transactionTypeField,
+  .iconPickerPopover,
+  .colorPickerPopover,
+  .transactionMenuPopover {
+    transform: none !important;
+    animation-name: recap-in !important;
+  }
+  .transactionKind::before {
+    transition: none;
+  }
+  .filteredRecap[data-motion='exiting'],
+  .transactionFilterDrawer[data-motion='exiting'],
+  .transactionFilterChips[data-motion='exiting'],
+  .transactionModalBackdrop[data-motion='exiting'],
+  .transactionModalBackdrop[data-motion='exiting'] .transactionModal {
+    animation-name: recap-out !important;
   }
 }
 

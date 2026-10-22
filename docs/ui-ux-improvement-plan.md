@@ -181,21 +181,21 @@ Acceptance criteria:
 
 ## Phase 9: Motion and state continuity
 
-- [ ] Define shared motion tokens for press, hover, popover, modal, and content transitions.
-- [ ] Animate modal and confirmation-dialog entry and exit with opacity and scale.
-- [ ] Animate the mobile filter scrim and sheet on open and close; use a compact reveal on larger
+- [x] Define shared motion tokens for press, hover, popover, modal, and content transitions.
+- [x] Animate modal and confirmation-dialog entry and exit with opacity and scale.
+- [x] Animate the mobile filter scrim and sheet on open and close; use a compact reveal on larger
       screens.
-- [ ] Crossfade transaction-form fields when switching between expense and income without moving
+- [x] Crossfade transaction-form fields when switching between expense and income without moving
       focus or delaying input.
-- [ ] Animate month-name changes in the direction of navigation while keeping the final label
+- [x] Animate month-name changes in the direction of navigation while keeping the final label
       immediately available to assistive technology.
-- [ ] Animate the filtered recap and active-filter summary when they appear or disappear.
-- [ ] Animate month-picker, transaction-menu, icon-picker, and color-picker popovers from their
+- [x] Animate the filtered recap and active-filter summary when they appear or disappear.
+- [x] Animate month-picker, transaction-menu, icon-picker, and color-picker popovers from their
       triggers.
-- [ ] Keep motion interruptible and use transform and opacity so transitions do not cause layout
+- [x] Keep motion interruptible and use transform and opacity so transitions do not cause layout
       shift.
-- [ ] Respect `prefers-reduced-motion`: retain short opacity feedback and remove travel and scale.
-- [ ] Add interaction tests for rapid toggling, focus retention, and reduced-motion behavior.
+- [x] Respect `prefers-reduced-motion`: retain short opacity feedback and remove travel and scale.
+- [x] Add interaction tests for rapid toggling, focus retention, and reduced-motion behavior.
 
 Acceptance criteria:
 

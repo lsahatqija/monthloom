@@ -1,3 +1,5 @@
+import type { MotionState } from '../../../components/motion/use-motion-presence';
+
 type Totals = {
   income: number | string;
   expenses: number | string;
@@ -9,10 +11,12 @@ export function TransactionSummary({
   currency,
   totals,
   filtered = false,
+  motionState = 'entered',
 }: {
   currency: string;
   totals: Totals;
   filtered?: boolean;
+  motionState?: MotionState;
 }) {
   const money = new Intl.NumberFormat(undefined, {
     style: 'currency',
@@ -33,6 +37,8 @@ export function TransactionSummary({
       className={`financeRecap${hasSavings ? ' hasSavings' : ''}${filtered ? ' filteredRecap' : ''}`}
       role={filtered ? 'group' : undefined}
       aria-label={filtered ? 'Filtered recap' : 'Monthly recap'}
+      aria-hidden={motionState === 'exiting' ? 'true' : undefined}
+      data-motion={motionState}
     >
       {filtered ? <p className="filteredRecapLabel">Filtered totals</p> : null}
       <div>

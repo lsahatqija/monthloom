@@ -13,6 +13,7 @@ export function useHouseholdMonth(householdId: string, month: string) {
     queryKey: financeKeys.householdMonth(householdId, month),
     queryFn: () => getHouseholdMonth(householdId, month),
     enabled: Boolean(householdId),
+    placeholderData: (previous) => (previous?.household.id === householdId ? previous : undefined),
   });
 }
 
