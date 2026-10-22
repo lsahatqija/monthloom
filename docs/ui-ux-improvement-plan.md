@@ -112,16 +112,16 @@ Acceptance criteria:
 
 ## Phase 5: Simplify filters
 
-- [ ] Group filters into transaction, date, and amount sections.
-- [ ] Give the filter surface consistent edge padding and larger gaps between groups than within
+- [x] Group filters into transaction, date, and amount sections.
+- [x] Give the filter surface consistent edge padding and larger gaps between groups than within
       groups.
-- [ ] Add household currency context to amount filters.
-- [ ] Show active filters after collapse as removable chips or an equivalent compact summary.
-- [ ] Keep result count and `Clear filters` together.
-- [ ] Replace the portrait-mobile two-column filter grid with a filter sheet.
-- [ ] Keep the most frequently used controls first; put secondary controls later without removing
+- [x] Add household currency context to amount filters.
+- [x] Show active filters after collapse as removable chips or an equivalent compact summary.
+- [x] Keep result count and `Clear filters` together.
+- [x] Replace the portrait-mobile two-column filter grid with a filter sheet.
+- [x] Keep the most frequently used controls first; put secondary controls later without removing
       them.
-- [ ] Verify keyboard focus, dismissal, and retained filter state.
+- [x] Verify keyboard focus, dismissal, and retained filter state.
 
 Acceptance criteria:
 

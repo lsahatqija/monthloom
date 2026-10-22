@@ -1,5 +1,5 @@
 import type { HouseholdTransaction } from '@monthloom/contracts';
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -221,8 +221,53 @@ describe('household dashboard', () => {
       within(filteredRecap).getByText('Filtered balance').nextElementSibling,
     ).toHaveTextContent(/-.*20\.00/);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+    await userEvent.click(screen.getByText('Filters', { exact: true }));
+    const activeFilters = screen.getByLabelText('Active filters');
+    expect(
+      within(activeFilters).getByRole('button', { name: 'Remove Expenses filter' }),
+    ).toBeVisible();
+    await userEvent.click(
+      within(activeFilters).getByRole('button', { name: 'Remove Expenses filter' }),
+    );
     expect(screen.queryByRole('group', { name: 'Filtered recap' })).not.toBeInTheDocument();
+  });
+
+  it('dismisses the mobile filter sheet with Escape and retains active filters', async () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
+    mockDashboard();
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+
+    await userEvent.click(screen.getByText('Filters', { exact: true }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Close filters' })).toHaveFocus(),
+    );
+    const type = screen.getByLabelText('Type');
+    await userEvent.selectOptions(type, 'expense');
+    await userEvent.keyboard('{Escape}');
+
+    expect(screen.getByRole('group', { name: 'Filtered recap' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Active filters')).toHaveTextContent('Expenses');
+    expect(screen.getByText('Filters', { exact: true }).closest('details')).not.toHaveAttribute(
+      'open',
+    );
+  });
+
+  it('filters with the accessible household-currency amount range', async () => {
+    mockDashboard();
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+    await userEvent.click(screen.getByText('Filters', { exact: true }));
+
+    const amountRange = screen.getByRole('group', { name: 'Amount range in EUR' });
+    fireEvent.change(within(amountRange).getByRole('slider', { name: 'Maximum amount in EUR' }), {
+      target: { value: '50' },
+    });
+
+    expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(2);
+    expect(
+      within(amountRange).getByRole('spinbutton', { name: 'Maximum amount in EUR' }),
+    ).toHaveValue(50);
   });
 
   it('shows distinct recurring indicators between the date and transaction icon', async () => {

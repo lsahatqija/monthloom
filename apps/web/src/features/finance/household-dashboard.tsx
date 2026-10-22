@@ -1,7 +1,16 @@
 'use client';
 
 import { Defaults, type HouseholdTransaction } from '@monthloom/contracts';
-import { Banknote, CalendarDays, RefreshCw, Store, Tags, UserRound } from 'lucide-react';
+import {
+  Banknote,
+  CalendarDays,
+  RefreshCw,
+  SlidersHorizontal,
+  Store,
+  Tags,
+  UserRound,
+  X,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
@@ -25,6 +34,7 @@ import { useDashboardSelection } from './dashboard/use-dashboard-selection';
 import { useTransactionView } from './dashboard/use-transaction-view';
 import { FinancialIcon, financialIconLabel } from './financial-icon';
 import { TransactionForm } from './transaction-form';
+import { transactionTypeLabel as formatTransactionType } from './transaction-type';
 
 const transactionCollator = new Intl.Collator(undefined, {
   numeric: true,
@@ -33,6 +43,10 @@ const transactionCollator = new Intl.Collator(undefined, {
 
 function monthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function isMobileFilterSheet(): boolean {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 620px)').matches;
 }
 
 function monthOptions(): Array<{
@@ -164,6 +178,10 @@ export function HouseholdDashboard() {
   const [transactionToEdit, setTransactionToEdit] = useState<HouseholdTransaction | null>(null);
   const [transactionToRemove, setTransactionToRemove] = useState<HouseholdTransaction | null>(null);
   const [savedDestinationMonth, setSavedDestinationMonth] = useState<string | null>(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const filterDetailsRef = useRef<HTMLDetailsElement>(null);
+  const filterSummaryRef = useRef<HTMLElement>(null);
+  const filterSheetRef = useRef<HTMLDivElement>(null);
   const householdsQuery = useHouseholds();
   useEffect(() => {
     if (!householdsQuery.data) return;
@@ -178,6 +196,41 @@ export function HouseholdDashboard() {
   }, [householdsQuery.data, setHouseholdId]);
   const query = useHouseholdMonth(householdId, month);
   const transactionView = useTransactionView(query.data?.transactions ?? []);
+  useEffect(() => {
+    if (!filtersExpanded || !isMobileFilterSheet()) return;
+
+    const sheet = filterSheetRef.current;
+    const focusable = () =>
+      Array.from(
+        sheet?.querySelectorAll<HTMLElement>('button:not([disabled]), select, input') ?? [],
+      );
+    focusable()[0]?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        filterDetailsRef.current?.removeAttribute('open');
+        setFiltersExpanded(false);
+        filterSummaryRef.current?.focus();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const controls = focusable();
+      const first = controls[0];
+      const last = controls.at(-1);
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [filtersExpanded]);
   if (householdsQuery.isPending || (householdsQuery.data?.length && query.isPending)) {
     return (
       <div className="dashboardState">
@@ -259,10 +312,78 @@ export function HouseholdDashboard() {
         .map((transaction) => transaction.type!),
     ),
   ).sort(transactionCollator.compare);
+  const amountRangeMax = Math.max(
+    100,
+    Math.ceil(
+      Math.max(
+        ...transactions.map((transaction) => Number(transaction.amount)),
+        Number(filters.amountOver) || 0,
+        Number(filters.amountUnder) || 0,
+      ) / 100,
+    ) * 100,
+  );
+  const amountRangeMinValue = Math.min(Number(filters.amountOver) || 0, amountRangeMax - 0.01);
+  const amountRangeMaxValue = Math.max(
+    Number(filters.amountUnder) || amountRangeMax,
+    amountRangeMinValue + 0.01,
+  );
   const updateFilter = <Key extends keyof TransactionFilters>(
     key: Key,
     value: TransactionFilters[Key],
   ) => setFilters((current) => ({ ...current, [key]: value }));
+  const closeFilters = () => {
+    filterDetailsRef.current?.removeAttribute('open');
+    setFiltersExpanded(false);
+    filterSummaryRef.current?.focus();
+  };
+  const activeFilters: Array<{ key: keyof TransactionFilters; label: string }> = [
+    filters.type !== 'all'
+      ? {
+          key: 'type',
+          label:
+            filters.type === 'income'
+              ? 'Income'
+              : filters.type === 'expense'
+                ? 'Expenses'
+                : formatTransactionType(filters.type.slice(8)),
+        }
+      : null,
+    filters.userId !== 'all'
+      ? {
+          key: 'userId',
+          label:
+            query.data.members.find((member) => member.id === filters.userId)?.displayName ??
+            'Selected user',
+        }
+      : null,
+    filters.sourceId !== 'all'
+      ? {
+          key: 'sourceId',
+          label:
+            query.data.sources.find((source) => source.id === filters.sourceId)?.displayName ??
+            'Selected source',
+        }
+      : null,
+    filters.recurring !== 'all'
+      ? {
+          key: 'recurring',
+          label: filters.recurring === 'recurring' ? 'Recurring' : 'One-off',
+        }
+      : null,
+    filters.dateFrom ? { key: 'dateFrom', label: `From ${filters.dateFrom}` } : null,
+    filters.dateTo ? { key: 'dateTo', label: `To ${filters.dateTo}` } : null,
+    filters.amountOver
+      ? { key: 'amountOver', label: `Over ${money.format(Number(filters.amountOver))}` }
+      : null,
+    filters.amountUnder
+      ? { key: 'amountUnder', label: `Under ${money.format(Number(filters.amountUnder))}` }
+      : null,
+  ].filter((filter): filter is { key: keyof TransactionFilters; label: string } => Boolean(filter));
+  const removeFilter = (key: keyof TransactionFilters) =>
+    updateFilter(
+      key,
+      key === 'type' || key === 'userId' || key === 'sourceId' || key === 'recurring' ? 'all' : '',
+    );
 
   return (
     <section className="householdDashboard" aria-label="Household dashboard">
@@ -380,12 +501,14 @@ export function HouseholdDashboard() {
             </button>
           </div>
         </div>
-        <details className="transactionFilters">
-          <summary>
+        <details
+          ref={filterDetailsRef}
+          className="transactionFilters"
+          onToggle={(event) => setFiltersExpanded(event.currentTarget.open)}
+        >
+          <summary ref={filterSummaryRef}>
             <span className="transactionFilterTitle">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 6h16M7 12h10m-7 6h4" />
-              </svg>
+              <SlidersHorizontal aria-hidden="true" />
               Filters
               {activeFilterCount ? (
                 <span className="transactionFilterCount">{activeFilterCount}</span>
@@ -395,121 +518,214 @@ export function HouseholdDashboard() {
               {activeFilterCount ? `${filteredTransactions.length} matching` : 'Show options'}
             </span>
           </summary>
-          <div className="transactionFilterDrawer">
-            <label className="transactionFilterField">
-              <span>Type</span>
-              <select
-                value={filters.type}
-                onChange={(event) => updateFilter('type', event.target.value)}
-              >
-                <option value="all">All types</option>
-                <option value="income">Income</option>
-                <option value="expense">All expenses</option>
-                {expenseTypes.map((type) => (
-                  <option key={type} value={`expense:${type}`}>
-                    {type
-                      .split('-')
-                      .map((word) => word[0]!.toUpperCase() + word.slice(1))
-                      .join(' ')}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="transactionFilterField">
-              <span>User</span>
-              <select
-                value={filters.userId}
-                onChange={(event) => updateFilter('userId', event.target.value)}
-              >
-                <option value="all">All users</option>
-                {query.data.members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.displayName}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="transactionFilterField">
-              <span>Source</span>
-              <select
-                value={filters.sourceId}
-                onChange={(event) => updateFilter('sourceId', event.target.value)}
-              >
-                <option value="all">All sources</option>
-                {query.data.sources.map((source) => (
-                  <option key={source.id} value={source.id}>
-                    {source.displayName}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="transactionFilterField">
-              <span>Recurring</span>
-              <select
-                value={filters.recurring}
-                onChange={(event) =>
-                  updateFilter('recurring', event.target.value as RecurringFilter)
-                }
-              >
-                <option value="all">All transactions</option>
-                <option value="recurring">Recurring only</option>
-                <option value="one-off">One-off only</option>
-              </select>
-            </label>
-            <label className="transactionFilterField">
-              <span>Date from</span>
-              <input
-                type="date"
-                value={filters.dateFrom}
-                max={filters.dateTo || undefined}
-                onChange={(event) => updateFilter('dateFrom', event.target.value)}
-              />
-            </label>
-            <label className="transactionFilterField">
-              <span>Date to</span>
-              <input
-                type="date"
-                value={filters.dateTo}
-                min={filters.dateFrom || undefined}
-                onChange={(event) => updateFilter('dateTo', event.target.value)}
-              />
-            </label>
-            <label className="transactionFilterField">
-              <span>Amount over</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={filters.amountOver}
-                onChange={(event) => updateFilter('amountOver', event.target.value)}
-              />
-            </label>
-            <label className="transactionFilterField">
-              <span>Amount under</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="0.01"
-                placeholder="No maximum"
-                value={filters.amountUnder}
-                onChange={(event) => updateFilter('amountUnder', event.target.value)}
-              />
-            </label>
-            <div className="transactionFilterFooter">
-              <span aria-live="polite">
-                Showing {filteredTransactions.length} of {transactions.length} entries
-              </span>
-              {activeFilterCount ? (
-                <button type="button" onClick={resetFilters}>
-                  Clear filters
+          <div
+            className="transactionFilterDrawer"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget && isMobileFilterSheet()) closeFilters();
+            }}
+          >
+            <div
+              ref={filterSheetRef}
+              className="transactionFilterSheet"
+              role="dialog"
+              aria-modal={filtersExpanded && isMobileFilterSheet() ? 'true' : undefined}
+              aria-label="Transaction filters"
+            >
+              <div className="transactionFilterSheetHeader">
+                <div>
+                  <strong>Filter activity</strong>
+                  <span>Refine this month&apos;s activity</span>
+                </div>
+                <button type="button" aria-label="Close filters" onClick={closeFilters}>
+                  <X aria-hidden="true" />
                 </button>
-              ) : null}
+              </div>
+              <div className="transactionFilterGroup transactionFilterGroupPrimary">
+                <div className="transactionFilterGroupFields">
+                  <label className="transactionFilterField">
+                    <span>Type</span>
+                    <select
+                      value={filters.type}
+                      onChange={(event) => updateFilter('type', event.target.value)}
+                    >
+                      <option value="all">All types</option>
+                      <option value="income">Income</option>
+                      <option value="expense">All expenses</option>
+                      {expenseTypes.map((type) => (
+                        <option key={type} value={`expense:${type}`}>
+                          {type
+                            .split('-')
+                            .map((word) => word[0]!.toUpperCase() + word.slice(1))
+                            .join(' ')}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="transactionFilterField">
+                    <span>Source</span>
+                    <select
+                      value={filters.sourceId}
+                      onChange={(event) => updateFilter('sourceId', event.target.value)}
+                    >
+                      <option value="all">All sources</option>
+                      {query.data.sources.map((source) => (
+                        <option key={source.id} value={source.id}>
+                          {source.displayName}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div className="transactionFilterGroup transactionFilterGroupSecondary">
+                <div className="transactionFilterGroupFields">
+                  <label className="transactionFilterField">
+                    <span>User</span>
+                    <select
+                      value={filters.userId}
+                      onChange={(event) => updateFilter('userId', event.target.value)}
+                    >
+                      <option value="all">All users</option>
+                      {query.data.members.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.displayName}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="transactionFilterField">
+                    <span>Recurring</span>
+                    <select
+                      value={filters.recurring}
+                      onChange={(event) =>
+                        updateFilter('recurring', event.target.value as RecurringFilter)
+                      }
+                    >
+                      <option value="all">All transactions</option>
+                      <option value="recurring">Recurring only</option>
+                      <option value="one-off">One-off only</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div className="transactionFilterGroup transactionFilterGroupDate">
+                <div className="transactionFilterGroupFields">
+                  <label className="transactionFilterField">
+                    <span>From</span>
+                    <input
+                      type="date"
+                      value={filters.dateFrom}
+                      max={filters.dateTo || undefined}
+                      onChange={(event) => updateFilter('dateFrom', event.target.value)}
+                    />
+                  </label>
+                  <label className="transactionFilterField">
+                    <span>To</span>
+                    <input
+                      type="date"
+                      value={filters.dateTo}
+                      min={filters.dateFrom || undefined}
+                      onChange={(event) => updateFilter('dateTo', event.target.value)}
+                    />
+                  </label>
+                </div>
+              </div>
+              <div
+                className="transactionFilterGroup transactionFilterGroupAmount"
+                role="group"
+                aria-label={`Amount range in ${household.currency}`}
+              >
+                <div className="amountRangeControl">
+                  <label className="amountRangeValue">
+                    <span className="srOnly">Minimum amount in {household.currency}</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      max={filters.amountUnder || amountRangeMax}
+                      step="0.01"
+                      placeholder="Min"
+                      value={filters.amountOver}
+                      onChange={(event) => updateFilter('amountOver', event.target.value)}
+                    />
+                    <span aria-hidden="true">{household.currency}</span>
+                  </label>
+                  <div className="amountRangeSliders">
+                    <input
+                      type="range"
+                      aria-label={`Minimum amount in ${household.currency}`}
+                      min="0"
+                      max={amountRangeMax}
+                      step="0.01"
+                      value={amountRangeMinValue}
+                      onChange={(event) => {
+                        const value = Math.min(
+                          Number(event.target.value),
+                          amountRangeMaxValue - 0.01,
+                        );
+                        updateFilter('amountOver', value === 0 ? '' : String(value));
+                      }}
+                    />
+                    <input
+                      type="range"
+                      aria-label={`Maximum amount in ${household.currency}`}
+                      min="0"
+                      max={amountRangeMax}
+                      step="0.01"
+                      value={amountRangeMaxValue}
+                      onChange={(event) => {
+                        const value = Math.max(
+                          Number(event.target.value),
+                          amountRangeMinValue + 0.01,
+                        );
+                        updateFilter('amountUnder', value === amountRangeMax ? '' : String(value));
+                      }}
+                    />
+                  </div>
+                  <label className="amountRangeValue">
+                    <span className="srOnly">Maximum amount in {household.currency}</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min={filters.amountOver || 0}
+                      max={amountRangeMax}
+                      step="0.01"
+                      placeholder="Max"
+                      value={filters.amountUnder}
+                      onChange={(event) => updateFilter('amountUnder', event.target.value)}
+                    />
+                    <span aria-hidden="true">{household.currency}</span>
+                  </label>
+                </div>
+              </div>
+              <div className="transactionFilterFooter">
+                <span aria-live="polite">
+                  Showing {filteredTransactions.length} of {transactions.length} entries
+                </span>
+                {activeFilterCount ? (
+                  <button type="button" onClick={resetFilters}>
+                    Clear filters
+                  </button>
+                ) : null}
+              </div>
             </div>
           </div>
         </details>
+        {activeFilters.length && !filtersExpanded ? (
+          <div className="transactionFilterChips" aria-label="Active filters">
+            {activeFilters.map((filter) => (
+              <button
+                key={filter.key}
+                type="button"
+                onClick={() => removeFilter(filter.key)}
+                aria-label={`Remove ${filter.label} filter`}
+              >
+                <span>{filter.label}</span>
+                <X aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="transactionScroll">
           {filteredTransactions.length ? (
             <table className="transactionTable">
