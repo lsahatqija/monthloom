@@ -12,10 +12,12 @@ import {
 } from '@monthloom/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 
+import type { MotionState } from '../../components/motion/use-motion-presence';
+import { ProfileImage } from '../../components/profile-image';
 import { Alert, Button } from '../../components/ui/index';
 import { useCurrentUser } from '../auth/use-current-user';
 
@@ -39,6 +41,15 @@ const COLOR_OPTIONS = [
   '#C48A2C',
   '#6B7280',
 ];
+
+type TransactionAppearance = Pick<CreateHouseholdTransactionRequest, 'icon' | 'color'>;
+
+function randomAppearance(): TransactionAppearance {
+  return {
+    icon: Constants.FINANCIAL_ICONS[Math.floor(Math.random() * Constants.FINANCIAL_ICONS.length)]!,
+    color: COLOR_OPTIONS[Math.floor(Math.random() * COLOR_OPTIONS.length)]!,
+  };
+}
 
 interface RecurrenceWheelProps<T extends string | number> {
   label: string;
@@ -247,6 +258,20 @@ function todayDate(): string {
   ).padStart(2, '0')}`;
 }
 
+function dateInMonth(month: string, today = todayDate()): string {
+  if (today.slice(0, 7) === month) return today;
+  const [year, monthNumber] = month.split('-').map(Number);
+  const day = Math.min(Number(today.slice(8, 10)), new Date(year!, monthNumber!, 0).getDate());
+  return `${month}-${String(day).padStart(2, '0')}`;
+}
+
+function monthLabel(month: string): string {
+  const [year, monthNumber] = month.split('-').map(Number);
+  return new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(
+    new Date(year!, monthNumber! - 1, 1),
+  );
+}
+
 function editableTransactionType(
   transaction: HouseholdTransaction | undefined,
 ): CreateHouseholdTransactionRequest['type'] {
@@ -261,26 +286,41 @@ function editableTransactionType(
 
 interface TransactionFormProps {
   householdId: string;
+  currency: string;
+  selectedMonth: string;
   members: HouseholdMonthResponse['members'];
   sources: HouseholdMonthResponse['sources'];
   transactions?: HouseholdMonthResponse['transactions'];
   transaction?: HouseholdTransaction;
   onClose: () => void;
+  onSaved?: (destinationMonth: string) => void;
+  motionState?: MotionState;
+  returnFocusTo?: HTMLElement | null;
 }
 
 export function TransactionForm({
   householdId,
+  currency,
+  selectedMonth,
   members,
   sources,
   transactions = [],
   transaction,
   onClose,
+  onSaved,
+  motionState = 'entered',
+  returnFocusTo,
 }: TransactionFormProps) {
+  const dialogRef = useRef<HTMLElement>(null);
+  const errorSummaryRef = useRef<HTMLDivElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
   const iconPickerRef = useRef<HTMLDetailsElement>(null);
   const colorPickerRef = useRef<HTMLDetailsElement>(null);
   const iconPickerPopoverRef = useRef<HTMLDivElement>(null);
   const colorPickerPopoverRef = useRef<HTMLDivElement>(null);
   const sourcePickerRef = useRef<HTMLDivElement>(null);
+  const appearanceLockedRef = useRef(false);
+  const randomAppearanceBySourceRef = useRef(new Map<string, TransactionAppearance>());
   const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const [availableSources, setAvailableSources] = useState(sources);
@@ -289,6 +329,7 @@ export function TransactionForm({
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
   const [sourceQuery, setSourceQuery] = useState(transaction?.source.displayName ?? '');
+  const [dirty, setDirty] = useState(false);
   const [expires, setExpires] = useState(Boolean(transaction?.expiresOn));
   const [selection, setSelection] = useState<TransactionSeriesSelection>({
     past: false,
@@ -309,7 +350,7 @@ export function TransactionForm({
       icon: transaction?.icon ?? Defaults.TRANSACTION_ICON,
       color: transaction?.color ?? Defaults.TRANSACTION_COLOR,
       amount: transaction?.amount ?? '',
-      date: transaction?.date ?? todayDate(),
+      date: transaction?.date ?? dateInMonth(selectedMonth),
       userId: transaction?.user.id ?? currentUser.data?.user?.id ?? members[0]?.id ?? '',
       recurring: transaction?.recurring ?? Defaults.TRANSACTION_RECURRING,
       recurrenceInterval:
@@ -330,8 +371,26 @@ export function TransactionForm({
   const recurrenceInterval = watch('recurrenceInterval');
   const recurrenceUnit = watch('recurrenceUnit');
   const expiresOn = watch('expiresOn') ?? '';
+  const destinationMonth = date ? date.slice(0, 7) : selectedMonth;
+  const isCrossMonth = destinationMonth !== selectedMonth;
+  const destinationLabel = monthLabel(destinationMonth);
+  const selectedMonthLabel = monthLabel(selectedMonth);
+  const selectedMember = members.find((member) => member.id === userId) ?? members[0];
+  const currencySymbol =
+    new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+      currencyDisplay: 'narrowSymbol',
+    })
+      .formatToParts(0)
+      .find((part) => part.type === 'currency')?.value ?? currency;
+
+  const requestClose = useCallback(() => {
+    if (!dirty || window.confirm('Discard your unsaved transaction changes?')) onClose();
+  }, [dirty, onClose]);
 
   const selectSource = (selectedSourceId: string) => {
+    setDirty(true);
     setValue('sourceId', selectedSourceId, { shouldValidate: true });
     if (transaction) return;
 
@@ -340,12 +399,18 @@ export function TransactionForm({
       .sort(
         (left, right) => right.date.localeCompare(left.date) || right.id.localeCompare(left.id),
       )[0];
-    if (!mostRecentTransaction) return;
+    if (mostRecentTransaction) {
+      setValue('kind', mostRecentTransaction.kind);
+      setValue('type', editableTransactionType(mostRecentTransaction));
+    }
+    if (appearanceLockedRef.current) return;
 
-    setValue('kind', mostRecentTransaction.kind);
-    setValue('type', editableTransactionType(mostRecentTransaction));
-    setValue('icon', mostRecentTransaction.icon);
-    setValue('color', mostRecentTransaction.color);
+    const appearance = mostRecentTransaction
+      ? { icon: mostRecentTransaction.icon, color: mostRecentTransaction.color }
+      : (randomAppearanceBySourceRef.current.get(selectedSourceId) ?? randomAppearance());
+    randomAppearanceBySourceRef.current.set(selectedSourceId, appearance);
+    setValue('icon', appearance.icon);
+    setValue('color', appearance.color);
   };
   const iconPickerPosition = usePickerPosition(
     iconPickerOpen,
@@ -388,12 +453,27 @@ export function TransactionForm({
       if (isAddingSource) {
         setIsAddingSource(false);
       } else {
-        onClose();
+        requestClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [colorPickerOpen, iconPickerOpen, isAddingSource, onClose, sourcePickerOpen]);
+  }, [colorPickerOpen, iconPickerOpen, isAddingSource, requestClose, sourcePickerOpen]);
+
+  useEffect(() => {
+    const restoreFocusTo = returnFocusTo ?? (document.activeElement as HTMLElement | null);
+    restoreFocusRef.current = restoreFocusTo;
+    const dialog = dialogRef.current;
+    const focusable = dialog?.querySelector<HTMLElement>(
+      'input:not([disabled]), button:not([disabled]), select:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
+    );
+    focusable?.focus();
+    return () => restoreFocusTo?.focus();
+  }, [returnFocusTo]);
+
+  useEffect(() => {
+    if (motionState === 'exiting') restoreFocusRef.current?.focus();
+  }, [motionState]);
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -427,6 +507,7 @@ export function TransactionForm({
         : createHouseholdTransaction(householdId, input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: financeKeys.all });
+      onSaved?.(destinationMonth);
       onClose();
     },
   });
@@ -435,13 +516,15 @@ export function TransactionForm({
     .map((error) => error?.message)
     .find((message): message is string => typeof message === 'string');
 
-  const submit = handleSubmit((input) =>
-    mutation.mutate({
-      ...input,
-      type: input.type,
-      date: input.date || todayDate(),
-      expiresOn: input.recurring && expires && input.expiresOn ? input.expiresOn : null,
-    }),
+  const submit = handleSubmit(
+    (input) =>
+      mutation.mutate({
+        ...input,
+        type: input.type,
+        date: input.date || todayDate(),
+        expiresOn: input.recurring && expires && input.expiresOn ? input.expiresOn : null,
+      }),
+    () => requestAnimationFrame(() => errorSummaryRef.current?.focus()),
   );
 
   if (isAddingSource) {
@@ -458,7 +541,7 @@ export function TransactionForm({
                 left.id.localeCompare(right.id),
             ),
           );
-          setValue('sourceId', source.id);
+          selectSource(source.id);
           setSourceQuery(source.displayName);
           setIsAddingSource(false);
         }}
@@ -469,15 +552,37 @@ export function TransactionForm({
   return (
     <div
       className="transactionModalBackdrop"
+      data-motion={motionState}
+      aria-hidden={motionState === 'exiting' ? 'true' : undefined}
+      inert={motionState === 'exiting' ? ('' as unknown as boolean) : undefined}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) requestClose();
       }}
     >
       <section
+        ref={dialogRef}
         className="transactionModal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="transaction-modal-title"
+        onKeyDown={(event) => {
+          if (event.key !== 'Tab') return;
+          const focusable = Array.from(
+            event.currentTarget.querySelectorAll<HTMLElement>(
+              'input:not([disabled]), button:not([disabled]), select:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
+            ),
+          ).filter((element) => element.offsetParent !== null);
+          if (!focusable.length) return;
+          const first = focusable[0]!;
+          const last = focusable[focusable.length - 1]!;
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        }}
       >
         <div className="transactionModalHeader">
           <div>
@@ -491,16 +596,22 @@ export function TransactionForm({
             type="button"
             className="modalCloseButton"
             data-onboarding="transaction-close"
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Close"
           >
             <span aria-hidden="true">×</span>
           </button>
         </div>
 
-        <form className="transactionForm" onSubmit={submit} noValidate>
+        <form
+          className="transactionForm"
+          onSubmit={submit}
+          onChange={() => setDirty(true)}
+          noValidate
+        >
           <fieldset
             className="transactionKind"
+            data-kind={kind}
             data-onboarding="transaction-kind"
             disabled={mutation.isPending}
           >
@@ -514,7 +625,7 @@ export function TransactionForm({
                 onChange={() => {
                   setValue('kind', 'expense');
                   if (!type) setValue('type', Defaults.TRANSACTION_TYPE);
-                  if (icon === Defaults.INCOME_TRANSACTION_ICON) {
+                  if (!appearanceLockedRef.current && icon === Defaults.INCOME_TRANSACTION_ICON) {
                     setValue('icon', Defaults.TRANSACTION_ICON);
                   }
                 }}
@@ -530,7 +641,7 @@ export function TransactionForm({
                 onChange={() => {
                   setValue('kind', 'income');
                   setValue('type', Defaults.INCOME_TRANSACTION_TYPE);
-                  if (icon === Defaults.TRANSACTION_ICON) {
+                  if (!appearanceLockedRef.current && icon === Defaults.TRANSACTION_ICON) {
                     setValue('icon', Defaults.INCOME_TRANSACTION_ICON);
                   }
                 }}
@@ -551,6 +662,7 @@ export function TransactionForm({
                   onToggle={(event) => setIconPickerOpen(event.currentTarget.open)}
                 >
                   <summary
+                    aria-label={`Icon: ${financialIconLabel(icon)}`}
                     onClick={(event) => {
                       if (mutation.isPending) event.preventDefault();
                     }}
@@ -558,7 +670,6 @@ export function TransactionForm({
                     <span className="selectedIconPreview" style={{ backgroundColor: color }}>
                       <FinancialIcon name={icon} size={20} />
                     </span>
-                    <span>{financialIconLabel(icon)}</span>
                   </summary>
                 </details>
                 {iconPickerOpen && typeof document !== 'undefined'
@@ -584,6 +695,7 @@ export function TransactionForm({
                                   checked={icon === option}
                                   disabled={mutation.isPending}
                                   onChange={() => {
+                                    appearanceLockedRef.current = true;
                                     setValue('icon', option);
                                     setIconPickerOpen(false);
                                   }}
@@ -610,12 +722,12 @@ export function TransactionForm({
                   onToggle={(event) => setColorPickerOpen(event.currentTarget.open)}
                 >
                   <summary
+                    aria-label={`Color: ${color.toUpperCase()}`}
                     onClick={(event) => {
                       if (mutation.isPending) event.preventDefault();
                     }}
                   >
                     <span className="selectedColorPreview" style={{ backgroundColor: color }} />
-                    <span>{color.toUpperCase()}</span>
                   </summary>
                 </details>
                 {colorPickerOpen && typeof document !== 'undefined'
@@ -635,6 +747,7 @@ export function TransactionForm({
                                 checked={color === option}
                                 disabled={mutation.isPending}
                                 onChange={() => {
+                                  appearanceLockedRef.current = true;
                                   setValue('color', option);
                                   setColorPickerOpen(false);
                                 }}
@@ -648,6 +761,7 @@ export function TransactionForm({
                               value={color}
                               disabled={mutation.isPending}
                               onChange={(event) => {
+                                appearanceLockedRef.current = true;
                                 setValue('color', event.target.value);
                                 setColorPickerOpen(false);
                               }}
@@ -661,23 +775,6 @@ export function TransactionForm({
                     )
                   : null}
               </div>
-
-              <label className="transactionField transactionMemberField">
-                <span>User</span>
-                <select
-                  value={userId}
-                  required
-                  disabled={mutation.isPending}
-                  onChange={(event) => setValue('userId', event.target.value)}
-                >
-                  {members.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.displayName}
-                      {member.id === currentUser.data?.user?.id ? ' (you)' : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
             </div>
             <div
               ref={sourcePickerRef}
@@ -696,6 +793,8 @@ export function TransactionForm({
                 value={sourceQuery}
                 autoFocus
                 required
+                aria-invalid={Boolean(errors.sourceId)}
+                aria-describedby={errors.sourceId ? 'transaction-source-error' : undefined}
                 disabled={mutation.isPending}
                 placeholder="Search sources"
                 onClick={() => setSourcePickerOpen(true)}
@@ -705,6 +804,11 @@ export function TransactionForm({
                   setSourcePickerOpen(true);
                 }}
               />
+              {errors.sourceId ? (
+                <small id="transaction-source-error" className="transactionFieldError">
+                  {errors.sourceId.message}
+                </small>
+              ) : null}
               {sourcePickerOpen ? (
                 <div
                   id="transaction-source-options"
@@ -752,7 +856,7 @@ export function TransactionForm({
               ) : null}
             </div>
 
-            <label className="transactionField transactionTypeField">
+            <label className="transactionField transactionTypeField" data-kind={kind}>
               <span>Type</span>
               <select
                 value={kind === 'expense' ? type : 'income'}
@@ -776,20 +880,59 @@ export function TransactionForm({
               </select>
             </label>
 
-            <div className="transactionAmountDateRow">
-              <label className="transactionField transactionAmountField">
-                <span>Amount</span>
-                <input
-                  value={amount}
-                  type="text"
-                  inputMode="decimal"
-                  pattern="\d{1,12}([.,]\d{1,2})?"
-                  placeholder="0.00"
+            <div className="transactionField transactionMemberField">
+              <label htmlFor="transaction-user">User</label>
+              <span className="transactionMemberControl">
+                {selectedMember ? (
+                  <ProfileImage
+                    image={selectedMember.profileImage}
+                    color={selectedMember.desiredColor}
+                    size={30}
+                  />
+                ) : null}
+                <select
+                  id="transaction-user"
+                  value={userId}
                   required
+                  aria-invalid={Boolean(errors.userId)}
                   disabled={mutation.isPending}
-                  onChange={(event) => setValue('amount', event.target.value.replace(',', '.'))}
-                />
-              </label>
+                  onChange={(event) => setValue('userId', event.target.value)}
+                >
+                  {members.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.displayName}
+                      {member.id === currentUser.data?.user?.id ? ' (you)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </span>
+            </div>
+
+            <div className="transactionAmountDateRow">
+              <div className="transactionField transactionAmountField">
+                <label htmlFor="transaction-amount">Amount</label>
+                <span className="transactionAmountControl">
+                  <span aria-hidden="true">{currencySymbol}</span>
+                  <input
+                    id="transaction-amount"
+                    value={amount}
+                    type="text"
+                    inputMode="decimal"
+                    pattern="\d{1,12}([.,]\d{1,2})?"
+                    placeholder="0.00"
+                    required
+                    aria-invalid={Boolean(errors.amount)}
+                    aria-describedby={errors.amount ? 'transaction-amount-error' : undefined}
+                    disabled={mutation.isPending}
+                    onChange={(event) => setValue('amount', event.target.value.replace(',', '.'))}
+                  />
+                </span>
+                {errors.amount ? (
+                  <small id="transaction-amount-error" className="transactionFieldError">
+                    {errors.amount.message}
+                  </small>
+                ) : null}
+              </div>
 
               <label className="transactionField transactionDateField">
                 <span>
@@ -803,6 +946,12 @@ export function TransactionForm({
                 />
               </label>
             </div>
+            {isCrossMonth ? (
+              <p className="transactionMonthNotice" role="status">
+                This transaction will be saved to {destinationLabel}, not {selectedMonthLabel}.
+                {recurring ? ` The recurring schedule will start in ${destinationLabel}.` : ''}
+              </p>
+            ) : null}
           </div>
 
           <div className="recurringSection" data-onboarding="recurring">
@@ -844,9 +993,10 @@ export function TransactionForm({
                     disabled={mutation.isPending}
                     freeMoving
                     format={String}
-                    onChange={(option) =>
+                    onChange={(option) => (
+                      setDirty(true),
                       setValue('recurrenceInterval', option, { shouldValidate: true })
-                    }
+                    )}
                   />
                   <RecurrenceWheel
                     label="Recurrence unit"
@@ -854,9 +1004,10 @@ export function TransactionForm({
                     value={recurrenceUnit}
                     disabled={mutation.isPending}
                     format={(option) => `${option}${recurrenceInterval === 1 ? '' : 's'}`}
-                    onChange={(option) =>
+                    onChange={(option) => (
+                      setDirty(true),
                       setValue('recurrenceUnit', option, { shouldValidate: true })
-                    }
+                    )}
                   />
                   <p aria-live="polite">
                     Every {recurrenceInterval} {recurrenceUnit}
@@ -944,9 +1095,11 @@ export function TransactionForm({
           ) : null}
 
           {Object.keys(errors).length ? (
-            <Alert variant="error">
-              {validationMessage ?? 'Check the transaction fields and try again.'}
-            </Alert>
+            <div ref={errorSummaryRef} tabIndex={-1} className="transactionErrorSummary">
+              <Alert variant="error">
+                {validationMessage ?? 'Check the transaction fields and try again.'}
+              </Alert>
+            </div>
           ) : null}
 
           {mutation.isError ? (
@@ -959,7 +1112,7 @@ export function TransactionForm({
             <Button
               type="button"
               variant="secondary"
-              onClick={onClose}
+              onClick={requestClose}
               disabled={mutation.isPending}
             >
               Cancel
@@ -983,8 +1136,10 @@ export function TransactionForm({
                   ? 'Saving…'
                   : 'Adding…'
                 : transaction
-                  ? 'Save changes'
-                  : 'Add transaction'}
+                  ? isCrossMonth
+                    ? `Save to ${destinationLabel}`
+                    : 'Save changes'
+                  : `Add to ${destinationLabel}`}
             </Button>
           </div>
         </form>

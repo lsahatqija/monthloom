@@ -1,10 +1,24 @@
 'use client';
 
 import { Defaults, type HouseholdTransaction } from '@monthloom/contracts';
-import { RefreshCw } from 'lucide-react';
+import {
+  Banknote,
+  CalendarCheck,
+  CalendarDays,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  SlidersHorizontal,
+  Store,
+  Tags,
+  UserRound,
+  X,
+} from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { useMotionPresence } from '../../components/motion/use-motion-presence';
 import { ProfileImage } from '../../components/profile-image';
 import { Alert, LoadingIndicator } from '../../components/ui/index';
 import { isApiClientError } from '../../lib/api/errors';
@@ -25,6 +39,7 @@ import { useDashboardSelection } from './dashboard/use-dashboard-selection';
 import { useTransactionView } from './dashboard/use-transaction-view';
 import { FinancialIcon, financialIconLabel } from './financial-icon';
 import { TransactionForm } from './transaction-form';
+import { transactionTypeLabel as formatTransactionType } from './transaction-type';
 
 const transactionCollator = new Intl.Collator(undefined, {
   numeric: true,
@@ -35,25 +50,13 @@ function monthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-function monthOptions(): Array<{
-  value: string;
-  label: string;
-  isCurrent: boolean;
-  isFuture: boolean;
-}> {
-  const formatter = new Intl.DateTimeFormat(undefined, { month: 'short' });
-  const today = new Date();
-  const offsets = Array.from({ length: 25 }, (_, index) => index - 12);
-  return offsets.map((offset) => {
-    const date = new Date(today.getFullYear(), today.getMonth() + offset, 1);
-    const isCurrent = offset === 0;
-    return {
-      value: monthKey(date),
-      label: `${formatter.format(date)} '${String(date.getFullYear()).slice(-2)}${isCurrent ? ' (current)' : ''}`,
-      isCurrent,
-      isFuture: offset > 0,
-    };
-  });
+function isMobileFilterSheet(): boolean {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 620px)').matches;
+}
+
+function shiftMonth(month: string, offset: number): string {
+  const [year, monthNumber] = month.split('-').map(Number);
+  return monthKey(new Date(year!, monthNumber! - 1 + offset, 1));
 }
 
 function EntryIcon({ entry }: { entry: HouseholdTransaction }) {
@@ -88,14 +91,196 @@ function RecurringIcon({ entry }: { entry: HouseholdTransaction }) {
   );
 }
 
+const transactionHeaderIcons = {
+  date: CalendarDays,
+  amount: Banknote,
+  source: Store,
+  type: Tags,
+  user: UserRound,
+};
+
+function SortableHeader({
+  column,
+  label,
+  className,
+  activeColumn,
+  direction,
+  onSort,
+}: {
+  column: TransactionSortKey;
+  label: string;
+  className?: string;
+  activeColumn: TransactionSortKey;
+  direction: 'ascending' | 'descending';
+  onSort: (column: TransactionSortKey) => void;
+}) {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [compact, setCompact] = useState(false);
+  const HeaderIcon = transactionHeaderIcons[column];
+
+  useLayoutEffect(() => {
+    const button = buttonRef.current;
+    if (!button || typeof ResizeObserver === 'undefined') return;
+
+    const measure = () => {
+      const [icon, title, indicator] = Array.from(button.children) as HTMLElement[];
+      const gap = Number.parseFloat(getComputedStyle(button).columnGap) || 0;
+      const requiredWidth =
+        (icon?.getBoundingClientRect().width ?? 0) +
+        Math.max(title?.scrollWidth ?? 0, title?.getBoundingClientRect().width ?? 0) +
+        (indicator?.getBoundingClientRect().width ?? 0) +
+        gap * 2;
+      setCompact(requiredWidth > button.clientWidth);
+    };
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(button);
+    measure();
+    void document.fonts?.ready.then(measure);
+    return () => observer.disconnect();
+  }, [label]);
+
+  return (
+    <th className={className} aria-sort={activeColumn === column ? direction : 'none'}>
+      <button
+        ref={buttonRef}
+        type="button"
+        className={`transactionSortButton${compact ? ' isCompact' : ''}`}
+        aria-label={`Sort by ${label}`}
+        onClick={() => onSort(column)}
+      >
+        <HeaderIcon className="transactionHeaderIcon" aria-hidden="true" />
+        <span className="transactionHeaderLabel">{label}</span>
+        <span className="transactionSortIndicator" aria-hidden="true">
+          {activeColumn === column ? (direction === 'ascending' ? '↑' : '↓') : '↕'}
+        </span>
+      </button>
+    </th>
+  );
+}
+
 export function HouseholdDashboard() {
-  const months = useMemo(monthOptions, []);
   const { month, setMonth, householdId, setHouseholdId } = useDashboardSelection();
-  const selectedMonthIndex = months.findIndex((option) => option.value === month);
+  const [selectedYear, selectedMonthNumber] = month.split('-').map(Number);
+  const currentMonthKey = monthKey(new Date());
+  const monthLabel = new Intl.DateTimeFormat(undefined, {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(selectedYear!, selectedMonthNumber! - 1, 1));
+  const compactMonthLabel = `${String(selectedMonthNumber).padStart(2, '0')}-'${String(selectedYear).slice(-2)}`;
+  const monthNames = useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, index) => ({
+        value: index + 1,
+        label: new Intl.DateTimeFormat(undefined, { month: 'long' }).format(
+          new Date(2024, index, 1),
+        ),
+      })),
+    [],
+  );
+  const yearOptions = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: 21 }, (_, index) => currentYear - 10 + index);
+    if (!years.includes(selectedYear!)) years.push(selectedYear!);
+    return years.sort((a, b) => a - b);
+  }, [selectedYear]);
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const previousMonthRef = useRef(month);
+  const monthDirection =
+    month === previousMonthRef.current
+      ? 'none'
+      : month > previousMonthRef.current
+        ? 'forward'
+        : 'backward';
+  const [compactMonth, setCompactMonth] = useState(false);
+  const [monthLabelWidth, setMonthLabelWidth] = useState<number>();
+  const dashboardSelectorsRef = useRef<HTMLDivElement>(null);
+  const householdControlRef = useRef<HTMLDivElement>(null);
+  const monthNavigationRef = useRef<HTMLDivElement>(null);
+  const monthLabelRef = useRef<HTMLSpanElement>(null);
+  const monthLabelMeasureRef = useRef<HTMLSpanElement>(null);
+  const compactMonthLabelMeasureRef = useRef<HTMLSpanElement>(null);
+  const monthPickerRef = useRef<HTMLDivElement>(null);
+  const monthPickerTriggerRef = useRef<HTMLButtonElement>(null);
+  const addTransactionTriggerRef = useRef<HTMLButtonElement>(null);
   const [addingTransaction, setAddingTransaction] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<HouseholdTransaction | null>(null);
   const [transactionToRemove, setTransactionToRemove] = useState<HouseholdTransaction | null>(null);
+  const [savedDestinationMonth, setSavedDestinationMonth] = useState<string | null>(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const filterSummaryRef = useRef<HTMLElement>(null);
+  const filterSheetRef = useRef<HTMLDivElement>(null);
+  const addingTransactionPresence = useMotionPresence(addingTransaction);
+  const editingTransactionPresence = useMotionPresence(Boolean(transactionToEdit));
+  const removingTransactionPresence = useMotionPresence(Boolean(transactionToRemove));
+  const filtersPresence = useMotionPresence(filtersExpanded);
+  const lastTransactionToEditRef = useRef<HouseholdTransaction | null>(null);
+  const lastTransactionToRemoveRef = useRef<HouseholdTransaction | null>(null);
+  if (transactionToEdit) lastTransactionToEditRef.current = transactionToEdit;
+  if (transactionToRemove) lastTransactionToRemoveRef.current = transactionToRemove;
   const householdsQuery = useHouseholds();
+  useEffect(() => {
+    previousMonthRef.current = month;
+  }, [month]);
+  useLayoutEffect(() => {
+    const container = dashboardSelectorsRef.current;
+    const householdControl = householdControlRef.current;
+    const navigation = monthNavigationRef.current;
+    const visibleLabel = monthLabelRef.current;
+    const fullLabel = monthLabelMeasureRef.current;
+    const compactLabel = compactMonthLabelMeasureRef.current;
+    if (
+      !container ||
+      !householdControl ||
+      !navigation ||
+      !visibleLabel ||
+      !fullLabel ||
+      !compactLabel ||
+      typeof ResizeObserver === 'undefined'
+    )
+      return;
+
+    const measure = () => {
+      const gap = Number.parseFloat(getComputedStyle(container).columnGap) || 0;
+      const householdContent = householdControl.querySelector<HTMLElement>(
+        '.householdNameText, select',
+      );
+      const householdWidth = householdContent?.scrollWidth ?? householdControl.scrollWidth;
+      const fullLabelWidth = fullLabel.getBoundingClientRect().width;
+      const compactLabelWidth = compactLabel.getBoundingClientRect().width;
+      const fullNavigationWidth =
+        navigation.getBoundingClientRect().width -
+        visibleLabel.getBoundingClientRect().width +
+        fullLabelWidth;
+      const shouldCompact = householdWidth + fullNavigationWidth + gap > container.clientWidth;
+      setCompactMonth(shouldCompact);
+      setMonthLabelWidth(shouldCompact ? compactLabelWidth : fullLabelWidth);
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    observer.observe(householdControl);
+    measure();
+    void document.fonts?.ready.then(measure);
+    return () => observer.disconnect();
+  }, [monthLabel]);
+  useEffect(() => {
+    if (!monthPickerOpen) return;
+    const closePicker = (event: MouseEvent) => {
+      if (!monthPickerRef.current?.contains(event.target as Node)) setMonthPickerOpen(false);
+    };
+    const closePickerWithKeyboard = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMonthPickerOpen(false);
+        monthPickerTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('mousedown', closePicker);
+    document.addEventListener('keydown', closePickerWithKeyboard);
+    return () => {
+      document.removeEventListener('mousedown', closePicker);
+      document.removeEventListener('keydown', closePickerWithKeyboard);
+    };
+  }, [monthPickerOpen]);
   useEffect(() => {
     if (!householdsQuery.data) return;
     setHouseholdId((current) => {
@@ -109,6 +294,49 @@ export function HouseholdDashboard() {
   }, [householdsQuery.data, setHouseholdId]);
   const query = useHouseholdMonth(householdId, month);
   const transactionView = useTransactionView(query.data?.transactions ?? []);
+  const filteredRecapPresence = useMotionPresence(transactionView.activeFilterCount > 0);
+  const filterChipsPresence = useMotionPresence(
+    transactionView.activeFilterCount > 0 && !filtersExpanded,
+  );
+  const lastFilteredSummaryRef = useRef(transactionView.filteredSummary);
+  const lastActiveFiltersRef = useRef<Array<{ key: keyof TransactionFilters; label: string }>>([]);
+  if (transactionView.activeFilterCount) {
+    lastFilteredSummaryRef.current = transactionView.filteredSummary;
+  }
+  useEffect(() => {
+    if (!filtersExpanded || !filtersPresence.visible || !isMobileFilterSheet()) return;
+
+    const sheet = filterSheetRef.current;
+    const focusable = () =>
+      Array.from(
+        sheet?.querySelectorAll<HTMLElement>('button:not([disabled]), select, input') ?? [],
+      );
+    focusable()[0]?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setFiltersExpanded(false);
+        filterSummaryRef.current?.focus();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const controls = focusable();
+      const first = controls[0];
+      const last = controls.at(-1);
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [filtersExpanded, filtersPresence.visible]);
   if (householdsQuery.isPending || (householdsQuery.data?.length && query.isPending)) {
     return (
       <div className="dashboardState">
@@ -156,7 +384,6 @@ export function HouseholdDashboard() {
   const { household, summary, transactions } = query.data;
   const {
     activeFilterCount,
-    filteredSummary,
     filters,
     resetFilters,
     setFilters,
@@ -168,14 +395,14 @@ export function HouseholdDashboard() {
   const filteredTransactions = sortedTransactions;
   const savings = summarizeTransactions(transactions).savings;
   const sortableHeader = (key: TransactionSortKey, label: string, className?: string) => (
-    <th className={className} aria-sort={sortKey === key ? sortDirection : 'none'}>
-      <button type="button" className="transactionSortButton" onClick={() => sortBy(key)}>
-        {label}
-        <span className="transactionSortIndicator" aria-hidden="true">
-          {sortKey === key ? (sortDirection === 'ascending' ? '↑' : '↓') : '↕'}
-        </span>
-      </button>
-    </th>
+    <SortableHeader
+      column={key}
+      label={label}
+      className={className}
+      activeColumn={sortKey}
+      direction={sortDirection}
+      onSort={sortBy}
+    />
   );
   const money = new Intl.NumberFormat(undefined, {
     style: 'currency',
@@ -190,74 +417,254 @@ export function HouseholdDashboard() {
         .map((transaction) => transaction.type!),
     ),
   ).sort(transactionCollator.compare);
+  const amountRangeMax = Math.max(
+    100,
+    Math.ceil(
+      Math.max(
+        ...transactions.map((transaction) => Number(transaction.amount)),
+        Number(filters.amountOver) || 0,
+        Number(filters.amountUnder) || 0,
+      ) / 100,
+    ) * 100,
+  );
+  const amountRangeMinValue = Math.min(Number(filters.amountOver) || 0, amountRangeMax - 0.01);
+  const amountRangeMaxValue = Math.max(
+    Number(filters.amountUnder) || amountRangeMax,
+    amountRangeMinValue + 0.01,
+  );
   const updateFilter = <Key extends keyof TransactionFilters>(
     key: Key,
     value: TransactionFilters[Key],
   ) => setFilters((current) => ({ ...current, [key]: value }));
+  const closeFilters = () => {
+    setFiltersExpanded(false);
+    filterSummaryRef.current?.focus();
+  };
+  const activeFilters: Array<{ key: keyof TransactionFilters; label: string }> = [
+    filters.type !== 'all'
+      ? {
+          key: 'type',
+          label:
+            filters.type === 'income'
+              ? 'Income'
+              : filters.type === 'expense'
+                ? 'Expenses'
+                : formatTransactionType(filters.type.slice(8)),
+        }
+      : null,
+    filters.userId !== 'all'
+      ? {
+          key: 'userId',
+          label:
+            query.data.members.find((member) => member.id === filters.userId)?.displayName ??
+            'Selected user',
+        }
+      : null,
+    filters.sourceId !== 'all'
+      ? {
+          key: 'sourceId',
+          label:
+            query.data.sources.find((source) => source.id === filters.sourceId)?.displayName ??
+            'Selected source',
+        }
+      : null,
+    filters.recurring !== 'all'
+      ? {
+          key: 'recurring',
+          label: filters.recurring === 'recurring' ? 'Recurring' : 'One-off',
+        }
+      : null,
+    filters.dateFrom ? { key: 'dateFrom', label: `From ${filters.dateFrom}` } : null,
+    filters.dateTo ? { key: 'dateTo', label: `To ${filters.dateTo}` } : null,
+    filters.amountOver
+      ? { key: 'amountOver', label: `Over ${money.format(Number(filters.amountOver))}` }
+      : null,
+    filters.amountUnder
+      ? { key: 'amountUnder', label: `Under ${money.format(Number(filters.amountUnder))}` }
+      : null,
+  ].filter((filter): filter is { key: keyof TransactionFilters; label: string } => Boolean(filter));
+  if (activeFilters.length) lastActiveFiltersRef.current = activeFilters;
+  const removeFilter = (key: keyof TransactionFilters) =>
+    updateFilter(
+      key,
+      key === 'type' || key === 'userId' || key === 'sourceId' || key === 'recurring' ? 'all' : '',
+    );
 
   return (
-    <section className="householdDashboard" aria-label="Household dashboard">
+    <section
+      className="householdDashboard"
+      aria-label="Household dashboard"
+      aria-busy={query.isFetching}
+    >
       <div className="dashboardHeading">
-        <div className="dashboardSelectors" data-onboarding="month-overview">
-          <div className="householdControl">
+        <div
+          ref={dashboardSelectorsRef}
+          className="dashboardSelectors"
+          data-onboarding="month-overview"
+        >
+          <div ref={householdControlRef} className="householdControl">
             {(householdsQuery.data?.length ?? 0) > 1 ? (
-              <label className="householdPicker">
-                <span className="srOnly">Household</span>
-                <select
-                  value={householdId}
-                  onChange={(event) => {
-                    setHouseholdId(event.target.value);
-                    resetFilters();
-                  }}
-                >
-                  {householdsQuery.data?.map((entry) => (
-                    <option key={entry.id} value={entry.id}>
-                      {entry.name}
-                      {entry.isPrimary ? ' (default)' : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <>
+                <label className="householdPicker">
+                  <span className="srOnly">Household</span>
+                  <select
+                    value={householdId}
+                    onChange={(event) => {
+                      setHouseholdId(event.target.value);
+                      resetFilters();
+                    }}
+                  >
+                    {householdsQuery.data?.map((entry) => (
+                      <option key={entry.id} value={entry.id}>
+                        {entry.name}
+                        {entry.isPrimary ? ' (default)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <h1 className="srOnly">{household.name}</h1>
+              </>
             ) : (
-              <h1 className="householdNameText">{household.name}</h1>
+              <h1 className="householdNameText" title={household.name}>
+                {household.name}
+              </h1>
             )}
           </div>
-          <div className="monthNavigation">
+          <div ref={monthNavigationRef} className="monthNavigation" aria-label="Month navigation">
+            <button
+              type="button"
+              className={`currentMonthButton${month === currentMonthKey ? ' isHidden' : ''}`}
+              aria-label="Current month"
+              aria-hidden={month === currentMonthKey ? 'true' : undefined}
+              tabIndex={month === currentMonthKey ? -1 : undefined}
+              title={month === currentMonthKey ? undefined : 'Current month'}
+              onClick={() => setMonth(currentMonthKey)}
+            >
+              <CalendarCheck aria-hidden="true" />
+            </button>
             <button
               type="button"
               className="monthNavigationButton"
               aria-label="Previous month"
-              disabled={selectedMonthIndex <= 0}
-              onClick={() => setMonth(months[selectedMonthIndex - 1]!.value)}
+              onClick={() => setMonth(shiftMonth(month, -1))}
             >
-              <span aria-hidden="true">←</span>
+              <ChevronLeft aria-hidden="true" />
             </button>
-            <label className="monthPicker">
-              <span className="srOnly">Month</span>
-              <select value={month} onChange={(event) => setMonth(event.target.value)}>
-                {months.map((option) => (
-                  <option
-                    key={option.value}
-                    value={option.value}
-                    className={option.isFuture ? 'futureMonthOption' : undefined}
+            <div ref={monthPickerRef} className="monthPicker">
+              <div className="monthHeading">
+                <button
+                  ref={monthPickerTriggerRef}
+                  type="button"
+                  className="monthPickerTrigger"
+                  aria-label={`Choose month, ${monthLabel}`}
+                  aria-expanded={monthPickerOpen}
+                  aria-controls="month-picker-popover"
+                  onClick={() => setMonthPickerOpen((open) => !open)}
+                >
+                  <span
+                    key={month}
+                    ref={monthLabelRef}
+                    className="monthLabelText"
+                    data-direction={monthDirection}
+                    style={monthLabelWidth ? { width: `${monthLabelWidth}px` } : undefined}
                   >
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+                    {compactMonth ? compactMonthLabel : monthLabel}
+                  </span>
+                  <span ref={monthLabelMeasureRef} className="monthLabelMeasure" aria-hidden="true">
+                    {monthNames.map((option) => (
+                      <span key={option.value}>{`${option.label} ${selectedYear}`}</span>
+                    ))}
+                  </span>
+                  <span
+                    ref={compactMonthLabelMeasureRef}
+                    className="monthLabelMeasure"
+                    aria-hidden="true"
+                  >
+                    {"00-'00"}
+                  </span>
+                  <ChevronDown aria-hidden="true" />
+                </button>
+              </div>
+              {monthPickerOpen ? (
+                <div
+                  id="month-picker-popover"
+                  className="monthPickerPopover"
+                  role="group"
+                  aria-label="Choose month"
+                >
+                  <label>
+                    <span>Month</span>
+                    <select
+                      value={selectedMonthNumber}
+                      onChange={(event) => {
+                        setMonth(`${selectedYear}-${event.target.value.padStart(2, '0')}`);
+                        setMonthPickerOpen(false);
+                      }}
+                    >
+                      {monthNames.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Year</span>
+                    <select
+                      value={selectedYear}
+                      onChange={(event) => {
+                        setMonth(
+                          `${event.target.value}-${String(selectedMonthNumber).padStart(2, '0')}`,
+                        );
+                        setMonthPickerOpen(false);
+                      }}
+                    >
+                      {yearOptions.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              ) : null}
+            </div>
             <button
               type="button"
               className="monthNavigationButton"
               aria-label="Next month"
-              disabled={selectedMonthIndex < 0 || selectedMonthIndex >= months.length - 1}
-              onClick={() => setMonth(months[selectedMonthIndex + 1]!.value)}
+              onClick={() => setMonth(shiftMonth(month, 1))}
             >
-              <span aria-hidden="true">→</span>
+              <ChevronRight aria-hidden="true" />
             </button>
           </div>
         </div>
       </div>
+      {savedDestinationMonth ? (
+        <div className="transactionSavedNotice" role="status">
+          <span>
+            Transaction saved to{' '}
+            {new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(
+              new Date(`${savedDestinationMonth}-01T12:00:00`),
+            )}
+            .
+          </span>
+          {savedDestinationMonth !== month ? (
+            <button
+              type="button"
+              onClick={() => {
+                setMonth(savedDestinationMonth);
+                setSavedDestinationMonth(null);
+              }}
+            >
+              View{' '}
+              {new Intl.DateTimeFormat(undefined, { month: 'long' }).format(
+                new Date(`${savedDestinationMonth}-01T12:00:00`),
+              )}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       <TransactionSummary
         currency={household.currency}
         totals={{
@@ -267,8 +674,13 @@ export function HouseholdDashboard() {
           balance: summary.leftover,
         }}
       />
-      {activeFilterCount ? (
-        <TransactionSummary currency={household.currency} totals={filteredSummary} filtered />
+      {filteredRecapPresence.visible ? (
+        <TransactionSummary
+          currency={household.currency}
+          totals={lastFilteredSummaryRef.current}
+          filtered
+          motionState={filteredRecapPresence.state}
+        />
       ) : null}
 
       <div className="transactionPanel">
@@ -277,6 +689,7 @@ export function HouseholdDashboard() {
           <div className="transactionPanelActions">
             <span>{transactions.length} entries</span>
             <button
+              ref={addTransactionTriggerRef}
               type="button"
               className="addTransactionButton"
               data-onboarding="add-transaction"
@@ -286,149 +699,260 @@ export function HouseholdDashboard() {
             </button>
           </div>
         </div>
-        <details className="transactionFilters">
-          <summary>
-            <span className="transactionFilterTitle">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 6h16M7 12h10m-7 6h4" />
-              </svg>
-              Filters
-              {activeFilterCount ? (
-                <span className="transactionFilterCount">{activeFilterCount}</span>
-              ) : null}
-            </span>
-            <span className="transactionFilterHint">
-              {activeFilterCount ? `${filteredTransactions.length} matching` : 'Show options'}
-            </span>
-          </summary>
-          <div className="transactionFilterDrawer">
-            <label className="transactionFilterField">
-              <span>Type</span>
-              <select
-                value={filters.type}
-                onChange={(event) => updateFilter('type', event.target.value)}
-              >
-                <option value="all">All types</option>
-                <option value="income">Income</option>
-                <option value="expense">All expenses</option>
-                {expenseTypes.map((type) => (
-                  <option key={type} value={`expense:${type}`}>
-                    {type
-                      .split('-')
-                      .map((word) => word[0]!.toUpperCase() + word.slice(1))
-                      .join(' ')}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="transactionFilterField">
-              <span>User</span>
-              <select
-                value={filters.userId}
-                onChange={(event) => updateFilter('userId', event.target.value)}
-              >
-                <option value="all">All users</option>
-                {query.data.members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.displayName}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="transactionFilterField">
-              <span>Source</span>
-              <select
-                value={filters.sourceId}
-                onChange={(event) => updateFilter('sourceId', event.target.value)}
-              >
-                <option value="all">All sources</option>
-                {query.data.sources.map((source) => (
-                  <option key={source.id} value={source.id}>
-                    {source.displayName}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="transactionFilterField">
-              <span>Recurring</span>
-              <select
-                value={filters.recurring}
-                onChange={(event) =>
-                  updateFilter('recurring', event.target.value as RecurringFilter)
-                }
-              >
-                <option value="all">All transactions</option>
-                <option value="recurring">Recurring only</option>
-                <option value="one-off">One-off only</option>
-              </select>
-            </label>
-            <label className="transactionFilterField">
-              <span>Date from</span>
-              <input
-                type="date"
-                value={filters.dateFrom}
-                max={filters.dateTo || undefined}
-                onChange={(event) => updateFilter('dateFrom', event.target.value)}
-              />
-            </label>
-            <label className="transactionFilterField">
-              <span>Date to</span>
-              <input
-                type="date"
-                value={filters.dateTo}
-                min={filters.dateFrom || undefined}
-                onChange={(event) => updateFilter('dateTo', event.target.value)}
-              />
-            </label>
-            <label className="transactionFilterField">
-              <span>Amount over</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={filters.amountOver}
-                onChange={(event) => updateFilter('amountOver', event.target.value)}
-              />
-            </label>
-            <label className="transactionFilterField">
-              <span>Amount under</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="0.01"
-                placeholder="No maximum"
-                value={filters.amountUnder}
-                onChange={(event) => updateFilter('amountUnder', event.target.value)}
-              />
-            </label>
-            <div className="transactionFilterFooter">
-              <span aria-live="polite">
-                Showing {filteredTransactions.length} of {transactions.length} entries
+        <div className="transactionFiltersRegion">
+          <details
+            className="transactionFilters"
+            open={filtersExpanded}
+          >
+            <summary
+              ref={filterSummaryRef}
+              onClick={(event) => {
+                event.preventDefault();
+                setFiltersExpanded((expanded) => !expanded);
+              }}
+            >
+              <span className="transactionFilterTitle">
+                <SlidersHorizontal aria-hidden="true" />
+                Filters
+                {activeFilterCount ? (
+                  <span className="transactionFilterCount">{activeFilterCount}</span>
+                ) : null}
               </span>
-              {activeFilterCount ? (
-                <button type="button" onClick={resetFilters}>
-                  Clear filters
+              <span className="transactionFilterHint">
+                {activeFilterCount ? `${filteredTransactions.length} matching` : 'Show options'}
+              </span>
+            </summary>
+          </details>
+          <div
+            className="transactionFilterDrawer"
+            data-motion={filtersPresence.state}
+            aria-hidden={filtersPresence.state === 'exiting' ? 'true' : undefined}
+            inert={filtersPresence.state === 'exiting' ? ('' as unknown as boolean) : undefined}
+            hidden={!filtersPresence.visible}
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget && isMobileFilterSheet()) closeFilters();
+            }}
+          >
+            <div
+              ref={filterSheetRef}
+              className="transactionFilterSheet"
+              role="dialog"
+              aria-modal={filtersExpanded && isMobileFilterSheet() ? 'true' : undefined}
+              aria-label="Transaction filters"
+            >
+              <div className="transactionFilterSheetHeader">
+                <div>
+                  <strong>Filter activity</strong>
+                  <span>Refine this month&apos;s activity</span>
+                </div>
+                <button type="button" aria-label="Close filters" onClick={closeFilters}>
+                  <X aria-hidden="true" />
                 </button>
-              ) : null}
+              </div>
+              <div className="transactionFilterGroup transactionFilterGroupPrimary">
+                <div className="transactionFilterGroupFields">
+                  <label className="transactionFilterField">
+                    <span>Type</span>
+                    <select
+                      value={filters.type}
+                      onChange={(event) => updateFilter('type', event.target.value)}
+                    >
+                      <option value="all">All types</option>
+                      <option value="income">Income</option>
+                      <option value="expense">All expenses</option>
+                      {expenseTypes.map((type) => (
+                        <option key={type} value={`expense:${type}`}>
+                          {type
+                            .split('-')
+                            .map((word) => word[0]!.toUpperCase() + word.slice(1))
+                            .join(' ')}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="transactionFilterField">
+                    <span>Source</span>
+                    <select
+                      value={filters.sourceId}
+                      onChange={(event) => updateFilter('sourceId', event.target.value)}
+                    >
+                      <option value="all">All sources</option>
+                      {query.data.sources.map((source) => (
+                        <option key={source.id} value={source.id}>
+                          {source.displayName}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div className="transactionFilterGroup transactionFilterGroupSecondary">
+                <div className="transactionFilterGroupFields">
+                  <label className="transactionFilterField">
+                    <span>User</span>
+                    <select
+                      value={filters.userId}
+                      onChange={(event) => updateFilter('userId', event.target.value)}
+                    >
+                      <option value="all">All users</option>
+                      {query.data.members.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.displayName}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="transactionFilterField">
+                    <span>Recurring</span>
+                    <select
+                      value={filters.recurring}
+                      onChange={(event) =>
+                        updateFilter('recurring', event.target.value as RecurringFilter)
+                      }
+                    >
+                      <option value="all">All transactions</option>
+                      <option value="recurring">Recurring only</option>
+                      <option value="one-off">One-off only</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div className="transactionFilterGroup transactionFilterGroupDate">
+                <div className="transactionFilterGroupFields">
+                  <label className="transactionFilterField">
+                    <span>From</span>
+                    <input
+                      type="date"
+                      value={filters.dateFrom}
+                      max={filters.dateTo || undefined}
+                      onChange={(event) => updateFilter('dateFrom', event.target.value)}
+                    />
+                  </label>
+                  <label className="transactionFilterField">
+                    <span>To</span>
+                    <input
+                      type="date"
+                      value={filters.dateTo}
+                      min={filters.dateFrom || undefined}
+                      onChange={(event) => updateFilter('dateTo', event.target.value)}
+                    />
+                  </label>
+                </div>
+              </div>
+              <div
+                className="transactionFilterGroup transactionFilterGroupAmount"
+                role="group"
+                aria-label={`Amount range in ${household.currency}`}
+              >
+                <div className="amountRangeControl">
+                  <label className="amountRangeValue">
+                    <span className="srOnly">Minimum amount in {household.currency}</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      max={filters.amountUnder || amountRangeMax}
+                      step="0.01"
+                      placeholder="Min"
+                      value={filters.amountOver}
+                      onChange={(event) => updateFilter('amountOver', event.target.value)}
+                    />
+                    <span aria-hidden="true">{household.currency}</span>
+                  </label>
+                  <div className="amountRangeSliders">
+                    <input
+                      type="range"
+                      aria-label={`Minimum amount in ${household.currency}`}
+                      min="0"
+                      max={amountRangeMax}
+                      step="0.01"
+                      value={amountRangeMinValue}
+                      onChange={(event) => {
+                        const value = Math.min(
+                          Number(event.target.value),
+                          amountRangeMaxValue - 0.01,
+                        );
+                        updateFilter('amountOver', value === 0 ? '' : String(value));
+                      }}
+                    />
+                    <input
+                      type="range"
+                      aria-label={`Maximum amount in ${household.currency}`}
+                      min="0"
+                      max={amountRangeMax}
+                      step="0.01"
+                      value={amountRangeMaxValue}
+                      onChange={(event) => {
+                        const value = Math.max(
+                          Number(event.target.value),
+                          amountRangeMinValue + 0.01,
+                        );
+                        updateFilter('amountUnder', value === amountRangeMax ? '' : String(value));
+                      }}
+                    />
+                  </div>
+                  <label className="amountRangeValue">
+                    <span className="srOnly">Maximum amount in {household.currency}</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min={filters.amountOver || 0}
+                      max={amountRangeMax}
+                      step="0.01"
+                      placeholder="Max"
+                      value={filters.amountUnder}
+                      onChange={(event) => updateFilter('amountUnder', event.target.value)}
+                    />
+                    <span aria-hidden="true">{household.currency}</span>
+                  </label>
+                </div>
+              </div>
+              <div className="transactionFilterFooter">
+                <span aria-live="polite">
+                  Showing {filteredTransactions.length} of {transactions.length} entries
+                </span>
+                {activeFilterCount ? (
+                  <button type="button" onClick={resetFilters}>
+                    Clear filters
+                  </button>
+                ) : null}
+              </div>
             </div>
           </div>
-        </details>
+        </div>
+        {filterChipsPresence.visible ? (
+          <div
+            className="transactionFilterChips"
+            aria-label="Active filters"
+            aria-hidden={filterChipsPresence.state === 'exiting' ? 'true' : undefined}
+            data-motion={filterChipsPresence.state}
+          >
+            {lastActiveFiltersRef.current.map((filter) => (
+              <button
+                key={filter.key}
+                type="button"
+                onClick={() => removeFilter(filter.key)}
+                aria-label={`Remove ${filter.label} filter`}
+              >
+                <span>{filter.label}</span>
+                <X aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="transactionScroll">
           {filteredTransactions.length ? (
             <table className="transactionTable">
               <thead>
                 <tr>
-                  {sortableHeader('date', 'Date')}
-                  <th aria-label="Recurring status" />
-                  <th aria-label="Icon" />
+                  <th className="transactionIconColumn" aria-label="Icon and color" />
+                  <th className="transactionRecurringColumn" aria-label="Recurring status" />
+                  {sortableHeader('date', 'Date', 'transactionDateColumn')}
                   {sortableHeader('amount', 'Amount', 'transactionAmountColumn')}
-                  {sortableHeader('source', 'Source')}
-                  {sortableHeader('type', 'Type')}
-                  {sortableHeader('user', 'User')}
-                  <th aria-label="Actions" />
+                  {sortableHeader('source', 'Source', 'transactionSourceColumn')}
+                  {sortableHeader('type', 'Type', 'transactionTypeColumn')}
+                  {sortableHeader('user', 'User', 'transactionUserColumn')}
+                  <th className="transactionActionsColumn" aria-label="Actions" />
                 </tr>
               </thead>
               <tbody>
@@ -441,16 +965,16 @@ export function HouseholdDashboard() {
                         : undefined
                     }
                   >
-                    <td>
+                    <td className="transactionIconColumn">
+                      <EntryIcon entry={entry} />
+                    </td>
+                    <td className="transactionRecurringColumn">
+                      <RecurringIcon entry={entry} />
+                    </td>
+                    <td className="transactionDateColumn">
                       <time dateTime={entry.date}>
                         {date.format(new Date(`${entry.date}T12:00:00`))}
                       </time>
-                    </td>
-                    <td>
-                      <RecurringIcon entry={entry} />
-                    </td>
-                    <td>
-                      <EntryIcon entry={entry} />
                     </td>
                     <td
                       className={`transactionAmountColumn ${
@@ -460,22 +984,24 @@ export function HouseholdDashboard() {
                       {entry.kind === 'income' ? '+' : '−'}
                       {money.format(Number(entry.amount))}
                     </td>
-                    <td>
+                    <td className="transactionSourceColumn">
                       {entry.projected ? <span className="srOnly">Projected: </span> : null}
-                      {entry.source.displayName}
+                      <span className="transactionSourceName" title={entry.source.displayName}>
+                        {entry.source.displayName}
+                      </span>
                     </td>
-                    <td>{transactionTypeLabel(entry)}</td>
-                    <td>
+                    <td className="transactionTypeColumn">{transactionTypeLabel(entry)}</td>
+                    <td className="transactionUserColumn">
                       <span className="transactionUser">
                         <ProfileImage
                           image={entry.user.profileImage}
                           color={entry.user.desiredColor}
                           size={32}
                         />
-                        <span>{entry.user.displayName}</span>
+                        <span className="transactionUserName">{entry.user.displayName}</span>
                       </span>
                     </td>
-                    <td>
+                    <td className="transactionActionsColumn">
                       {entry.projected ? null : (
                         <TransactionMenu
                           entry={entry}
@@ -501,28 +1027,45 @@ export function HouseholdDashboard() {
         </div>
       </div>
 
-      {addingTransaction ? (
+      {addingTransactionPresence.visible ? (
         <TransactionForm
+          motionState={addingTransactionPresence.state}
+          returnFocusTo={addTransactionTriggerRef.current}
           householdId={household.id}
+          currency={household.currency}
+          selectedMonth={month}
           members={query.data.members}
           sources={query.data.sources}
           transactions={query.data.transactions}
-          onClose={() => setAddingTransaction(false)}
+          onSaved={(destinationMonth) => {
+            if (destinationMonth !== month) setSavedDestinationMonth(destinationMonth);
+          }}
+          onClose={() => {
+            setAddingTransaction(false);
+            addTransactionTriggerRef.current?.focus();
+          }}
         />
       ) : null}
-      {transactionToEdit ? (
+      {editingTransactionPresence.visible && lastTransactionToEditRef.current ? (
         <TransactionForm
+          motionState={editingTransactionPresence.state}
           householdId={household.id}
+          currency={household.currency}
+          selectedMonth={month}
           members={query.data.members}
           sources={query.data.sources}
-          transaction={transactionToEdit}
+          transaction={lastTransactionToEditRef.current}
+          onSaved={(destinationMonth) => {
+            if (destinationMonth !== month) setSavedDestinationMonth(destinationMonth);
+          }}
           onClose={() => setTransactionToEdit(null)}
         />
       ) : null}
-      {transactionToRemove ? (
+      {removingTransactionPresence.visible && lastTransactionToRemoveRef.current ? (
         <RemoveTransactionDialog
+          motionState={removingTransactionPresence.state}
           householdId={household.id}
-          transaction={transactionToRemove}
+          transaction={lastTransactionToRemoveRef.current}
           onClose={() => setTransactionToRemove(null)}
         />
       ) : null}

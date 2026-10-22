@@ -1,5 +1,5 @@
 import type { HouseholdTransaction } from '@monthloom/contracts';
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -77,14 +77,18 @@ describe('household dashboard', () => {
     renderWithQuery(<HouseholdDashboard />);
     await screen.findByRole('heading', { name: 'Our Home' });
     expect(screen.getByRole('table')).toHaveTextContent(symbol!);
-    expect(screen.getByText('Total income').nextElementSibling).toHaveTextContent(symbol!);
+    expect(
+      within(screen.getByLabelText('Monthly recap')).getByText('Income').nextElementSibling,
+    ).toHaveTextContent(symbol!);
   });
 
   it('only shows total savings when the selected month has savings transactions', async () => {
     mockDashboard();
     const { unmount } = renderWithQuery(<HouseholdDashboard />);
     await screen.findByRole('heading', { name: 'Our Home' });
-    expect(screen.queryByText('Total savings')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText('Monthly recap')).queryByText('Savings'),
+    ).not.toBeInTheDocument();
     unmount();
 
     mockDashboard('EUR', [
@@ -98,7 +102,9 @@ describe('household dashboard', () => {
     ]);
     renderWithQuery(<HouseholdDashboard />);
     await screen.findByRole('heading', { name: 'Our Home' });
-    expect(screen.getByText('Total savings').nextElementSibling).toHaveTextContent('25.00');
+    expect(
+      within(screen.getByLabelText('Monthly recap')).getByText('Savings').nextElementSibling,
+    ).toHaveTextContent('25.00');
   });
 
   it('shows an actionable empty state when no households exist', async () => {
@@ -169,26 +175,70 @@ describe('household dashboard', () => {
     expect(screen.queryByRole('button', { name: 'Make default' })).not.toBeInTheDocument();
   });
 
-  it('shows abbreviated months and moves between them with arrow buttons', async () => {
+  it('shows the month in the heading and preserves month navigation in browser history', async () => {
     mockDashboard();
     renderWithQuery(<HouseholdDashboard />);
-    await screen.findByRole('heading', { name: 'Our Home' });
+    await screen.findByText('Our Home');
 
-    const selector = screen.getByRole('combobox', { name: 'Month' });
-    const startingIndex = (selector as HTMLSelectElement).selectedIndex;
-    expect(selector).toHaveDisplayValue(/^[A-Z][a-z]{2} '\d{2} \(current\)$/);
-    expect(screen.getByRole('button', { name: 'Previous month' })).toHaveTextContent('←');
-    expect(screen.getByRole('button', { name: 'Next month' })).toHaveTextContent('→');
-
-    await userEvent.click(screen.getByRole('button', { name: 'Previous month' }));
-    await waitFor(() =>
-      expect(
-        (screen.getByRole('combobox', { name: 'Month' }) as HTMLSelectElement).selectedIndex,
-      ).toBe(startingIndex - 1),
+    expect(screen.getByRole('button', { name: /Choose month/i })).toHaveTextContent(
+      new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(new Date()),
     );
-    const updatedSelector = screen.getByRole('combobox', { name: 'Month' });
-    expect(new URL(window.location.href).searchParams.get('month')).toBe(
-      (updatedSelector as HTMLSelectElement).value,
+    expect(
+      screen.getByRole('button', { name: 'Previous month' }).querySelector('svg'),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Next month' }).querySelector('svg')).toBeTruthy();
+
+    const startingMonth = new URL(window.location.href).searchParams.get('month');
+    await userEvent.click(screen.getByRole('button', { name: 'Previous month' }));
+    expect(new URL(window.location.href).searchParams.get('month')).not.toBe(startingMonth);
+    expect(screen.getByRole('button', { name: 'Current month' })).toBeVisible();
+
+    window.history.back();
+    await waitFor(() =>
+      expect(new URL(window.location.href).searchParams.get('month')).toBe(startingMonth),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Current month' })).not.toBeInTheDocument(),
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: /Choose month/i }));
+    expect(screen.getByRole('group', { name: 'Choose month' })).toBeVisible();
+  });
+
+  it('keeps the dashboard mounted while the next month loads', async () => {
+    let monthRequest = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) => {
+        const url = new URL(String(input));
+        if (url.pathname === '/api/v1/households') {
+          return Response.json({ households: [household] });
+        }
+        if (url.pathname === '/api/v1/households/home/month') {
+          monthRequest += 1;
+          if (monthRequest > 1) return new Promise<Response>(() => undefined);
+          return Response.json({
+            household,
+            month: url.searchParams.get('month'),
+            summary: { income: '100.00', expenses: '20.00', leftover: '80.00' },
+            members: [member],
+            sources: [shop, work],
+            transactions,
+          });
+        }
+        throw new Error(`Unexpected test request: ${url}`);
+      }),
+    );
+
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+    await userEvent.click(screen.getByRole('button', { name: 'Previous month' }));
+
+    expect(screen.getByRole('heading', { name: 'Our Home' })).toBeVisible();
+    expect(screen.queryByText('Loading householdâ€¦')).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Household dashboard' })).toHaveAttribute(
+      'aria-busy',
+      'true',
     );
   });
 
@@ -201,28 +251,131 @@ describe('household dashboard', () => {
       within(table)
         .getAllByRole('columnheader')
         .map((header) => header.textContent),
-    ).toEqual(['Date↓', '', '', 'Amount↕', 'Source↕', 'Type↕', 'User↕', '']);
+    ).toEqual(['', '', 'Date↓', 'Amount↕', 'Source↕', 'Type↕', 'User↕', '']);
     expect(within(table).getAllByRole('row')[1]).toHaveTextContent('Grocer');
-    await userEvent.click(screen.getByRole('button', { name: 'Amount' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Sort by Amount' }));
     expect(within(table).getAllByRole('row')[1]).toHaveTextContent('Grocer');
     await userEvent.click(screen.getByText('Filters', { exact: true }));
     await userEvent.selectOptions(screen.getByLabelText('Type'), 'expense');
     expect(within(table).getAllByRole('row')).toHaveLength(2);
     expect(within(table).queryByText('Employer')).not.toBeInTheDocument();
-    expect(screen.getByText('Total income').nextElementSibling).toHaveTextContent('100.00');
+    expect(
+      within(screen.getByLabelText('Monthly recap')).getByText('Income').nextElementSibling,
+    ).toHaveTextContent('100.00');
     const filteredRecap = screen.getByRole('group', { name: 'Filtered recap' });
-    expect(within(filteredRecap).getByText('Filtered income').nextElementSibling).toHaveTextContent(
-      '0.00',
+    expect(within(filteredRecap).getByText('Filtered totals')).toBeVisible();
+    expect(within(filteredRecap).getByText('Income').nextElementSibling).toHaveTextContent('0.00');
+    expect(within(filteredRecap).getByText('Expenses').nextElementSibling).toHaveTextContent(
+      /-.*20\.00/,
     );
-    expect(
-      within(filteredRecap).getByText('Filtered expenses').nextElementSibling,
-    ).toHaveTextContent('20.00');
-    expect(
-      within(filteredRecap).getByText('Filtered balance').nextElementSibling,
-    ).toHaveTextContent(/-.*20\.00/);
+    expect(within(filteredRecap).getByText('Balance').nextElementSibling).toHaveTextContent(
+      /-.*20\.00/,
+    );
 
-    await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+    await userEvent.click(screen.getByText('Filters', { exact: true }));
+    const activeFilters = screen.getByLabelText('Active filters');
+    expect(
+      within(activeFilters).getByRole('button', { name: 'Remove Expenses filter' }),
+    ).toBeVisible();
+    await userEvent.click(
+      within(activeFilters).getByRole('button', { name: 'Remove Expenses filter' }),
+    );
     expect(screen.queryByRole('group', { name: 'Filtered recap' })).not.toBeInTheDocument();
+  });
+
+  it('dismisses the mobile filter sheet with Escape and retains active filters', async () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
+    mockDashboard();
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+
+    await userEvent.click(screen.getByText('Filters', { exact: true }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Close filters' })).toHaveFocus(),
+    );
+    const type = screen.getByLabelText('Type');
+    await userEvent.selectOptions(type, 'expense');
+    await userEvent.keyboard('{Escape}');
+
+    expect(screen.getByRole('group', { name: 'Filtered recap' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Active filters')).toHaveTextContent('Expenses');
+    expect(screen.getByText('Filters', { exact: true }).closest('details')).not.toHaveAttribute(
+      'open',
+    );
+  });
+
+  it('settles rapid filter toggles in the latest requested state', async () => {
+    mockDashboard();
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+    const trigger = screen.getByText('Filters', { exact: true });
+
+    await userEvent.click(trigger);
+    await userEvent.click(trigger);
+    await userEvent.click(trigger);
+
+    expect(trigger.closest('details')).toHaveAttribute('open');
+    expect(screen.getByLabelText('Type')).toBeVisible();
+    expect(screen.getByLabelText('Type').closest('[data-motion]')).toHaveAttribute(
+      'data-motion',
+      'entered',
+    );
+  });
+
+  it('restores focus as a transaction dialog begins its exit', async () => {
+    mockDashboard();
+    const { container } = renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+    const trigger = screen.getByRole('button', { name: 'Add transaction' });
+
+    await userEvent.click(trigger);
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    expect(trigger).toHaveFocus();
+    expect(screen.queryByRole('dialog', { name: 'Add transaction' })).not.toBeInTheDocument();
+    expect(container.querySelector('.transactionModalBackdrop')).toHaveAttribute('inert');
+  });
+
+  it('keeps reduced-motion exits brief and semantically hidden', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(prefers-reduced-motion: reduce)',
+      })),
+    );
+    mockDashboard();
+    const { container } = renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+    const trigger = screen.getByText('Filters', { exact: true });
+
+    await userEvent.click(trigger);
+    await userEvent.click(trigger);
+
+    expect(container.querySelector('.transactionFilterDrawer')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+    await waitFor(
+      () => expect(container.querySelector('.transactionFilterDrawer')).not.toBeVisible(),
+      { timeout: 160 },
+    );
+  });
+
+  it('filters with the accessible household-currency amount range', async () => {
+    mockDashboard();
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+    await userEvent.click(screen.getByText('Filters', { exact: true }));
+
+    const amountRange = screen.getByRole('group', { name: 'Amount range in EUR' });
+    fireEvent.change(within(amountRange).getByRole('slider', { name: 'Maximum amount in EUR' }), {
+      target: { value: '50' },
+    });
+
+    expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(2);
+    expect(
+      within(amountRange).getByRole('spinbutton', { name: 'Maximum amount in EUR' }),
+    ).toHaveValue(50);
   });
 
   it('shows distinct recurring indicators between the date and transaction icon', async () => {
@@ -244,12 +397,38 @@ describe('household dashboard', () => {
 
     for (const indicator of [recurring, expiring]) {
       const cells = within(indicator.closest('tr')!).getAllByRole('cell');
+      expect(cells[0]?.querySelector('.transactionIcon')).toBeInTheDocument();
       expect(cells[1]).toContainElement(indicator);
-      expect(cells[2]?.querySelector('.transactionIcon')).toBeInTheDocument();
     }
 
     const oneOffRow = table.querySelector('time[datetime="2026-01-03"]')!.closest('tr')!;
     expect(within(oneOffRow).queryByLabelText(/^Every/)).not.toBeInTheDocument();
+  });
+
+  it('uses the responsive single-line transaction column contract', async () => {
+    mockDashboard();
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+
+    const row = within(screen.getByRole('table')).getAllByRole('row')[1]!;
+    const cells = within(row).getAllByRole('cell');
+    expect(cells.map((cell) => cell.className)).toEqual([
+      'transactionIconColumn',
+      'transactionRecurringColumn',
+      'transactionDateColumn',
+      expect.stringContaining('transactionAmountColumn'),
+      'transactionSourceColumn',
+      'transactionTypeColumn',
+      'transactionUserColumn',
+      'transactionActionsColumn',
+    ]);
+    expect(within(row).getByTitle('Grocer')).toHaveClass('transactionSourceName');
+    expect(within(row).getByText('Person')).toHaveClass('transactionUserName');
+    for (const label of ['Date', 'Amount', 'Source', 'Type', 'User']) {
+      expect(
+        screen.getByRole('button', { name: `Sort by ${label}` }).querySelector('svg'),
+      ).toBeInTheDocument();
+    }
   });
 
   it('confirms transaction removal before making the DELETE request', async () => {

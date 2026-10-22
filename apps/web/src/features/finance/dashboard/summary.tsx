@@ -1,3 +1,5 @@
+import type { MotionState } from '../../../components/motion/use-motion-presence';
+
 type Totals = {
   income: number | string;
   expenses: number | string;
@@ -9,41 +11,59 @@ export function TransactionSummary({
   currency,
   totals,
   filtered = false,
+  motionState = 'entered',
 }: {
   currency: string;
   totals: Totals;
   filtered?: boolean;
+  motionState?: MotionState;
 }) {
   const money = new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency,
     currencyDisplay: 'narrowSymbol',
   });
+  const signedMoney = new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
+    currencyDisplay: 'narrowSymbol',
+    signDisplay: 'exceptZero',
+  });
   const hasSavings = totals.savings !== undefined && Number(totals.savings) > 0;
+  const balance = Number(totals.balance);
 
   return (
     <div
-      className={`financeRecap${hasSavings ? ' hasSavings' : ''}`}
+      className={`financeRecap${hasSavings ? ' hasSavings' : ''}${filtered ? ' filteredRecap' : ''}`}
       role={filtered ? 'group' : undefined}
       aria-label={filtered ? 'Filtered recap' : 'Monthly recap'}
+      aria-hidden={motionState === 'exiting' ? 'true' : undefined}
+      data-motion={motionState}
     >
+      {filtered ? <p className="filteredRecapLabel">Filtered totals</p> : null}
       <div>
-        <span>{filtered ? 'Filtered income' : 'Total income'}</span>
-        <strong className="incomeAmount">{money.format(Number(totals.income))}</strong>
+        <span>Income</span>
+        <strong className="incomeAmount">
+          {signedMoney.format(Math.abs(Number(totals.income)))}
+        </strong>
       </div>
       <div>
-        <span>{filtered ? 'Filtered expenses' : 'Total expenses'}</span>
-        <strong className="expenseAmount">{money.format(Number(totals.expenses))}</strong>
+        <span>Expenses</span>
+        <strong className="expenseAmount">
+          {signedMoney.format(-Math.abs(Number(totals.expenses)))}
+        </strong>
       </div>
       {hasSavings ? (
         <div className="savingsRecap">
-          <span>{filtered ? 'Filtered savings' : 'Total savings'}</span>
+          <span>Savings</span>
           <strong className="savingsAmount">{money.format(Number(totals.savings))}</strong>
         </div>
       ) : null}
-      <div className="leftoverRecap">
-        <span>{filtered ? 'Filtered balance' : 'Balance'}</span>
-        <strong>{money.format(Number(totals.balance))}</strong>
+      <div className="balanceRecap">
+        <span>Balance</span>
+        <strong className={balance < 0 ? 'expenseAmount' : undefined}>
+          {signedMoney.format(balance)}
+        </strong>
       </div>
     </div>
   );

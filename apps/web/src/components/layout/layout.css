@@ -3,9 +3,7 @@
   z-index: 30;
   top: 0;
   border-bottom: 1px solid var(--ml-divider);
-  background: color-mix(in srgb, var(--ml-surface) 94%, transparent);
-  box-shadow: 0 2px 16px var(--ml-shadow);
-  backdrop-filter: blur(12px);
+  background: var(--ml-surface);
 }
 :root[data-mode='light'][data-header-style='dark'] .header {
   --header-background: color-mix(in srgb, var(--ml-text) 92%, #000);
@@ -273,7 +271,7 @@
   padding: 0;
   overflow-y: auto;
   border: 1px solid var(--ml-border);
-  border-radius: 22px;
+  border-radius: var(--radius-overlay);
   background: var(--ml-surface);
   color: var(--ml-text);
   box-shadow: 0 24px 70px var(--ml-shadow);
