@@ -146,12 +146,12 @@ Acceptance criteria:
 
 ## Phase 7: Rebalance the monthly recap
 
-- [ ] Make balance the leading figure and keep income, expenses, and savings subordinate.
-- [ ] Replace uppercase tracked labels with sentence case.
-- [ ] Use signs and labels so meaning does not depend on red/green alone.
-- [ ] Remove the resting card shadow and use a flat divided surface or spacing instead.
-- [ ] Replace the duplicate filtered recap with a smaller, explicitly labeled filtered state.
-- [ ] Verify negative, zero, positive, savings, and filtered totals in every supported currency.
+- [x] Place balance at the right edge while keeping all recap figures equally sized.
+- [x] Replace uppercase tracked labels with sentence case.
+- [x] Use signs and labels so meaning does not depend on red/green alone.
+- [x] Remove the resting card shadow and use a flat divided surface or spacing instead.
+- [x] Replace the duplicate filtered recap with a smaller, explicitly labeled filtered state.
+- [x] Verify negative, zero, positive, savings, and filtered totals in every supported currency.
 
 Acceptance criteria:
 
@@ -161,20 +161,48 @@ Acceptance criteria:
 
 ## Phase 8: Visual-system and accessibility cleanup
 
-- [ ] Reserve shadows for floating elements such as dialogs, menus, and popovers.
-- [ ] Remove recurrence-wheel gradients or replace them with flat contrast cues.
-- [ ] Remove unnecessary backdrop blur and verify the modal scrim against every theme.
-- [ ] Reduce panel/control radius variation to one coherent family.
-- [ ] Audit text, icon, border, focus, success, and danger contrast across all themes.
-- [ ] Verify visible focus states and minimum pointer target sizes.
-- [ ] Ensure projected and recurring states have accessible text equivalents.
-- [ ] Review empty, loading, error, and no-match states after layout changes.
+- [x] Reserve shadows for floating elements such as dialogs, menus, and popovers.
+- [x] Remove recurrence-wheel gradients or replace them with flat contrast cues.
+- [x] Remove decorative blur from the persistent header. Retain the subtle 3px blur only behind
+      dismissive modal overlays, where it separates the active dialog from inactive content; the
+      mobile filter sheet uses an opaque scrim without blur.
+- [x] Reduce panel/control radius variation to a coherent 8px control, 12px surface, and 16px
+      floating-overlay scale.
+- [x] Audit text, icon, border, focus, success, and danger contrast across all themes.
+- [x] Verify visible focus states and minimum pointer target sizes.
+- [x] Ensure projected and recurring states have accessible text equivalents.
+- [x] Review empty, loading, error, and no-match states after layout changes.
 
 Acceptance criteria:
 
 - Resting surfaces are visually quieter than interactive overlays.
 - All meaningful text meets WCAG AA contrast.
 - Keyboard focus is visible and no focused control is obscured.
+
+## Phase 9: Motion and state continuity
+
+- [ ] Define shared motion tokens for press, hover, popover, modal, and content transitions.
+- [ ] Animate modal and confirmation-dialog entry and exit with opacity and scale.
+- [ ] Animate the mobile filter scrim and sheet on open and close; use a compact reveal on larger
+      screens.
+- [ ] Crossfade transaction-form fields when switching between expense and income without moving
+      focus or delaying input.
+- [ ] Animate month-name changes in the direction of navigation while keeping the final label
+      immediately available to assistive technology.
+- [ ] Animate the filtered recap and active-filter summary when they appear or disappear.
+- [ ] Animate month-picker, transaction-menu, icon-picker, and color-picker popovers from their
+      triggers.
+- [ ] Keep motion interruptible and use transform and opacity so transitions do not cause layout
+      shift.
+- [ ] Respect `prefers-reduced-motion`: retain short opacity feedback and remove travel and scale.
+- [ ] Add interaction tests for rapid toggling, focus retention, and reduced-motion behavior.
+
+Acceptance criteria:
+
+- Opening, closing, and state changes explain where content came from and where it went.
+- No transition blocks input, changes application state, or depends on an animation finishing.
+- Rapid repeated actions always settle in the latest requested state.
+- Reduced-motion users receive the same information and focus behavior without spatial movement.
 
 ## Verification for every phase
 

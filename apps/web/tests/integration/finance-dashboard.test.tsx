@@ -77,14 +77,18 @@ describe('household dashboard', () => {
     renderWithQuery(<HouseholdDashboard />);
     await screen.findByRole('heading', { name: 'Our Home' });
     expect(screen.getByRole('table')).toHaveTextContent(symbol!);
-    expect(screen.getByText('Total income').nextElementSibling).toHaveTextContent(symbol!);
+    expect(
+      within(screen.getByLabelText('Monthly recap')).getByText('Income').nextElementSibling,
+    ).toHaveTextContent(symbol!);
   });
 
   it('only shows total savings when the selected month has savings transactions', async () => {
     mockDashboard();
     const { unmount } = renderWithQuery(<HouseholdDashboard />);
     await screen.findByRole('heading', { name: 'Our Home' });
-    expect(screen.queryByText('Total savings')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText('Monthly recap')).queryByText('Savings'),
+    ).not.toBeInTheDocument();
     unmount();
 
     mockDashboard('EUR', [
@@ -98,7 +102,9 @@ describe('household dashboard', () => {
     ]);
     renderWithQuery(<HouseholdDashboard />);
     await screen.findByRole('heading', { name: 'Our Home' });
-    expect(screen.getByText('Total savings').nextElementSibling).toHaveTextContent('25.00');
+    expect(
+      within(screen.getByLabelText('Monthly recap')).getByText('Savings').nextElementSibling,
+    ).toHaveTextContent('25.00');
   });
 
   it('shows an actionable empty state when no households exist', async () => {
@@ -214,17 +220,18 @@ describe('household dashboard', () => {
     await userEvent.selectOptions(screen.getByLabelText('Type'), 'expense');
     expect(within(table).getAllByRole('row')).toHaveLength(2);
     expect(within(table).queryByText('Employer')).not.toBeInTheDocument();
-    expect(screen.getByText('Total income').nextElementSibling).toHaveTextContent('100.00');
+    expect(
+      within(screen.getByLabelText('Monthly recap')).getByText('Income').nextElementSibling,
+    ).toHaveTextContent('100.00');
     const filteredRecap = screen.getByRole('group', { name: 'Filtered recap' });
-    expect(within(filteredRecap).getByText('Filtered income').nextElementSibling).toHaveTextContent(
-      '0.00',
+    expect(within(filteredRecap).getByText('Filtered totals')).toBeVisible();
+    expect(within(filteredRecap).getByText('Income').nextElementSibling).toHaveTextContent('0.00');
+    expect(within(filteredRecap).getByText('Expenses').nextElementSibling).toHaveTextContent(
+      /-.*20\.00/,
     );
-    expect(
-      within(filteredRecap).getByText('Filtered expenses').nextElementSibling,
-    ).toHaveTextContent('20.00');
-    expect(
-      within(filteredRecap).getByText('Filtered balance').nextElementSibling,
-    ).toHaveTextContent(/-.*20\.00/);
+    expect(within(filteredRecap).getByText('Balance').nextElementSibling).toHaveTextContent(
+      /-.*20\.00/,
+    );
 
     await userEvent.click(screen.getByText('Filters', { exact: true }));
     const activeFilters = screen.getByLabelText('Active filters');

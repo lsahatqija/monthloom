@@ -229,8 +229,14 @@
   --space-8: 2rem;
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --radius: 12px;
+  --radius-overlay: 16px;
   --profile-image-shape-radius: 20%;
   --max-content-width: 42rem;
+}
+
+:root[data-mode='dark'] {
+  --color-danger: #ff9b8f;
+  --color-success: #78d7a8;
 }
 
 * {
