@@ -40,7 +40,8 @@
 .householdControl {
   display: flex;
   min-width: 0;
-  flex: 1 1 auto;
+  max-width: 50%;
+  flex: 1 1 0;
   align-items: center;
   gap: var(--space-2);
 }
@@ -55,8 +56,9 @@
 
 .monthNavigation {
   display: flex;
-  flex: 0 0 auto;
-  margin-left: auto;
+  min-width: 0;
+  max-width: 50%;
+  flex: 1 1 0;
   flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
@@ -93,7 +95,8 @@
 .monthPicker,
 .householdPicker {
   position: relative;
-  flex: 0 0 auto;
+  max-width: 100%;
+  flex: 0 1 auto;
 }
 .householdPicker::after {
   content: '';
@@ -120,7 +123,7 @@
   cursor: pointer;
 }
 .householdPicker select {
-  max-width: min(18rem, 42vw);
+  max-width: min(18rem, 100%);
   text-overflow: ellipsis;
 }
 .monthHeading {
@@ -225,9 +228,26 @@
   visibility: hidden;
   pointer-events: none;
 }
+.monthNavigation.isCompact .currentMonthButton {
+  display: none;
+}
 .currentMonthButton svg {
   width: 1.2rem;
   height: 1.2rem;
+}
+.monthPickerCurrentMonthButton {
+  grid-column: 1 / -1;
+  min-height: 2.75rem;
+  border: 1px solid var(--ml-border);
+  border-radius: 8px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+}
+.monthPickerCurrentMonthButton:hover {
+  background: var(--ml-surface-hover);
 }
 
 .financeRecap {
@@ -707,6 +727,7 @@
   z-index: 100;
   inset: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
   padding: var(--space-6) var(--space-4);
   place-items: center;
@@ -717,6 +738,8 @@
 .transactionModal {
   display: flex;
   width: min(100%, 44rem);
+  min-width: 0;
+  max-width: 100%;
   max-height: calc(100vh - 3rem);
   flex-direction: column;
   overflow: hidden;
@@ -775,7 +798,10 @@
 .transactionForm {
   display: grid;
   gap: var(--space-6);
+  min-width: 0;
+  max-width: 100%;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   padding: var(--space-6);
   scroll-padding-bottom: 5rem;
@@ -1567,6 +1593,10 @@
   }
   .transactionModalHeader,
   .transactionForm {
+    padding-inline: var(--space-4);
+  }
+  .transactionFormActions {
+    margin-inline: calc(-1 * var(--space-4));
     padding-inline: var(--space-4);
   }
   .transactionFormGrid {
