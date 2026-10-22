@@ -208,7 +208,6 @@ export function HouseholdDashboard() {
   const [transactionToRemove, setTransactionToRemove] = useState<HouseholdTransaction | null>(null);
   const [savedDestinationMonth, setSavedDestinationMonth] = useState<string | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const filterDetailsRef = useRef<HTMLDetailsElement>(null);
   const filterSummaryRef = useRef<HTMLElement>(null);
   const filterSheetRef = useRef<HTMLDivElement>(null);
   const addingTransactionPresence = useMotionPresence(addingTransaction);
@@ -317,7 +316,6 @@ export function HouseholdDashboard() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        filterDetailsRef.current?.removeAttribute('open');
         setFiltersExpanded(false);
         filterSummaryRef.current?.focus();
         return;
@@ -439,7 +437,6 @@ export function HouseholdDashboard() {
     value: TransactionFilters[Key],
   ) => setFilters((current) => ({ ...current, [key]: value }));
   const closeFilters = () => {
-    filterDetailsRef.current?.removeAttribute('open');
     setFiltersExpanded(false);
     filterSummaryRef.current?.focus();
   };
@@ -704,11 +701,16 @@ export function HouseholdDashboard() {
         </div>
         <div className="transactionFiltersRegion">
           <details
-            ref={filterDetailsRef}
             className="transactionFilters"
-            onToggle={(event) => setFiltersExpanded(event.currentTarget.open)}
+            open={filtersExpanded}
           >
-            <summary ref={filterSummaryRef}>
+            <summary
+              ref={filterSummaryRef}
+              onClick={(event) => {
+                event.preventDefault();
+                setFiltersExpanded((expanded) => !expanded);
+              }}
+            >
               <span className="transactionFilterTitle">
                 <SlidersHorizontal aria-hidden="true" />
                 Filters

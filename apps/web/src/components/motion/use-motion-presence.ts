@@ -5,26 +5,27 @@ import { useEffect, useRef, useState } from 'react';
 export type MotionState = 'entered' | 'exiting';
 
 export function useMotionPresence(open: boolean, exitDuration = 180) {
-  const [visible, setVisible] = useState(open);
-  const [state, setState] = useState<MotionState>('entered');
+  const [mounted, setMounted] = useState(open);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     clearTimeout(timeoutRef.current);
     if (open) {
-      setVisible(true);
-      setState('entered');
+      setMounted(true);
       return;
     }
-    if (!visible) return;
+    if (!mounted) return;
 
-    setState('exiting');
     const duration = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
       ? 80
       : exitDuration;
-    timeoutRef.current = setTimeout(() => setVisible(false), duration);
+    timeoutRef.current = setTimeout(() => setMounted(false), duration);
     return () => clearTimeout(timeoutRef.current);
-  }, [exitDuration, open, visible]);
+  }, [exitDuration, mounted, open]);
 
-  return { state, visible };
+  const state: MotionState = open ? 'entered' : 'exiting';
+  return {
+    state,
+    visible: open || mounted,
+  };
 }
