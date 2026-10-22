@@ -3,7 +3,11 @@
 import { Defaults, type HouseholdTransaction } from '@monthloom/contracts';
 import {
   Banknote,
+  CalendarCheck,
   CalendarDays,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   RefreshCw,
   SlidersHorizontal,
   Store,
@@ -49,25 +53,9 @@ function isMobileFilterSheet(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 620px)').matches;
 }
 
-function monthOptions(): Array<{
-  value: string;
-  label: string;
-  isCurrent: boolean;
-  isFuture: boolean;
-}> {
-  const formatter = new Intl.DateTimeFormat(undefined, { month: 'short' });
-  const today = new Date();
-  const offsets = Array.from({ length: 25 }, (_, index) => index - 12);
-  return offsets.map((offset) => {
-    const date = new Date(today.getFullYear(), today.getMonth() + offset, 1);
-    const isCurrent = offset === 0;
-    return {
-      value: monthKey(date),
-      label: `${formatter.format(date)} '${String(date.getFullYear()).slice(-2)}${isCurrent ? ' (current)' : ''}`,
-      isCurrent,
-      isFuture: offset > 0,
-    };
-  });
+function shiftMonth(month: string, offset: number): string {
+  const [year, monthNumber] = month.split('-').map(Number);
+  return monthKey(new Date(year!, monthNumber! - 1 + offset, 1));
 }
 
 function EntryIcon({ entry }: { entry: HouseholdTransaction }) {
@@ -171,9 +159,41 @@ function SortableHeader({
 }
 
 export function HouseholdDashboard() {
-  const months = useMemo(monthOptions, []);
   const { month, setMonth, householdId, setHouseholdId } = useDashboardSelection();
-  const selectedMonthIndex = months.findIndex((option) => option.value === month);
+  const [selectedYear, selectedMonthNumber] = month.split('-').map(Number);
+  const currentMonthKey = monthKey(new Date());
+  const monthLabel = new Intl.DateTimeFormat(undefined, {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(selectedYear!, selectedMonthNumber! - 1, 1));
+  const compactMonthLabel = `${String(selectedMonthNumber).padStart(2, '0')}-'${String(selectedYear).slice(-2)}`;
+  const monthNames = useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, index) => ({
+        value: index + 1,
+        label: new Intl.DateTimeFormat(undefined, { month: 'long' }).format(
+          new Date(2024, index, 1),
+        ),
+      })),
+    [],
+  );
+  const yearOptions = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: 21 }, (_, index) => currentYear - 10 + index);
+    if (!years.includes(selectedYear!)) years.push(selectedYear!);
+    return years.sort((a, b) => a - b);
+  }, [selectedYear]);
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const [compactMonth, setCompactMonth] = useState(false);
+  const [monthLabelWidth, setMonthLabelWidth] = useState<number>();
+  const dashboardSelectorsRef = useRef<HTMLDivElement>(null);
+  const householdControlRef = useRef<HTMLDivElement>(null);
+  const monthNavigationRef = useRef<HTMLDivElement>(null);
+  const monthLabelRef = useRef<HTMLSpanElement>(null);
+  const monthLabelMeasureRef = useRef<HTMLSpanElement>(null);
+  const compactMonthLabelMeasureRef = useRef<HTMLSpanElement>(null);
+  const monthPickerRef = useRef<HTMLDivElement>(null);
+  const monthPickerTriggerRef = useRef<HTMLButtonElement>(null);
   const [addingTransaction, setAddingTransaction] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<HouseholdTransaction | null>(null);
   const [transactionToRemove, setTransactionToRemove] = useState<HouseholdTransaction | null>(null);
@@ -183,6 +203,66 @@ export function HouseholdDashboard() {
   const filterSummaryRef = useRef<HTMLElement>(null);
   const filterSheetRef = useRef<HTMLDivElement>(null);
   const householdsQuery = useHouseholds();
+  useLayoutEffect(() => {
+    const container = dashboardSelectorsRef.current;
+    const householdControl = householdControlRef.current;
+    const navigation = monthNavigationRef.current;
+    const visibleLabel = monthLabelRef.current;
+    const fullLabel = monthLabelMeasureRef.current;
+    const compactLabel = compactMonthLabelMeasureRef.current;
+    if (
+      !container ||
+      !householdControl ||
+      !navigation ||
+      !visibleLabel ||
+      !fullLabel ||
+      !compactLabel ||
+      typeof ResizeObserver === 'undefined'
+    )
+      return;
+
+    const measure = () => {
+      const gap = Number.parseFloat(getComputedStyle(container).columnGap) || 0;
+      const householdContent = householdControl.querySelector<HTMLElement>(
+        '.householdNameText, select',
+      );
+      const householdWidth = householdContent?.scrollWidth ?? householdControl.scrollWidth;
+      const fullLabelWidth = fullLabel.getBoundingClientRect().width;
+      const compactLabelWidth = compactLabel.getBoundingClientRect().width;
+      const fullNavigationWidth =
+        navigation.getBoundingClientRect().width -
+        visibleLabel.getBoundingClientRect().width +
+        fullLabelWidth;
+      const shouldCompact =
+        householdWidth + fullNavigationWidth + gap > container.clientWidth;
+      setCompactMonth(shouldCompact);
+      setMonthLabelWidth(shouldCompact ? compactLabelWidth : fullLabelWidth);
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    observer.observe(householdControl);
+    measure();
+    void document.fonts?.ready.then(measure);
+    return () => observer.disconnect();
+  }, [monthLabel]);
+  useEffect(() => {
+    if (!monthPickerOpen) return;
+    const closePicker = (event: MouseEvent) => {
+      if (!monthPickerRef.current?.contains(event.target as Node)) setMonthPickerOpen(false);
+    };
+    const closePickerWithKeyboard = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMonthPickerOpen(false);
+        monthPickerTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('mousedown', closePicker);
+    document.addEventListener('keydown', closePickerWithKeyboard);
+    return () => {
+      document.removeEventListener('mousedown', closePicker);
+      document.removeEventListener('keydown', closePickerWithKeyboard);
+    };
+  }, [monthPickerOpen]);
   useEffect(() => {
     if (!householdsQuery.data) return;
     setHouseholdId((current) => {
@@ -388,62 +468,147 @@ export function HouseholdDashboard() {
   return (
     <section className="householdDashboard" aria-label="Household dashboard">
       <div className="dashboardHeading">
-        <div className="dashboardSelectors" data-onboarding="month-overview">
-          <div className="householdControl">
+        <div
+          ref={dashboardSelectorsRef}
+          className="dashboardSelectors"
+          data-onboarding="month-overview"
+        >
+          <div ref={householdControlRef} className="householdControl">
             {(householdsQuery.data?.length ?? 0) > 1 ? (
-              <label className="householdPicker">
-                <span className="srOnly">Household</span>
-                <select
-                  value={householdId}
-                  onChange={(event) => {
-                    setHouseholdId(event.target.value);
-                    resetFilters();
-                  }}
-                >
-                  {householdsQuery.data?.map((entry) => (
-                    <option key={entry.id} value={entry.id}>
-                      {entry.name}
-                      {entry.isPrimary ? ' (default)' : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <>
+                <label className="householdPicker">
+                  <span className="srOnly">Household</span>
+                  <select
+                    value={householdId}
+                    onChange={(event) => {
+                      setHouseholdId(event.target.value);
+                      resetFilters();
+                    }}
+                  >
+                    {householdsQuery.data?.map((entry) => (
+                      <option key={entry.id} value={entry.id}>
+                        {entry.name}
+                        {entry.isPrimary ? ' (default)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <h1 className="srOnly">{household.name}</h1>
+              </>
             ) : (
-              <h1 className="householdNameText">{household.name}</h1>
+              <h1 className="householdNameText" title={household.name}>
+                {household.name}
+              </h1>
             )}
           </div>
-          <div className="monthNavigation">
+          <div
+            ref={monthNavigationRef}
+            className="monthNavigation"
+            aria-label="Month navigation"
+          >
+            <button
+              type="button"
+              className={`currentMonthButton${month === currentMonthKey ? ' isHidden' : ''}`}
+              aria-label="Current month"
+              aria-hidden={month === currentMonthKey ? 'true' : undefined}
+              tabIndex={month === currentMonthKey ? -1 : undefined}
+              title={month === currentMonthKey ? undefined : 'Current month'}
+              onClick={() => setMonth(currentMonthKey)}
+            >
+              <CalendarCheck aria-hidden="true" />
+            </button>
             <button
               type="button"
               className="monthNavigationButton"
               aria-label="Previous month"
-              disabled={selectedMonthIndex <= 0}
-              onClick={() => setMonth(months[selectedMonthIndex - 1]!.value)}
+              onClick={() => setMonth(shiftMonth(month, -1))}
             >
-              <span aria-hidden="true">←</span>
+              <ChevronLeft aria-hidden="true" />
             </button>
-            <label className="monthPicker">
-              <span className="srOnly">Month</span>
-              <select value={month} onChange={(event) => setMonth(event.target.value)}>
-                {months.map((option) => (
-                  <option
-                    key={option.value}
-                    value={option.value}
-                    className={option.isFuture ? 'futureMonthOption' : undefined}
+            <div ref={monthPickerRef} className="monthPicker">
+              <div className="monthHeading">
+                <button
+                  ref={monthPickerTriggerRef}
+                  type="button"
+                  className="monthPickerTrigger"
+                  aria-label={`Choose month, ${monthLabel}`}
+                  aria-expanded={monthPickerOpen}
+                  aria-controls="month-picker-popover"
+                  onClick={() => setMonthPickerOpen((open) => !open)}
+                >
+                  <span
+                    ref={monthLabelRef}
+                    className="monthLabelText"
+                    style={monthLabelWidth ? { width: `${monthLabelWidth}px` } : undefined}
                   >
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+                    {compactMonth ? compactMonthLabel : monthLabel}
+                  </span>
+                  <span ref={monthLabelMeasureRef} className="monthLabelMeasure" aria-hidden="true">
+                    {monthNames.map((option) => (
+                      <span key={option.value}>{`${option.label} ${selectedYear}`}</span>
+                    ))}
+                  </span>
+                  <span
+                    ref={compactMonthLabelMeasureRef}
+                    className="monthLabelMeasure"
+                    aria-hidden="true"
+                  >
+                    {"00-'00"}
+                  </span>
+                  <ChevronDown aria-hidden="true" />
+                </button>
+              </div>
+              {monthPickerOpen ? (
+                <div
+                  id="month-picker-popover"
+                  className="monthPickerPopover"
+                  role="group"
+                  aria-label="Choose month"
+                >
+                  <label>
+                    <span>Month</span>
+                    <select
+                      value={selectedMonthNumber}
+                      onChange={(event) => {
+                        setMonth(`${selectedYear}-${event.target.value.padStart(2, '0')}`);
+                        setMonthPickerOpen(false);
+                      }}
+                    >
+                      {monthNames.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Year</span>
+                    <select
+                      value={selectedYear}
+                      onChange={(event) => {
+                        setMonth(
+                          `${event.target.value}-${String(selectedMonthNumber).padStart(2, '0')}`,
+                        );
+                        setMonthPickerOpen(false);
+                      }}
+                    >
+                      {yearOptions.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              ) : null}
+            </div>
             <button
               type="button"
               className="monthNavigationButton"
               aria-label="Next month"
-              disabled={selectedMonthIndex < 0 || selectedMonthIndex >= months.length - 1}
-              onClick={() => setMonth(months[selectedMonthIndex + 1]!.value)}
+              onClick={() => setMonth(shiftMonth(month, 1))}
             >
-              <span aria-hidden="true">→</span>
+              <ChevronRight aria-hidden="true" />
             </button>
           </div>
         </div>

@@ -131,13 +131,13 @@ Acceptance criteria:
 
 ## Phase 6: Improve month navigation
 
-- [ ] Treat the selected month as part of the dashboard heading rather than an isolated pill select.
-- [ ] Replace text arrows with the project's existing Lucide icon set.
-- [ ] Keep previous and next controls at least 44px square.
-- [ ] Let the month label open a compact month/year picker.
-- [ ] Offer a `Current month` action when another month is selected.
-- [ ] Preserve the selected month in the URL and retain browser back/forward behavior.
-- [ ] Verify long localized month names without clipping important controls.
+- [x] Treat the selected month as part of the dashboard heading rather than an isolated pill select.
+- [x] Replace text arrows with the project's existing Lucide icon set.
+- [x] Keep previous and next controls at least 44px square.
+- [x] Let the month label open a compact month/year picker.
+- [x] Offer a `Current month` action when another month is selected.
+- [x] Preserve the selected month in the URL and retain browser back/forward behavior.
+- [x] Verify long localized month names without clipping important controls.
 
 Acceptance criteria:
 

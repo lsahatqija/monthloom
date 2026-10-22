@@ -40,27 +40,32 @@
 .householdControl {
   display: flex;
   min-width: 0;
-  flex-wrap: wrap;
+  flex: 1 1 auto;
   align-items: center;
   gap: var(--space-2);
 }
 
 .dashboardSelectors {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  min-width: 0;
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--space-3);
 }
 
 .monthNavigation {
   display: flex;
+  flex: 0 0 auto;
+  margin-left: auto;
+  flex-wrap: nowrap;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-1);
 }
 .monthNavigationButton {
   display: grid;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   flex: 0 0 auto;
   place-items: center;
   padding: 0;
@@ -70,8 +75,11 @@
   color: var(--ml-text);
   cursor: pointer;
   font: inherit;
-  font-size: 1.15rem;
   line-height: 1;
+}
+.monthNavigationButton svg {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 .monthNavigationButton:hover:not(:disabled) {
   border-color: var(--ml-primary);
@@ -87,7 +95,6 @@
   position: relative;
   flex: 0 0 auto;
 }
-.monthPicker::after,
 .householdPicker::after {
   content: '';
   position: absolute;
@@ -100,7 +107,6 @@
   pointer-events: none;
   transform: translateY(-70%) rotate(45deg);
 }
-.monthPicker select,
 .householdPicker select {
   min-height: 2.75rem;
   padding: var(--space-2) 2.5rem var(--space-2) var(--space-3);
@@ -117,8 +123,103 @@
   max-width: min(18rem, 42vw);
   text-overflow: ellipsis;
 }
-.monthPicker option.futureMonthOption {
-  font-style: italic;
+.monthHeading {
+  margin: 0;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  line-height: 1.1;
+}
+.monthPickerTrigger {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ml-text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: inherit;
+  text-align: left;
+}
+.monthPickerTrigger:hover,
+.monthPickerTrigger[aria-expanded='true'] {
+  background: var(--ml-surface-hover);
+}
+.monthPickerTrigger svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+}
+.monthLabelText {
+  display: inline-block;
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.monthLabelMeasure {
+  position: absolute;
+  display: grid;
+  width: max-content;
+  font-variant-numeric: tabular-nums;
+  visibility: hidden;
+  white-space: nowrap;
+}
+.monthPickerPopover {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  display: grid;
+  grid-template-columns: minmax(9rem, 1fr) 6.5rem;
+  gap: var(--space-3);
+  min-width: 18rem;
+  padding: var(--space-3);
+  border: 1px solid var(--ml-border);
+  border-radius: 10px;
+  background: var(--ml-surface);
+  box-shadow: 0 12px 32px var(--ml-shadow);
+}
+.monthPickerPopover label {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--ml-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.monthPickerPopover select {
+  min-height: 2.75rem;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--ml-border);
+  border-radius: 8px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  font: inherit;
+}
+.currentMonthButton {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--ml-primary);
+  border-radius: 8px;
+  background: var(--ml-primary);
+  color: var(--ml-on-primary);
+  cursor: pointer;
+}
+.currentMonthButton:hover {
+  filter: brightness(0.92);
+}
+.currentMonthButton.isHidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+.currentMonthButton svg {
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 .financeRecap {
@@ -1738,7 +1839,6 @@
   }
   .dashboardSelectors {
     width: 100%;
-    grid-template-columns: minmax(0, 1fr) auto;
   }
   .householdPicker {
     width: 100%;
@@ -1750,10 +1850,9 @@
   .householdNameText {
     font-size: 1.4rem;
   }
-  .monthPicker select {
-    width: min(9.5rem, 33vw);
-    max-width: 100%;
-    text-overflow: ellipsis;
+  .monthPickerPopover {
+    right: 0;
+    left: auto;
   }
   .financeRecap {
     grid-template-columns: 1fr 1fr;

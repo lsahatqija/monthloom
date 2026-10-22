@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 
 function currentMonth(): string {
   const today = new Date();
@@ -11,7 +11,7 @@ function initialParameter(name: string, fallback: string): string {
 }
 
 export function useDashboardSelection() {
-  const [month, setMonth] = useState(() => initialParameter('month', currentMonth()));
+  const [month, setMonthState] = useState(() => initialParameter('month', currentMonth()));
   const [householdId, setHouseholdId] = useState(() => initialParameter('household', ''));
 
   useEffect(() => {
@@ -21,6 +21,30 @@ export function useDashboardSelection() {
     else url.searchParams.delete('household');
     window.history.replaceState(window.history.state, '', url);
   }, [householdId, month]);
+
+  useEffect(() => {
+    const restoreSelection = () => {
+      setMonthState(initialParameter('month', currentMonth()));
+      setHouseholdId(initialParameter('household', ''));
+    };
+    window.addEventListener('popstate', restoreSelection);
+    return () => window.removeEventListener('popstate', restoreSelection);
+  }, []);
+
+  const setMonth: Dispatch<SetStateAction<string>> = useCallback(
+    (value) => {
+      setMonthState((current) => {
+        const next = typeof value === 'function' ? value(current) : value;
+        if (next === current) return current;
+        const url = new URL(window.location.href);
+        url.searchParams.set('month', next);
+        if (householdId) url.searchParams.set('household', householdId);
+        window.history.pushState(window.history.state, '', url);
+        return next;
+      });
+    },
+    [householdId],
+  );
 
   return { householdId, setHouseholdId, month, setMonth };
 }

@@ -169,27 +169,32 @@ describe('household dashboard', () => {
     expect(screen.queryByRole('button', { name: 'Make default' })).not.toBeInTheDocument();
   });
 
-  it('shows abbreviated months and moves between them with arrow buttons', async () => {
+  it('shows the month in the heading and preserves month navigation in browser history', async () => {
     mockDashboard();
     renderWithQuery(<HouseholdDashboard />);
-    await screen.findByRole('heading', { name: 'Our Home' });
+    await screen.findByText('Our Home');
 
-    const selector = screen.getByRole('combobox', { name: 'Month' });
-    const startingIndex = (selector as HTMLSelectElement).selectedIndex;
-    expect(selector).toHaveDisplayValue(/^[A-Z][a-z]{2} '\d{2} \(current\)$/);
-    expect(screen.getByRole('button', { name: 'Previous month' })).toHaveTextContent('←');
-    expect(screen.getByRole('button', { name: 'Next month' })).toHaveTextContent('→');
+    expect(screen.getByRole('button', { name: /Choose month/i })).toHaveTextContent(
+      new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(new Date()),
+    );
+    expect(screen.getByRole('button', { name: 'Previous month' }).querySelector('svg')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Next month' }).querySelector('svg')).toBeTruthy();
 
+    const startingMonth = new URL(window.location.href).searchParams.get('month');
     await userEvent.click(screen.getByRole('button', { name: 'Previous month' }));
+    expect(new URL(window.location.href).searchParams.get('month')).not.toBe(startingMonth);
+    expect(screen.getByRole('button', { name: 'Current month' })).toBeVisible();
+
+    window.history.back();
     await waitFor(() =>
-      expect(
-        (screen.getByRole('combobox', { name: 'Month' }) as HTMLSelectElement).selectedIndex,
-      ).toBe(startingIndex - 1),
+      expect(new URL(window.location.href).searchParams.get('month')).toBe(startingMonth),
     );
-    const updatedSelector = screen.getByRole('combobox', { name: 'Month' });
-    expect(new URL(window.location.href).searchParams.get('month')).toBe(
-      (updatedSelector as HTMLSelectElement).value,
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Current month' })).not.toBeInTheDocument(),
     );
+
+    await userEvent.click(screen.getByRole('button', { name: /Choose month/i }));
+    expect(screen.getByRole('group', { name: 'Choose month' })).toBeVisible();
   });
 
   it('shows latest transactions first, sorts by signed amount, and filters expenses', async () => {
