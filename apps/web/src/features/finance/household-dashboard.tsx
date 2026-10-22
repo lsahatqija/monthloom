@@ -600,6 +600,7 @@ export function HouseholdDashboard() {
       {addingTransaction ? (
         <TransactionForm
           householdId={household.id}
+          currency={household.currency}
           selectedMonth={month}
           members={query.data.members}
           sources={query.data.sources}
@@ -613,6 +614,7 @@ export function HouseholdDashboard() {
       {transactionToEdit ? (
         <TransactionForm
           householdId={household.id}
+          currency={household.currency}
           selectedMonth={month}
           members={query.data.members}
           sources={query.data.sources}

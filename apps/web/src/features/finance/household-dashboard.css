@@ -351,16 +351,18 @@
   z-index: 100;
   inset: 0;
   display: grid;
-  overflow-y: auto;
+  overflow: hidden;
   padding: var(--space-6) var(--space-4);
   place-items: center;
   background: color-mix(in srgb, var(--ml-text) 48%, transparent);
   backdrop-filter: blur(3px);
 }
 .transactionModal {
-  width: min(100%, 38rem);
+  display: flex;
+  width: min(100%, 44rem);
   max-height: calc(100vh - 3rem);
-  overflow-y: auto;
+  flex-direction: column;
+  overflow: hidden;
   border: 1px solid var(--ml-border);
   border-radius: 22px;
   background: var(--ml-surface);
@@ -407,7 +409,10 @@
 .transactionForm {
   display: grid;
   gap: var(--space-6);
+  min-height: 0;
+  overflow-y: auto;
   padding: var(--space-6);
+  scroll-padding-bottom: 5rem;
 }
 .transactionKind,
 .colorPicker,
@@ -421,7 +426,8 @@
 .colorPicker legend,
 .iconPickerLabel,
 .compactControlLabel,
-.transactionField > span {
+.transactionField > span,
+.transactionField > label {
   margin-bottom: var(--space-2);
   color: var(--ml-text-muted);
   font-size: 0.78rem;
@@ -463,7 +469,7 @@
 }
 .transactionFormGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-4);
 }
 .transactionField {
@@ -473,7 +479,7 @@
 }
 .transactionSourceField {
   position: relative;
-  grid-column: 1 / -1;
+  grid-column: 1 / 3;
   grid-row: 1;
 }
 .transactionSourceField > label {
@@ -542,17 +548,53 @@
   display: grid;
   grid-column: 1 / -1;
   grid-row: 2;
-  grid-template-columns: minmax(7rem, 0.7fr) minmax(11rem, 1.3fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-4);
-  max-width: 28rem;
 }
 .transactionTypeField {
-  grid-column: 1 / -1;
-  grid-row: 3;
+  grid-column: 3 / 5;
+  grid-row: 1;
 }
 .transactionMemberField {
-  grid-column: 1 / -1;
+  grid-column: 3 / 5;
   grid-row: 3;
+}
+.transactionMemberControl,
+.transactionAmountControl {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  border: 1px solid var(--ml-border);
+  border-radius: 11px;
+  background: var(--ml-background);
+}
+.transactionMemberControl {
+  padding-left: var(--space-2);
+}
+.transactionMemberControl .profileImage {
+  flex: 0 0 auto;
+}
+.transactionField .transactionMemberControl select,
+.transactionField .transactionAmountControl input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+.transactionAmountControl > span {
+  padding-left: var(--space-3);
+  color: var(--ml-text-muted);
+  font-weight: 700;
+}
+.transactionMemberControl:focus-within,
+.transactionAmountControl:focus-within {
+  border-color: var(--ml-primary);
+  outline: 2px solid var(--ml-focus-ring);
+  outline-offset: 1px;
+}
+.transactionFieldError {
+  margin-top: var(--space-2);
+  color: var(--ml-danger);
 }
 .transactionField input,
 .transactionField select {
@@ -582,17 +624,19 @@
   display: block;
 }
 .transactionCompactRow {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-row: 4;
-  grid-template-columns: minmax(0, 1.15fr) minmax(7rem, 0.75fr) minmax(0, 1.15fr);
-  gap: var(--space-3);
-  align-items: end;
+  display: contents;
+}
+.transactionCompactRow .iconPicker {
+  grid-column: 1;
+  grid-row: 3;
+}
+.transactionCompactRow .colorPicker {
+  grid-column: 2;
+  grid-row: 3;
 }
 .transactionCompactRow .iconPicker,
 .transactionCompactRow .transactionMemberField {
-  grid-column: auto;
-  grid-row: auto;
+  min-width: 0;
 }
 .transactionCompactRow .colorPicker {
   min-width: 0;
@@ -1078,9 +1122,20 @@
   cursor: pointer;
 }
 .transactionFormActions {
+  position: sticky;
+  z-index: 5;
+  bottom: calc(-1 * var(--space-6));
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
+  margin: 0 calc(-1 * var(--space-6)) calc(-1 * var(--space-6));
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--ml-divider);
+  background: var(--ml-surface);
+}
+.transactionErrorSummary:focus {
+  outline: 2px solid var(--ml-focus-ring);
+  outline-offset: 2px;
 }
 .sourceModal {
   width: min(100%, 34rem);
@@ -1132,45 +1187,48 @@
     padding-inline: var(--space-4);
   }
   .transactionFormGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .transactionSourceField {
-    grid-column: auto;
+    grid-column: 1 / 3;
   }
   .transactionSourceField,
-  .transactionAmountDateRow,
-  .transactionTypeField,
-  .transactionMemberField,
-  .iconPicker {
-    grid-column: auto;
-    grid-row: auto;
+  .transactionTypeField {
+    grid-row: 1;
   }
   .iconPickerGrid {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
-  .transactionSourceField {
-    grid-column: 1;
-    grid-row: 1;
-  }
   .transactionAmountDateRow {
-    grid-column: 1;
+    grid-column: 1 / -1;
     grid-row: 2;
-    grid-template-columns: minmax(6.5rem, 0.72fr) minmax(10rem, 1.28fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-3);
     max-width: none;
   }
   .transactionTypeField {
+    grid-column: 3 / 5;
+    grid-row: 1;
+  }
+  .transactionMemberField {
+    grid-column: 3 / 5;
+    grid-row: 3;
+  }
+  .transactionCompactRow .iconPicker {
     grid-column: 1;
     grid-row: 3;
   }
-  .transactionCompactRow {
-    grid-column: 1;
-    grid-row: 4;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.72fr) minmax(0, 1fr);
-    gap: var(--space-2);
+  .transactionCompactRow .colorPicker {
+    grid-column: 2;
+    grid-row: 3;
   }
   .transactionFormActions .button {
     flex: 1;
+  }
+}
+@media (max-width: 430px) {
+  .transactionAmountDateRow {
+    grid-template-columns: 1fr;
   }
 }
 .transactionScroll {

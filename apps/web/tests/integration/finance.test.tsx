@@ -43,6 +43,7 @@ function renderForm(
   renderWithQuery(
     <TransactionForm
       householdId="home"
+      currency="EUR"
       selectedMonth={selectedMonth}
       members={[member]}
       sources={sources}
@@ -280,6 +281,36 @@ describe('transaction form + query + HTTP client', () => {
       expiresOn: null,
     });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['finance'] });
+  });
+
+  it('shows currency and the selected member avatar, then focuses linked validation feedback', async () => {
+    renderForm();
+
+    expect(screen.getByText('€')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /Diamond Kilim profile image/ })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('combobox', { name: 'Source' }));
+    await userEvent.click(screen.getByRole('option', { name: source.displayName }));
+    await userEvent.click(screen.getByRole('button', { name: 'Add to October 2026' }));
+
+    const amount = screen.getByLabelText('Amount');
+    expect(amount).toHaveAttribute('aria-invalid', 'true');
+    expect(amount).toHaveAccessibleDescription();
+    await waitFor(() => expect(screen.getByRole('alert').parentElement).toHaveFocus());
+  });
+
+  it('confirms before dismissing a dirty transaction', async () => {
+    const confirm = vi
+      .spyOn(window, 'confirm')
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(true);
+    const { onClose } = renderForm();
+
+    await userEvent.type(screen.getByLabelText('Amount'), '12');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onClose).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(confirm).toHaveBeenCalledTimes(2);
   });
 
   it('prefills fields from the most recent transaction for a selected source', async () => {

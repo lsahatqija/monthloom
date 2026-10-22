@@ -91,17 +91,17 @@ Acceptance criteria:
 
 ## Phase 4: Recompose the add/edit transaction modal
 
-- [ ] Use the field order: kind, source, amount/date, type/user, icon/color, recurrence, actions.
-- [ ] Increase the desktop modal width only as much as needed to prevent clipped values.
-- [ ] Give amount at least as much width as date and show the household currency in the control.
-- [ ] Show the selected user's profile image in the user selector.
-- [ ] Keep labels and selected values visible without unnecessary truncation.
-- [ ] Stack paired fields when either field becomes too narrow.
-- [ ] Keep actions reachable when recurrence makes the form tall, using a sticky footer if needed.
-- [ ] Verify that modal, form, and popovers do not create competing nested scroll regions.
-- [ ] Move focus into the modal on open, trap focus, and restore it to the trigger on close.
-- [ ] Confirm before dismissing a dirty form.
-- [ ] Connect field errors to their inputs and focus the error summary after a failed submit.
+- [x] Use the field order: kind, source, amount/date, type/user, icon/color, recurrence, actions.
+- [x] Increase the desktop modal width only as much as needed to prevent clipped values.
+- [x] Give amount at least as much width as date and show the household currency in the control.
+- [x] Show the selected user's profile image in the user selector.
+- [x] Keep labels and selected values visible without unnecessary truncation.
+- [x] Stack paired fields when either field becomes too narrow.
+- [x] Keep actions reachable when recurrence makes the form tall, using a sticky footer if needed.
+- [x] Verify that modal, form, and popovers do not create competing nested scroll regions.
+- [x] Move focus into the modal on open, trap focus, and restore it to the trigger on close.
+- [x] Confirm before dismissing a dirty form.
+- [x] Connect field errors to their inputs and focus the error summary after a failed submit.
 
 Acceptance criteria:
 

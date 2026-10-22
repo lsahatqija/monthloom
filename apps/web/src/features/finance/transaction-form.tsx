@@ -12,10 +12,11 @@ import {
 } from '@monthloom/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 
+import { ProfileImage } from '../../components/profile-image';
 import { Alert, Button } from '../../components/ui/index';
 import { useCurrentUser } from '../auth/use-current-user';
 
@@ -284,6 +285,7 @@ function editableTransactionType(
 
 interface TransactionFormProps {
   householdId: string;
+  currency: string;
   selectedMonth: string;
   members: HouseholdMonthResponse['members'];
   sources: HouseholdMonthResponse['sources'];
@@ -295,6 +297,7 @@ interface TransactionFormProps {
 
 export function TransactionForm({
   householdId,
+  currency,
   selectedMonth,
   members,
   sources,
@@ -303,6 +306,9 @@ export function TransactionForm({
   onClose,
   onSaved,
 }: TransactionFormProps) {
+  const dialogRef = useRef<HTMLElement>(null);
+  const errorSummaryRef = useRef<HTMLDivElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
   const iconPickerRef = useRef<HTMLDetailsElement>(null);
   const colorPickerRef = useRef<HTMLDetailsElement>(null);
   const iconPickerPopoverRef = useRef<HTMLDivElement>(null);
@@ -318,6 +324,7 @@ export function TransactionForm({
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
   const [sourceQuery, setSourceQuery] = useState(transaction?.source.displayName ?? '');
+  const [dirty, setDirty] = useState(false);
   const [expires, setExpires] = useState(Boolean(transaction?.expiresOn));
   const [selection, setSelection] = useState<TransactionSeriesSelection>({
     past: false,
@@ -363,8 +370,22 @@ export function TransactionForm({
   const isCrossMonth = destinationMonth !== selectedMonth;
   const destinationLabel = monthLabel(destinationMonth);
   const selectedMonthLabel = monthLabel(selectedMonth);
+  const selectedMember = members.find((member) => member.id === userId) ?? members[0];
+  const currencySymbol =
+    new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+      currencyDisplay: 'narrowSymbol',
+    })
+      .formatToParts(0)
+      .find((part) => part.type === 'currency')?.value ?? currency;
+
+  const requestClose = useCallback(() => {
+    if (!dirty || window.confirm('Discard your unsaved transaction changes?')) onClose();
+  }, [dirty, onClose]);
 
   const selectSource = (selectedSourceId: string) => {
+    setDirty(true);
     setValue('sourceId', selectedSourceId, { shouldValidate: true });
     if (transaction) return;
 
@@ -427,12 +448,22 @@ export function TransactionForm({
       if (isAddingSource) {
         setIsAddingSource(false);
       } else {
-        onClose();
+        requestClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [colorPickerOpen, iconPickerOpen, isAddingSource, onClose, sourcePickerOpen]);
+  }, [colorPickerOpen, iconPickerOpen, isAddingSource, requestClose, sourcePickerOpen]);
+
+  useEffect(() => {
+    restoreFocusRef.current = document.activeElement as HTMLElement | null;
+    const dialog = dialogRef.current;
+    const focusable = dialog?.querySelector<HTMLElement>(
+      'input:not([disabled]), button:not([disabled]), select:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
+    );
+    focusable?.focus();
+    return () => restoreFocusRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -475,13 +506,15 @@ export function TransactionForm({
     .map((error) => error?.message)
     .find((message): message is string => typeof message === 'string');
 
-  const submit = handleSubmit((input) =>
-    mutation.mutate({
-      ...input,
-      type: input.type,
-      date: input.date || todayDate(),
-      expiresOn: input.recurring && expires && input.expiresOn ? input.expiresOn : null,
-    }),
+  const submit = handleSubmit(
+    (input) =>
+      mutation.mutate({
+        ...input,
+        type: input.type,
+        date: input.date || todayDate(),
+        expiresOn: input.recurring && expires && input.expiresOn ? input.expiresOn : null,
+      }),
+    () => requestAnimationFrame(() => errorSummaryRef.current?.focus()),
   );
 
   if (isAddingSource) {
@@ -510,14 +543,33 @@ export function TransactionForm({
     <div
       className="transactionModalBackdrop"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) requestClose();
       }}
     >
       <section
+        ref={dialogRef}
         className="transactionModal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="transaction-modal-title"
+        onKeyDown={(event) => {
+          if (event.key !== 'Tab') return;
+          const focusable = Array.from(
+            event.currentTarget.querySelectorAll<HTMLElement>(
+              'input:not([disabled]), button:not([disabled]), select:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
+            ),
+          ).filter((element) => element.offsetParent !== null);
+          if (!focusable.length) return;
+          const first = focusable[0]!;
+          const last = focusable[focusable.length - 1]!;
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        }}
       >
         <div className="transactionModalHeader">
           <div>
@@ -531,14 +583,19 @@ export function TransactionForm({
             type="button"
             className="modalCloseButton"
             data-onboarding="transaction-close"
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Close"
           >
             <span aria-hidden="true">×</span>
           </button>
         </div>
 
-        <form className="transactionForm" onSubmit={submit} noValidate>
+        <form
+          className="transactionForm"
+          onSubmit={submit}
+          onChange={() => setDirty(true)}
+          noValidate
+        >
           <fieldset
             className="transactionKind"
             data-onboarding="transaction-kind"
@@ -704,23 +761,6 @@ export function TransactionForm({
                     )
                   : null}
               </div>
-
-              <label className="transactionField transactionMemberField">
-                <span>User</span>
-                <select
-                  value={userId}
-                  required
-                  disabled={mutation.isPending}
-                  onChange={(event) => setValue('userId', event.target.value)}
-                >
-                  {members.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.displayName}
-                      {member.id === currentUser.data?.user?.id ? ' (you)' : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
             </div>
             <div
               ref={sourcePickerRef}
@@ -739,6 +779,8 @@ export function TransactionForm({
                 value={sourceQuery}
                 autoFocus
                 required
+                aria-invalid={Boolean(errors.sourceId)}
+                aria-describedby={errors.sourceId ? 'transaction-source-error' : undefined}
                 disabled={mutation.isPending}
                 placeholder="Search sources"
                 onClick={() => setSourcePickerOpen(true)}
@@ -748,6 +790,11 @@ export function TransactionForm({
                   setSourcePickerOpen(true);
                 }}
               />
+              {errors.sourceId ? (
+                <small id="transaction-source-error" className="transactionFieldError">
+                  {errors.sourceId.message}
+                </small>
+              ) : null}
               {sourcePickerOpen ? (
                 <div
                   id="transaction-source-options"
@@ -819,20 +866,59 @@ export function TransactionForm({
               </select>
             </label>
 
-            <div className="transactionAmountDateRow">
-              <label className="transactionField transactionAmountField">
-                <span>Amount</span>
-                <input
-                  value={amount}
-                  type="text"
-                  inputMode="decimal"
-                  pattern="\d{1,12}([.,]\d{1,2})?"
-                  placeholder="0.00"
+            <div className="transactionField transactionMemberField">
+              <label htmlFor="transaction-user">User</label>
+              <span className="transactionMemberControl">
+                {selectedMember ? (
+                  <ProfileImage
+                    image={selectedMember.profileImage}
+                    color={selectedMember.desiredColor}
+                    size={30}
+                  />
+                ) : null}
+                <select
+                  id="transaction-user"
+                  value={userId}
                   required
+                  aria-invalid={Boolean(errors.userId)}
                   disabled={mutation.isPending}
-                  onChange={(event) => setValue('amount', event.target.value.replace(',', '.'))}
-                />
-              </label>
+                  onChange={(event) => setValue('userId', event.target.value)}
+                >
+                  {members.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.displayName}
+                      {member.id === currentUser.data?.user?.id ? ' (you)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </span>
+            </div>
+
+            <div className="transactionAmountDateRow">
+              <div className="transactionField transactionAmountField">
+                <label htmlFor="transaction-amount">Amount</label>
+                <span className="transactionAmountControl">
+                  <span aria-hidden="true">{currencySymbol}</span>
+                  <input
+                    id="transaction-amount"
+                    value={amount}
+                    type="text"
+                    inputMode="decimal"
+                    pattern="\d{1,12}([.,]\d{1,2})?"
+                    placeholder="0.00"
+                    required
+                    aria-invalid={Boolean(errors.amount)}
+                    aria-describedby={errors.amount ? 'transaction-amount-error' : undefined}
+                    disabled={mutation.isPending}
+                    onChange={(event) => setValue('amount', event.target.value.replace(',', '.'))}
+                  />
+                </span>
+                {errors.amount ? (
+                  <small id="transaction-amount-error" className="transactionFieldError">
+                    {errors.amount.message}
+                  </small>
+                ) : null}
+              </div>
 
               <label className="transactionField transactionDateField">
                 <span>
@@ -893,9 +979,10 @@ export function TransactionForm({
                     disabled={mutation.isPending}
                     freeMoving
                     format={String}
-                    onChange={(option) =>
+                    onChange={(option) => (
+                      setDirty(true),
                       setValue('recurrenceInterval', option, { shouldValidate: true })
-                    }
+                    )}
                   />
                   <RecurrenceWheel
                     label="Recurrence unit"
@@ -903,9 +990,10 @@ export function TransactionForm({
                     value={recurrenceUnit}
                     disabled={mutation.isPending}
                     format={(option) => `${option}${recurrenceInterval === 1 ? '' : 's'}`}
-                    onChange={(option) =>
+                    onChange={(option) => (
+                      setDirty(true),
                       setValue('recurrenceUnit', option, { shouldValidate: true })
-                    }
+                    )}
                   />
                   <p aria-live="polite">
                     Every {recurrenceInterval} {recurrenceUnit}
@@ -993,9 +1081,11 @@ export function TransactionForm({
           ) : null}
 
           {Object.keys(errors).length ? (
-            <Alert variant="error">
-              {validationMessage ?? 'Check the transaction fields and try again.'}
-            </Alert>
+            <div ref={errorSummaryRef} tabIndex={-1} className="transactionErrorSummary">
+              <Alert variant="error">
+                {validationMessage ?? 'Check the transaction fields and try again.'}
+              </Alert>
+            </div>
           ) : null}
 
           {mutation.isError ? (
@@ -1008,7 +1098,7 @@ export function TransactionForm({
             <Button
               type="button"
               variant="secondary"
-              onClick={onClose}
+              onClick={requestClose}
               disabled={mutation.isPending}
             >
               Cancel
