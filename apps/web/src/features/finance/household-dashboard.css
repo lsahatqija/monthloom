@@ -1603,6 +1603,14 @@
     max-height: 92vh;
     border-radius: var(--radius-overlay) var(--radius-overlay) 0 0;
   }
+  .sourceModalBackdrop {
+    align-items: center;
+    padding: var(--space-4);
+  }
+  .sourceModal {
+    max-height: 92dvh;
+    border-radius: var(--radius-overlay);
+  }
   .transactionModalHeader,
   .transactionForm {
     padding-inline: var(--space-4);
