@@ -48,10 +48,12 @@ describe('source settings', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add source' }));
     const dialog = screen.getByRole('dialog', { name: 'Add new source' });
     expect(within(dialog).queryByLabelText('Display name alias')).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText('Alias 1')).not.toBeInTheDocument();
     await userEvent.type(
       within(dialog).getByLabelText('Source Display Name'),
       'Neighborhood Market',
     );
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add alias' }));
     await userEvent.type(within(dialog).getByLabelText('Alias 1'), 'NBRHD MKT 1042');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add source' }));
 

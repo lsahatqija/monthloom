@@ -444,6 +444,7 @@ describe('transaction form + query + HTTP client', () => {
     expect(screen.getByRole('dialog', { name: 'Add new source' })).toBeInTheDocument();
     expect(screen.getByLabelText('Source Display Name')).toHaveValue('Neighborhood Market');
     expect(screen.queryByLabelText('Display name alias')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Alias 1')).not.toBeInTheDocument();
   });
 
   it('disables recurring edits when no occurrences are selected', async () => {

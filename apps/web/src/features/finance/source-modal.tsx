@@ -30,10 +30,9 @@ export function SourceModal({
 }: SourceModalProps) {
   const queryClient = useQueryClient();
   const [displayName, setDisplayName] = useState(source?.displayName ?? initialDisplayName);
-  const [aliases, setAliases] = useState(() => {
-    const additionalAliases = source?.aliases.filter((alias) => alias !== source.displayName) ?? [];
-    return additionalAliases.length ? additionalAliases : [''];
-  });
+  const [aliases, setAliases] = useState(
+    () => source?.aliases.filter((alias) => alias !== source.displayName) ?? [],
+  );
   const mutation = useMutation({
     mutationFn: (input: CreateHouseholdSourceRequest) =>
       source
@@ -136,7 +135,7 @@ export function SourceModal({
                 <Button
                   type="button"
                   variant="secondary"
-                  disabled={mutation.isPending || aliases.length === 1}
+                  disabled={mutation.isPending}
                   onClick={() =>
                     setAliases((current) =>
                       current.filter((_value, aliasIndex) => aliasIndex !== index),

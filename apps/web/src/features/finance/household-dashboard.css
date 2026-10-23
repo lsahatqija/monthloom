@@ -40,7 +40,8 @@
 .householdControl {
   display: flex;
   min-width: 0;
-  flex: 1 1 auto;
+  max-width: 50%;
+  flex: 1 1 0;
   align-items: center;
   gap: var(--space-2);
 }
@@ -55,8 +56,9 @@
 
 .monthNavigation {
   display: flex;
-  flex: 0 0 auto;
-  margin-left: auto;
+  min-width: 0;
+  max-width: 50%;
+  flex: 1 1 0;
   flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
@@ -93,7 +95,9 @@
 .monthPicker,
 .householdPicker {
   position: relative;
-  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
+  flex: 0 1 auto;
 }
 .householdPicker::after {
   content: '';
@@ -120,16 +124,20 @@
   cursor: pointer;
 }
 .householdPicker select {
-  max-width: min(18rem, 42vw);
+  max-width: min(18rem, 100%);
   text-overflow: ellipsis;
 }
 .monthHeading {
+  min-width: 0;
+  max-width: 100%;
   margin: 0;
   font-size: clamp(1.45rem, 3vw, 2rem);
   line-height: 1.1;
 }
 .monthPickerTrigger {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
   min-height: 2.75rem;
   align-items: center;
   gap: var(--space-1);
@@ -154,8 +162,12 @@
 }
 .monthLabelText {
   display: inline-block;
-  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
+  flex: 0 1 auto;
+  overflow: hidden;
   font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .monthLabelText[data-direction='forward'] {
@@ -166,10 +178,13 @@
 }
 .monthLabelMeasure {
   position: absolute;
+  top: 0;
+  right: 100%;
   display: grid;
   width: max-content;
   font-variant-numeric: tabular-nums;
   visibility: hidden;
+  pointer-events: none;
   white-space: nowrap;
 }
 .monthPickerPopover {
@@ -225,9 +240,26 @@
   visibility: hidden;
   pointer-events: none;
 }
+.monthNavigation.isCompact .currentMonthButton {
+  display: none;
+}
 .currentMonthButton svg {
   width: 1.2rem;
   height: 1.2rem;
+}
+.monthPickerCurrentMonthButton {
+  grid-column: 1 / -1;
+  min-height: 2.75rem;
+  border: 1px solid var(--ml-border);
+  border-radius: 8px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+}
+.monthPickerCurrentMonthButton:hover {
+  background: var(--ml-surface-hover);
 }
 
 .financeRecap {
@@ -707,6 +739,7 @@
   z-index: 100;
   inset: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
   padding: var(--space-6) var(--space-4);
   place-items: center;
@@ -717,6 +750,8 @@
 .transactionModal {
   display: flex;
   width: min(100%, 44rem);
+  min-width: 0;
+  max-width: 100%;
   max-height: calc(100vh - 3rem);
   flex-direction: column;
   overflow: hidden;
@@ -775,7 +810,10 @@
 .transactionForm {
   display: grid;
   gap: var(--space-6);
+  min-width: 0;
+  max-width: 100%;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   padding: var(--space-6);
   scroll-padding-bottom: 5rem;
@@ -1557,16 +1595,20 @@
 
 @media (max-width: 620px) {
   .transactionModalBackdrop {
-    align-items: end;
-    padding: 0;
+    align-items: center;
+    padding: var(--space-4);
   }
   .transactionModal {
     width: 100%;
-    max-height: 92vh;
-    border-radius: var(--radius-overlay) var(--radius-overlay) 0 0;
+    max-height: 92dvh;
+    border-radius: var(--radius-overlay);
   }
   .transactionModalHeader,
   .transactionForm {
+    padding-inline: var(--space-4);
+  }
+  .transactionFormActions {
+    margin-inline: calc(-1 * var(--space-4));
     padding-inline: var(--space-4);
   }
   .transactionFormGrid {

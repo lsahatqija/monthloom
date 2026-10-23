@@ -59,6 +59,28 @@ function shiftMonth(month: string, offset: number): string {
   return monthKey(new Date(year!, monthNumber! - 1 + offset, 1));
 }
 
+export function selectMonthLabelVariant(
+  availableWidth: number,
+  fullWidth: number,
+  shortYearWidth: number,
+  monthWidth: number,
+  abbreviatedShortYearWidth: number,
+): 'full' | 'shortYear' | 'month' | 'abbreviatedShortYear' | 'abbreviated' {
+  if (fullWidth <= availableWidth) return 'full';
+  if (shortYearWidth <= availableWidth) return 'shortYear';
+  if (monthWidth <= availableWidth) return 'month';
+  if (abbreviatedShortYearWidth <= availableWidth) return 'abbreviatedShortYear';
+  return 'abbreviated';
+}
+
+export function shouldCollapseCurrentMonthButton(
+  availableWidth: number,
+  controlsWidth: number,
+  abbreviatedLabelWidth: number,
+): boolean {
+  return controlsWidth + abbreviatedLabelWidth > availableWidth;
+}
+
 function EntryIcon({ entry }: { entry: HouseholdTransaction }) {
   return (
     <span
@@ -167,12 +189,23 @@ export function HouseholdDashboard() {
     month: 'long',
     year: 'numeric',
   }).format(new Date(selectedYear!, selectedMonthNumber! - 1, 1));
-  const compactMonthLabel = `${String(selectedMonthNumber).padStart(2, '0')}-'${String(selectedYear).slice(-2)}`;
+  const monthName = new Intl.DateTimeFormat(undefined, { month: 'long' }).format(
+    new Date(selectedYear!, selectedMonthNumber! - 1, 1),
+  );
+  const abbreviatedMonthName = new Intl.DateTimeFormat(undefined, { month: 'short' }).format(
+    new Date(selectedYear!, selectedMonthNumber! - 1, 1),
+  );
+  const shortYear = `'${String(selectedYear).slice(-2)}`;
+  const monthNameWithShortYear = `${monthName} ${shortYear}`;
+  const abbreviatedMonthNameWithShortYear = `${abbreviatedMonthName} ${shortYear}`;
   const monthNames = useMemo(
     () =>
       Array.from({ length: 12 }, (_, index) => ({
         value: index + 1,
         label: new Intl.DateTimeFormat(undefined, { month: 'long' }).format(
+          new Date(2024, index, 1),
+        ),
+        abbreviatedLabel: new Intl.DateTimeFormat(undefined, { month: 'short' }).format(
           new Date(2024, index, 1),
         ),
       })),
@@ -192,14 +225,18 @@ export function HouseholdDashboard() {
       : month > previousMonthRef.current
         ? 'forward'
         : 'backward';
-  const [compactMonth, setCompactMonth] = useState(false);
+  const [monthLabelVariant, setMonthLabelVariant] = useState<
+    'full' | 'shortYear' | 'month' | 'abbreviatedShortYear' | 'abbreviated'
+  >('full');
+  const [currentMonthButtonInPicker, setCurrentMonthButtonInPicker] = useState(false);
   const [monthLabelWidth, setMonthLabelWidth] = useState<number>();
-  const dashboardSelectorsRef = useRef<HTMLDivElement>(null);
-  const householdControlRef = useRef<HTMLDivElement>(null);
   const monthNavigationRef = useRef<HTMLDivElement>(null);
   const monthLabelRef = useRef<HTMLSpanElement>(null);
   const monthLabelMeasureRef = useRef<HTMLSpanElement>(null);
-  const compactMonthLabelMeasureRef = useRef<HTMLSpanElement>(null);
+  const monthNameWithShortYearMeasureRef = useRef<HTMLSpanElement>(null);
+  const monthNameMeasureRef = useRef<HTMLSpanElement>(null);
+  const abbreviatedMonthNameWithShortYearMeasureRef = useRef<HTMLSpanElement>(null);
+  const abbreviatedMonthNameMeasureRef = useRef<HTMLSpanElement>(null);
   const monthPickerRef = useRef<HTMLDivElement>(null);
   const monthPickerTriggerRef = useRef<HTMLButtonElement>(null);
   const addTransactionTriggerRef = useRef<HTMLButtonElement>(null);
@@ -223,46 +260,94 @@ export function HouseholdDashboard() {
     previousMonthRef.current = month;
   }, [month]);
   useLayoutEffect(() => {
-    const container = dashboardSelectorsRef.current;
-    const householdControl = householdControlRef.current;
     const navigation = monthNavigationRef.current;
     const visibleLabel = monthLabelRef.current;
+    const monthPicker = monthPickerRef.current;
+    const monthPickerTrigger = monthPickerTriggerRef.current;
     const fullLabel = monthLabelMeasureRef.current;
-    const compactLabel = compactMonthLabelMeasureRef.current;
+    const shortYearLabel = monthNameWithShortYearMeasureRef.current;
+    const monthOnlyLabel = monthNameMeasureRef.current;
+    const abbreviatedShortYearLabel = abbreviatedMonthNameWithShortYearMeasureRef.current;
+    const abbreviatedLabel = abbreviatedMonthNameMeasureRef.current;
     if (
-      !container ||
-      !householdControl ||
       !navigation ||
       !visibleLabel ||
+      !monthPicker ||
+      !monthPickerTrigger ||
       !fullLabel ||
-      !compactLabel ||
+      !shortYearLabel ||
+      !monthOnlyLabel ||
+      !abbreviatedShortYearLabel ||
+      !abbreviatedLabel ||
       typeof ResizeObserver === 'undefined'
     )
       return;
 
     const measure = () => {
-      const gap = Number.parseFloat(getComputedStyle(container).columnGap) || 0;
-      const householdContent = householdControl.querySelector<HTMLElement>(
-        '.householdNameText, select',
-      );
-      const householdWidth = householdContent?.scrollWidth ?? householdControl.scrollWidth;
       const fullLabelWidth = fullLabel.getBoundingClientRect().width;
-      const compactLabelWidth = compactLabel.getBoundingClientRect().width;
-      const fullNavigationWidth =
-        navigation.getBoundingClientRect().width -
-        visibleLabel.getBoundingClientRect().width +
-        fullLabelWidth;
-      const shouldCompact = householdWidth + fullNavigationWidth + gap > container.clientWidth;
-      setCompactMonth(shouldCompact);
-      setMonthLabelWidth(shouldCompact ? compactLabelWidth : fullLabelWidth);
+      const shortYearLabelWidth = shortYearLabel.getBoundingClientRect().width;
+      const monthNameWidth = monthOnlyLabel.getBoundingClientRect().width;
+      const abbreviatedShortYearLabelWidth =
+        abbreviatedShortYearLabel.getBoundingClientRect().width;
+      const abbreviatedMonthNameWidth = abbreviatedLabel.getBoundingClientRect().width;
+      const visibleLabelWidth = visibleLabel.getBoundingClientRect().width;
+      const gap = Number.parseFloat(getComputedStyle(navigation).columnGap) || 0;
+      const showCurrentMonthButton = month !== currentMonthKey;
+      const navigationButtonWidth =
+        navigation.querySelector<HTMLElement>('.monthNavigationButton')?.getBoundingClientRect()
+          .width ?? 0;
+      const monthPickerChromeWidth =
+        monthPickerTrigger.getBoundingClientRect().width - visibleLabelWidth;
+      const otherControlsWidth = Array.from(navigation.children).reduce(
+        (width, child) =>
+          child === monthPicker || child.classList.contains('currentMonthButton')
+            ? width
+            : width + child.getBoundingClientRect().width,
+        0,
+      );
+      const expandedControlsWidth =
+        otherControlsWidth +
+        monthPickerChromeWidth +
+        (showCurrentMonthButton ? navigationButtonWidth : 0) +
+        gap * (showCurrentMonthButton ? 3 : 2);
+      const collapseCurrentMonthButton =
+        showCurrentMonthButton &&
+        shouldCollapseCurrentMonthButton(
+          navigation.clientWidth,
+          expandedControlsWidth,
+          abbreviatedMonthNameWidth,
+        );
+      const navigationWithoutLabelWidth = collapseCurrentMonthButton
+        ? otherControlsWidth + monthPickerChromeWidth + gap * 2
+        : expandedControlsWidth;
+      const availableLabelWidth = navigation.clientWidth - navigationWithoutLabelWidth;
+      const variant = selectMonthLabelVariant(
+        availableLabelWidth,
+        fullLabelWidth,
+        shortYearLabelWidth,
+        monthNameWidth,
+        abbreviatedShortYearLabelWidth,
+      );
+      setCurrentMonthButtonInPicker(collapseCurrentMonthButton);
+      setMonthLabelVariant(variant);
+      setMonthLabelWidth(
+        variant === 'full'
+          ? fullLabelWidth
+          : variant === 'shortYear'
+            ? shortYearLabelWidth
+            : variant === 'month'
+              ? monthNameWidth
+              : variant === 'abbreviatedShortYear'
+                ? abbreviatedShortYearLabelWidth
+                : abbreviatedMonthNameWidth,
+      );
     };
     const observer = new ResizeObserver(measure);
-    observer.observe(container);
-    observer.observe(householdControl);
+    observer.observe(navigation);
     measure();
     void document.fonts?.ready.then(measure);
     return () => observer.disconnect();
-  }, [monthLabel]);
+  }, [currentMonthKey, month, monthLabel]);
   useEffect(() => {
     if (!monthPickerOpen) return;
     const closePicker = (event: MouseEvent) => {
@@ -497,12 +582,8 @@ export function HouseholdDashboard() {
       aria-busy={query.isFetching}
     >
       <div className="dashboardHeading">
-        <div
-          ref={dashboardSelectorsRef}
-          className="dashboardSelectors"
-          data-onboarding="month-overview"
-        >
-          <div ref={householdControlRef} className="householdControl">
+        <div className="dashboardSelectors" data-onboarding="month-overview">
+          <div className="householdControl">
             {(householdsQuery.data?.length ?? 0) > 1 ? (
               <>
                 <label className="householdPicker">
@@ -530,7 +611,11 @@ export function HouseholdDashboard() {
               </h1>
             )}
           </div>
-          <div ref={monthNavigationRef} className="monthNavigation" aria-label="Month navigation">
+          <div
+            ref={monthNavigationRef}
+            className={`monthNavigation${currentMonthButtonInPicker ? ' isCompact' : ''}`}
+            aria-label="Month navigation"
+          >
             <button
               type="button"
               className={`currentMonthButton${month === currentMonthKey ? ' isHidden' : ''}`}
@@ -568,7 +653,15 @@ export function HouseholdDashboard() {
                     data-direction={monthDirection}
                     style={monthLabelWidth ? { width: `${monthLabelWidth}px` } : undefined}
                   >
-                    {compactMonth ? compactMonthLabel : monthLabel}
+                    {monthLabelVariant === 'full'
+                      ? monthLabel
+                      : monthLabelVariant === 'shortYear'
+                        ? monthNameWithShortYear
+                        : monthLabelVariant === 'month'
+                          ? monthName
+                          : monthLabelVariant === 'abbreviatedShortYear'
+                            ? abbreviatedMonthNameWithShortYear
+                            : abbreviatedMonthName}
                   </span>
                   <span ref={monthLabelMeasureRef} className="monthLabelMeasure" aria-hidden="true">
                     {monthNames.map((option) => (
@@ -576,11 +669,36 @@ export function HouseholdDashboard() {
                     ))}
                   </span>
                   <span
-                    ref={compactMonthLabelMeasureRef}
+                    ref={monthNameWithShortYearMeasureRef}
                     className="monthLabelMeasure"
                     aria-hidden="true"
                   >
-                    {"00-'00"}
+                    {monthNames.map((option) => (
+                      <span key={option.value}>{`${option.label} ${shortYear}`}</span>
+                    ))}
+                  </span>
+                  <span ref={monthNameMeasureRef} className="monthLabelMeasure" aria-hidden="true">
+                    {monthNames.map((option) => (
+                      <span key={option.value}>{option.label}</span>
+                    ))}
+                  </span>
+                  <span
+                    ref={abbreviatedMonthNameWithShortYearMeasureRef}
+                    className="monthLabelMeasure"
+                    aria-hidden="true"
+                  >
+                    {monthNames.map((option) => (
+                      <span key={option.value}>{`${option.abbreviatedLabel} ${shortYear}`}</span>
+                    ))}
+                  </span>
+                  <span
+                    ref={abbreviatedMonthNameMeasureRef}
+                    className="monthLabelMeasure"
+                    aria-hidden="true"
+                  >
+                    {monthNames.map((option) => (
+                      <span key={option.value}>{option.abbreviatedLabel}</span>
+                    ))}
                   </span>
                   <ChevronDown aria-hidden="true" />
                 </button>
@@ -626,6 +744,18 @@ export function HouseholdDashboard() {
                       ))}
                     </select>
                   </label>
+                  {currentMonthButtonInPicker ? (
+                    <button
+                      type="button"
+                      className="monthPickerCurrentMonthButton"
+                      onClick={() => {
+                        setMonth(currentMonthKey);
+                        setMonthPickerOpen(false);
+                      }}
+                    >
+                      Current month
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
             </div>
