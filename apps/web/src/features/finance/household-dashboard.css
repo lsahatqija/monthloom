@@ -95,6 +95,7 @@
 .monthPicker,
 .householdPicker {
   position: relative;
+  min-width: 0;
   max-width: 100%;
   flex: 0 1 auto;
 }
@@ -127,12 +128,16 @@
   text-overflow: ellipsis;
 }
 .monthHeading {
+  min-width: 0;
+  max-width: 100%;
   margin: 0;
   font-size: clamp(1.45rem, 3vw, 2rem);
   line-height: 1.1;
 }
 .monthPickerTrigger {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
   min-height: 2.75rem;
   align-items: center;
   gap: var(--space-1);
@@ -157,8 +162,12 @@
 }
 .monthLabelText {
   display: inline-block;
-  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
+  flex: 0 1 auto;
+  overflow: hidden;
   font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .monthLabelText[data-direction='forward'] {
@@ -169,10 +178,13 @@
 }
 .monthLabelMeasure {
   position: absolute;
+  top: 0;
+  right: 100%;
   display: grid;
   width: max-content;
   font-variant-numeric: tabular-nums;
   visibility: hidden;
+  pointer-events: none;
   white-space: nowrap;
 }
 .monthPickerPopover {
