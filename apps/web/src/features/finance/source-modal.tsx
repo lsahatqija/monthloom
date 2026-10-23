@@ -63,7 +63,7 @@ export function SourceModal({
 
   return (
     <div
-      className="transactionModalBackdrop sourceModalBackdrop"
+      className="transactionModalBackdrop"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !mutation.isPending) onClose();
       }}

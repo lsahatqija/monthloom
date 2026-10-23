@@ -1595,19 +1595,11 @@
 
 @media (max-width: 620px) {
   .transactionModalBackdrop {
-    align-items: end;
-    padding: 0;
-  }
-  .transactionModal {
-    width: 100%;
-    max-height: 92vh;
-    border-radius: var(--radius-overlay) var(--radius-overlay) 0 0;
-  }
-  .sourceModalBackdrop {
     align-items: center;
     padding: var(--space-4);
   }
-  .sourceModal {
+  .transactionModal {
+    width: 100%;
     max-height: 92dvh;
     border-radius: var(--radius-overlay);
   }
