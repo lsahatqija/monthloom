@@ -62,23 +62,23 @@
 }
 :root[data-theme='apricot-cotton'] {
   color-scheme: light;
-  --ml-background: #fbf5ef;
-  --ml-surface: #fffcf8;
-  --ml-accent-1: #f1ceb5;
-  --ml-accent-2: #eadca9;
-  --ml-accent-3: #c9dcd8;
-  --ml-primary: #8a5542;
-  --ml-text: #453931;
+  --ml-background: #fff0f6;
+  --ml-surface: #fff8fb;
+  --ml-accent-1: #ffb8d2;
+  --ml-accent-2: #ffd0e2;
+  --ml-accent-3: #f4a6c4;
+  --ml-primary: #a72f68;
+  --ml-text: #4b2436;
 }
 :root[data-theme='apricot-cotton'][data-mode='dark'] {
   color-scheme: dark;
-  --ml-background: #241c18;
-  --ml-surface: #322721;
-  --ml-accent-1: #5a4030;
-  --ml-accent-2: #50472d;
-  --ml-accent-3: #324b46;
-  --ml-primary: #e5b393;
-  --ml-text: #f3e8df;
+  --ml-background: #27141f;
+  --ml-surface: #361c2a;
+  --ml-accent-1: #71324f;
+  --ml-accent-2: #633044;
+  --ml-accent-3: #4f263b;
+  --ml-primary: #ff99bf;
+  --ml-text: #f9e3ed;
 }
 :root[data-theme='blue-hour'] {
   color-scheme: light;
@@ -102,43 +102,43 @@
 }
 :root[data-theme='rosewood-ember'] {
   color-scheme: light;
-  --ml-background: #fbf3f0;
-  --ml-surface: #fffaf8;
-  --ml-accent-1: #e8b8ae;
-  --ml-accent-2: #efc99f;
-  --ml-accent-3: #d9b2a7;
-  --ml-primary: #873f3f;
-  --ml-text: #4a2928;
+  --ml-background: #fbf1f1;
+  --ml-surface: #fff9f9;
+  --ml-accent-1: #e9b1b1;
+  --ml-accent-2: #ecc0b8;
+  --ml-accent-3: #d9a8aa;
+  --ml-primary: #913d45;
+  --ml-text: #4c272b;
 }
 :root[data-theme='rosewood-ember'][data-mode='dark'] {
   color-scheme: dark;
-  --ml-background: #211616;
-  --ml-surface: #301f1e;
-  --ml-accent-1: #633a37;
-  --ml-accent-2: #5d432b;
-  --ml-accent-3: #513331;
-  --ml-primary: #f0aaa0;
-  --ml-text: #f6e5e1;
+  --ml-background: #231516;
+  --ml-surface: #321d20;
+  --ml-accent-1: #693638;
+  --ml-accent-2: #5d3934;
+  --ml-accent-3: #573033;
+  --ml-primary: #f2a3aa;
+  --ml-text: #f7e3e5;
 }
 :root[data-theme='golden-hour'] {
   color-scheme: light;
-  --ml-background: #fffbea;
-  --ml-surface: #fffef5;
-  --ml-accent-1: #f6dc72;
-  --ml-accent-2: #ffd24d;
-  --ml-accent-3: #e8bd55;
-  --ml-primary: #765400;
-  --ml-text: #453600;
+  --ml-background: color-mix(in srgb, #f3dd6d 42%, #fff);
+  --ml-surface: color-mix(in srgb, #fecb8b 20%, #fff);
+  --ml-accent-1: #ffd100;
+  --ml-accent-2: #ffc72c;
+  --ml-accent-3: #fecb8b;
+  --ml-primary: color-mix(in srgb, #a07400 78%, #000);
+  --ml-text: #3b2b00;
 }
 :root[data-theme='golden-hour'][data-mode='dark'] {
   color-scheme: dark;
-  --ml-background: #201c08;
-  --ml-surface: #2e280c;
-  --ml-accent-1: #5e5012;
-  --ml-accent-2: #6b5705;
-  --ml-accent-3: #554511;
-  --ml-primary: #ffe16c;
-  --ml-text: #fff5c9;
+  --ml-background: color-mix(in srgb, #a07400 25%, #0d0b04);
+  --ml-surface: color-mix(in srgb, #a07400 32%, #171205);
+  --ml-accent-1: color-mix(in srgb, #f3dd6d 32%, #211b09);
+  --ml-accent-2: color-mix(in srgb, #fecb8b 30%, #211b09);
+  --ml-accent-3: color-mix(in srgb, #ffc72c 30%, #211b09);
+  --ml-primary: #f3dd6d;
+  --ml-text: #fff5d6;
 }
 :root[data-theme='terracotta-grove'] {
   color-scheme: light;
