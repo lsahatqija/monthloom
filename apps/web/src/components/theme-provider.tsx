@@ -56,9 +56,14 @@ function applyHeaderStyle(enabled: boolean) {
 }
 
 function syncThemeColor() {
-  const header = document.querySelector<HTMLElement>('.header');
   const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  if (header && themeColor) themeColor.content = getComputedStyle(header).backgroundColor;
+  if (!themeColor) return;
+
+  const probe = document.createElement('span');
+  probe.style.background = 'var(--ml-pwa-theme-color)';
+  document.body.append(probe);
+  themeColor.content = getComputedStyle(probe).backgroundColor;
+  probe.remove();
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -88,7 +93,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setDarkHeaderState(enabled);
     localStorage.setItem(DARK_HEADER_STORAGE_KEY, String(enabled));
     applyHeaderStyle(enabled);
-    syncThemeColor();
   }, []);
 
   const setTheme = useCallback(

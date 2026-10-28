@@ -202,6 +202,8 @@
 }
 
 :root {
+  --ml-dark-header-background: color-mix(in srgb, var(--ml-text) 92%, #000);
+  --ml-pwa-theme-color: var(--ml-dark-header-background);
   --ml-on-primary: var(--ml-surface);
   --ml-text-muted: color-mix(in srgb, var(--ml-text) 72%, var(--ml-surface));
   --ml-border: color-mix(in srgb, var(--ml-text) 20%, var(--ml-surface));
@@ -246,6 +248,7 @@
 }
 
 :root[data-mode='dark'] {
+  --ml-pwa-theme-color: var(--ml-surface);
   --color-danger: #ff9b8f;
   --color-success: #78d7a8;
 }

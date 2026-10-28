@@ -1,5 +1,5 @@
 import { Defaults } from '@monthloom/contracts';
-import type { Metadata, Viewport } from 'next';
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
 import { PwaRegistration } from '../components/pwa-registration';
@@ -31,10 +31,6 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport: Viewport = {
-  themeColor: '#fffefa',
-};
-
 export default function RootLayout({ children }: { children: ReactNode }) {
   const defaultHeaderStyle = Defaults.DARK_HEADER_IN_LIGHT_MODE ? 'dark' : 'theme';
   const appearanceScript = `(function(){try{var t=localStorage.getItem('monthloom-theme');var m=localStorage.getItem('monthloom-mode');var h=localStorage.getItem('monthloom-dark-header');var themes=['linen-sage','sea-glass','lavender-mist','apricot-cotton','blue-hour','rosewood-ember','golden-hour','terracotta-grove','high-contrast','monochrome'];document.documentElement.dataset.theme=themes.includes(t)?t:${JSON.stringify(Defaults.THEME)};document.documentElement.dataset.mode=m==='light'||m==='dark'?m:${JSON.stringify(Defaults.COLOR_MODE)};document.documentElement.dataset.headerStyle=h===null?${JSON.stringify(defaultHeaderStyle)}:h==='true'?'dark':'theme'}catch(e){document.documentElement.dataset.theme=${JSON.stringify(Defaults.THEME)};document.documentElement.dataset.mode=${JSON.stringify(Defaults.COLOR_MODE)};document.documentElement.dataset.headerStyle=${JSON.stringify(defaultHeaderStyle)}}})()`;
@@ -48,6 +44,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
     >
       <head>
+        <meta name="theme-color" content="#263732" />
         <script dangerouslySetInnerHTML={{ __html: appearanceScript }} />
       </head>
       <body>
