@@ -55,6 +55,12 @@ function applyHeaderStyle(enabled: boolean) {
   document.documentElement.dataset.headerStyle = enabled ? 'dark' : 'theme';
 }
 
+function syncThemeColor() {
+  const header = document.querySelector<HTMLElement>('.header');
+  const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (header && themeColor) themeColor.content = getComputedStyle(header).backgroundColor;
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeId>(Defaults.THEME);
   const [mode, setMode] = useState<ColorMode>(Defaults.COLOR_MODE);
@@ -75,12 +81,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setDarkHeaderState(initialDarkHeader);
     applyAppearance(initialTheme, initialMode);
     applyHeaderStyle(initialDarkHeader);
+    syncThemeColor();
   }, []);
 
   const setDarkHeaderInLightMode = useCallback((enabled: boolean) => {
     setDarkHeaderState(enabled);
     localStorage.setItem(DARK_HEADER_STORAGE_KEY, String(enabled));
     applyHeaderStyle(enabled);
+    syncThemeColor();
   }, []);
 
   const setTheme = useCallback(
@@ -88,6 +96,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setThemeState(nextTheme);
       localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
       applyAppearance(nextTheme, mode);
+      syncThemeColor();
     },
     [mode],
   );
@@ -97,6 +106,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const nextMode = currentMode === 'light' ? 'dark' : 'light';
       localStorage.setItem(MODE_STORAGE_KEY, nextMode);
       applyAppearance(theme, nextMode);
+      syncThemeColor();
       return nextMode;
     });
   }, [theme]);
