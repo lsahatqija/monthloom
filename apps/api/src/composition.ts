@@ -10,6 +10,8 @@ import { AuthController } from './modules/auth/auth.controller.js';
 import { createAuthMiddleware, requireRole } from './modules/auth/auth.middleware.js';
 import { AuthService } from './modules/auth/auth.service.js';
 import { AutomatedEmailService } from './modules/email/automated-email.service.js';
+import { FeedbackController } from './modules/feedback/feedback.controller.js';
+import { FeedbackService } from './modules/feedback/feedback.service.js';
 import { PostgresFileRepository } from './modules/files/adapters/postgres-file.repository.js';
 import { FileController } from './modules/files/file.controller.js';
 import { FileService } from './modules/files/file.service.js';
@@ -51,6 +53,7 @@ export function buildAppDependencies() {
   const emailService = new AutomatedEmailService(emailSender);
 
   const userService = new UserService(userRepository);
+  const feedbackService = new FeedbackService(emailService, config.email.feedbackAddress);
   const financeServices = {
     households: new HouseholdService(financeRepositories.households),
     invitations: new InvitationService(
@@ -82,6 +85,7 @@ export function buildAppDependencies() {
   const fileController = new FileController(fileService);
   const financeController = new FinanceController(financeServices);
   const systemController = new SystemController(systemService);
+  const feedbackController = new FeedbackController(feedbackService);
 
   return {
     controllers: {
@@ -90,6 +94,7 @@ export function buildAppDependencies() {
       fileController,
       financeController,
       systemController,
+      feedbackController,
     },
     middleware: { requireAuth, optionalAuth, requireRole },
   };

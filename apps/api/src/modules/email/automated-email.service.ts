@@ -47,6 +47,17 @@ export interface MonthlyReportEmailInput {
   reportUrl: string;
 }
 
+export interface FeedbackEmailInput {
+  to: string;
+  feedbackType: string;
+  feedback: string;
+  identity?: {
+    userId: string;
+    userEmail: string;
+    displayName: string;
+  };
+}
+
 /** Composes all product email in one place and delegates provider-specific delivery. */
 export class AutomatedEmailService {
   constructor(private readonly sender: EmailSender) {}
@@ -122,6 +133,28 @@ export class AutomatedEmailService {
         EXPENSES: escapeHtml(input.expenses),
         LEFTOVER: escapeHtml(input.leftover),
         REPORT_URL: escapeHtml(input.reportUrl),
+      },
+    });
+  }
+
+  sendFeedback(input: FeedbackEmailInput): Promise<void> {
+    const submitter = input.identity
+      ? `<strong>${escapeHtml(input.identity.displayName)}</strong> (${escapeHtml(input.identity.userEmail)})`
+      : '<strong>Anonymous user</strong>';
+    const userReference = input.identity
+      ? `<p style="color:#74675e;font-size:13px">User ID: ${escapeHtml(input.identity.userId)}</p>`
+      : '';
+
+    return this.sender.send({
+      kind: 'template',
+      label: 'feedback',
+      to: input.to,
+      templateId: resendTemplateAliases.feedback,
+      variables: {
+        FEEDBACK_TYPE: escapeHtml(input.feedbackType),
+        FEEDBACK: escapeHtml(input.feedback).replace(/\r?\n/g, '<br>'),
+        SUBMITTER: submitter,
+        USER_REFERENCE: userReference,
       },
     });
   }

@@ -6,6 +6,7 @@ import { config } from './config/index.js';
 import { generateOpenApiDocument } from './infrastructure/openapi/document.js';
 import { verifyRequestOrigin } from './middleware/verify-origin.middleware.js';
 import { createAuthRouter } from './modules/auth/auth.routes.js';
+import { createFeedbackRouter } from './modules/feedback/feedback.routes.js';
 import { createFileRouter } from './modules/files/file.routes.js';
 import { createFinanceRouter } from './modules/finance/finance.routes.js';
 import { createSystemRouter } from './modules/system/system.routes.js';
@@ -31,6 +32,10 @@ export function registerRoutes(app: Express, deps: AppDependencies): void {
   app.use(
     `${API_BASE_PATH}/files`,
     createFileRouter(controllers.fileController, middleware.requireAuth),
+  );
+  app.use(
+    `${API_BASE_PATH}/feedback`,
+    createFeedbackRouter(controllers.feedbackController, middleware.requireAuth),
   );
   app.use(
     `${API_BASE_PATH}/households`,

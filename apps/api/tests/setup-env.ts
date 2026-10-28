@@ -12,6 +12,7 @@ Object.assign(process.env, {
   EMAIL_FROM_NAME: 'Monthloom Test',
   EMAIL_FROM_ADDRESS: 'test@example.com',
   EMAIL_REPLY_TO: '',
+  FEEDBACK_EMAIL_ADDRESS: 'feedback@example.com',
   RESEND_API_KEY: '',
   RESEND_ADMIN_KEY: '',
   LOG_LEVEL: 'silent',
