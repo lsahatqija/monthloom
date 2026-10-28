@@ -81,6 +81,9 @@ web_modules/
 .env.production.local
 .env.local
 
+# Private security findings (keep local; never publish or commit)
+/docs/security-review.md
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache

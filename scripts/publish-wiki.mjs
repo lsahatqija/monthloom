@@ -1,5 +1,13 @@
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -126,6 +134,7 @@ const areas = new Map([
 ]);
 
 mkdirSync(wikiPath, { recursive: true });
+rmSync(join(wikiPath, 'Security.md'), { force: true });
 
 for (const file of readdirSync(join(root, 'wiki')).filter((name) => name.endsWith('.md'))) {
   const content = readFileSync(join(root, 'wiki', file), 'utf8').replaceAll(
@@ -141,7 +150,6 @@ const documentation = new Map([
   ['github-wiki.md', 'Wiki-Maintenance.md'],
   ['production-concerns.md', 'Production-Concerns.md'],
   ['runtime-configuration.md', 'Runtime-Configuration.md'],
-  ['security-review.md', 'Security.md'],
   ['testing.md', 'Testing.md'],
 ]);
 
