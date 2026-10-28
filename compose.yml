@@ -40,6 +40,7 @@ services:
       EMAIL_TRANSPORT: ${EMAIL_TRANSPORT:-log}
       EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-no-reply@monthloom.local}
       EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-}
+      FEEDBACK_EMAIL_ADDRESS: ${FEEDBACK_EMAIL_ADDRESS:-feedback@monthloom.local}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
     ports:
       - '4000:4000'

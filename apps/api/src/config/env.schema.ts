@@ -30,6 +30,7 @@ export const apiEnvShape = {
   EMAIL_FROM_NAME: z.string().min(1).default('Monthloom'),
   EMAIL_FROM_ADDRESS: z.string().email().default('no-reply@monthloom.local'),
   EMAIL_REPLY_TO: emptyStringAsUndefined(z.string().email()),
+  FEEDBACK_EMAIL_ADDRESS: z.string().email().default('feedback@monthloom.local'),
   RESEND_API_KEY: emptyStringAsUndefined(z.string().startsWith('re_')),
   RESEND_ADMIN_KEY: emptyStringAsUndefined(z.string().startsWith('re_')),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),

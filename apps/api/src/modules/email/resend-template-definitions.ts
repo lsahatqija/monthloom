@@ -30,6 +30,7 @@ export const resendTemplateAliases = {
   passwordReset: 'monthloom-password-reset',
   householdInvitation: 'monthloom-household-invitation',
   monthlyBalance: 'monthloom-monthly-balance',
+  feedback: 'monthloom-feedback',
 } as const;
 
 export const resendTemplateDefinitions = [
@@ -99,6 +100,23 @@ export const resendTemplateDefinitions = [
       variable('EXPENSES'),
       variable('LEFTOVER'),
       variable('REPORT_URL'),
+    ],
+  },
+  {
+    name: 'Monthloom feedback',
+    alias: resendTemplateAliases.feedback,
+    subject: 'Monthloom Feedback: {{{FEEDBACK_TYPE}}}',
+    html: layout(
+      'New feedback was submitted through Monthloom.',
+      'New {{{FEEDBACK_TYPE}}}',
+      `<p style="line-height:1.6"><strong>{{{DISPLAY_NAME}}}</strong> ({{{USER_EMAIL}}}) submitted feedback from inside Monthloom.</p><div style="margin:24px 0;padding:20px;border:1px solid #ded5cc;border-radius:10px;background:#f8f5f1;line-height:1.65;overflow-wrap:anywhere">{{{FEEDBACK}}}</div><p style="color:#74675e;font-size:13px">User ID: {{{USER_ID}}}</p>`,
+    ),
+    variables: [
+      variable('FEEDBACK_TYPE'),
+      variable('FEEDBACK'),
+      variable('USER_ID'),
+      variable('USER_EMAIL'),
+      variable('DISPLAY_NAME'),
     ],
   },
 ] as const;

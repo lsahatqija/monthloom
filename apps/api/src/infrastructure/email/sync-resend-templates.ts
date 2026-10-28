@@ -13,8 +13,16 @@ async function syncTemplates(): Promise<void> {
 
   const resend = new Resend(managementKey);
   const from = `${config.email.from.name} <${config.email.from.address}>`;
+  const requestedAlias = process.argv[2];
+  const definitions = requestedAlias
+    ? resendTemplateDefinitions.filter((definition) => definition.alias === requestedAlias)
+    : resendTemplateDefinitions;
 
-  for (const definition of resendTemplateDefinitions) {
+  if (definitions.length === 0) {
+    throw new Error(`Unknown Resend template alias: ${requestedAlias}`);
+  }
+
+  for (const definition of definitions) {
     const payload = {
       name: definition.name,
       alias: definition.alias,

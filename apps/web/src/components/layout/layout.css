@@ -300,6 +300,74 @@
   border-radius: 12px;
   background: var(--ml-surface-hover);
 }
+.feedbackModal {
+  width: min(36rem, calc(100% - 2rem));
+}
+.feedbackForm,
+.feedbackSuccess {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-6);
+}
+.feedbackIntro,
+.feedbackHint {
+  margin: 0;
+  color: var(--ml-text-muted);
+}
+.feedbackIntro {
+  line-height: 1.55;
+}
+.feedbackHint {
+  font-size: 0.82rem;
+}
+.feedbackForm .formField {
+  margin: 0;
+}
+.feedbackForm select,
+.feedbackForm textarea {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--ml-border);
+  border-radius: var(--radius);
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  font: inherit;
+}
+.feedbackForm select {
+  min-height: 2.85rem;
+}
+.feedbackForm textarea {
+  min-height: 11rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+.feedbackForm select:focus-visible,
+.feedbackForm textarea:focus-visible {
+  outline: 2px solid var(--ml-primary);
+  outline-offset: 1px;
+}
+.feedbackForm select:disabled,
+.feedbackForm textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.feedbackActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+.feedbackSuccess .button {
+  justify-self: end;
+}
+@media (max-width: 480px) {
+  .feedbackForm,
+  .feedbackSuccess {
+    padding: var(--space-4);
+  }
+  .feedbackActions .button {
+    flex: 1;
+  }
+}
 @media (max-width: 390px) {
   .headerInner {
     padding-inline: var(--space-3);

@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { LogoutButton } from '../../features/auth/logout-button';
+import { FeedbackModal } from '../../features/feedback/feedback-modal';
 import { usePwaInstall } from '../pwa-registration';
 import { useTheme } from '../theme-provider';
 
@@ -217,6 +218,7 @@ export function Header({ user }: { user: PublicUser | null }) {
                       {mode === 'light' ? 'Dark mode' : 'Light mode'}
                     </button>
                   ) : null}
+                  <FeedbackModal onClose={() => setIsOpen(false)} />
                   <LogoutButton className="accountMenuItem accountMenuLogout" />
                 </div>
               ) : null}

@@ -70,6 +70,7 @@ export const config = {
       address: env.EMAIL_FROM_ADDRESS,
     },
     replyTo: env.EMAIL_REPLY_TO,
+    feedbackAddress: env.FEEDBACK_EMAIL_ADDRESS,
     resendApiKey: env.RESEND_API_KEY,
     resendAdminKey: env.RESEND_ADMIN_KEY,
   },
