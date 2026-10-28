@@ -373,10 +373,10 @@
   --preview-accent-3: #eed4dc;
 }
 .themeOption[data-palette='apricot-cotton'] {
-  --preview-primary: #8a5542;
-  --preview-accent-1: #f1ceb5;
-  --preview-accent-2: #eadca9;
-  --preview-accent-3: #c9dcd8;
+  --preview-primary: #a72f68;
+  --preview-accent-1: #ffb8d2;
+  --preview-accent-2: #ffd0e2;
+  --preview-accent-3: #f4a6c4;
 }
 .themeOption[data-palette='blue-hour'] {
   --preview-primary: #45658b;
@@ -385,16 +385,16 @@
   --preview-accent-3: #eedcc3;
 }
 .themeOption[data-palette='rosewood-ember'] {
-  --preview-primary: #873f3f;
-  --preview-accent-1: #e8b8ae;
-  --preview-accent-2: #efc99f;
-  --preview-accent-3: #d9b2a7;
+  --preview-primary: #913d45;
+  --preview-accent-1: #e9b1b1;
+  --preview-accent-2: #ecc0b8;
+  --preview-accent-3: #d9a8aa;
 }
 .themeOption[data-palette='golden-hour'] {
-  --preview-primary: #765400;
-  --preview-accent-1: #f6dc72;
-  --preview-accent-2: #ffd24d;
-  --preview-accent-3: #e8bd55;
+  --preview-primary: #a07400;
+  --preview-accent-1: #ffd100;
+  --preview-accent-2: #ffc72c;
+  --preview-accent-3: #f3dd6d;
 }
 .themeOption[data-palette='terracotta-grove'] {
   --preview-primary: #763b2b;
