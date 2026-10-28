@@ -34,6 +34,7 @@ describe('feedback modal', () => {
       'The monthly dashboard needs a yearly overview.',
     );
     await userEvent.selectOptions(screen.getByLabelText('Feedback type'), 'feature request');
+    await userEvent.click(screen.getByLabelText(/send anonymously/i));
     await userEvent.click(screen.getByRole('button', { name: 'Send Feedback' }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
@@ -43,6 +44,7 @@ describe('feedback modal', () => {
         method: 'POST',
         body: JSON.stringify({
           type: 'feature request',
+          anonymous: true,
           feedback: 'The monthly dashboard needs a yearly overview.',
         }),
       }),

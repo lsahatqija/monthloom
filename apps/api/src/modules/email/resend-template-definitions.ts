@@ -109,14 +109,13 @@ export const resendTemplateDefinitions = [
     html: layout(
       'New feedback was submitted through Monthloom.',
       'New {{{FEEDBACK_TYPE}}}',
-      `<p style="line-height:1.6"><strong>{{{DISPLAY_NAME}}}</strong> ({{{USER_EMAIL}}}) submitted feedback from inside Monthloom.</p><div style="margin:24px 0;padding:20px;border:1px solid #ded5cc;border-radius:10px;background:#f8f5f1;line-height:1.65;overflow-wrap:anywhere">{{{FEEDBACK}}}</div><p style="color:#74675e;font-size:13px">User ID: {{{USER_ID}}}</p>`,
+      `<p style="line-height:1.6">{{{SUBMITTER}}} submitted feedback from inside Monthloom.</p><div style="margin:24px 0;padding:20px;border:1px solid #ded5cc;border-radius:10px;background:#f8f5f1;line-height:1.65;overflow-wrap:anywhere">{{{FEEDBACK}}}</div>{{{USER_REFERENCE}}}`,
     ),
     variables: [
       variable('FEEDBACK_TYPE'),
       variable('FEEDBACK'),
-      variable('USER_ID'),
-      variable('USER_EMAIL'),
-      variable('DISPLAY_NAME'),
+      variable('SUBMITTER'),
+      variable('USER_REFERENCE'),
     ],
   },
 ] as const;

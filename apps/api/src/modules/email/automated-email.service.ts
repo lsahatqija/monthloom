@@ -51,9 +51,11 @@ export interface FeedbackEmailInput {
   to: string;
   feedbackType: string;
   feedback: string;
-  userId: string;
-  userEmail: string;
-  displayName: string;
+  identity?: {
+    userId: string;
+    userEmail: string;
+    displayName: string;
+  };
 }
 
 /** Composes all product email in one place and delegates provider-specific delivery. */
@@ -136,6 +138,13 @@ export class AutomatedEmailService {
   }
 
   sendFeedback(input: FeedbackEmailInput): Promise<void> {
+    const submitter = input.identity
+      ? `<strong>${escapeHtml(input.identity.displayName)}</strong> (${escapeHtml(input.identity.userEmail)})`
+      : '<strong>Anonymous user</strong>';
+    const userReference = input.identity
+      ? `<p style="color:#74675e;font-size:13px">User ID: ${escapeHtml(input.identity.userId)}</p>`
+      : '';
+
     return this.sender.send({
       kind: 'template',
       label: 'feedback',
@@ -144,9 +153,8 @@ export class AutomatedEmailService {
       variables: {
         FEEDBACK_TYPE: escapeHtml(input.feedbackType),
         FEEDBACK: escapeHtml(input.feedback).replace(/\r?\n/g, '<br>'),
-        USER_ID: escapeHtml(input.userId),
-        USER_EMAIL: escapeHtml(input.userEmail),
-        DISPLAY_NAME: escapeHtml(input.displayName),
+        SUBMITTER: submitter,
+        USER_REFERENCE: userReference,
       },
     });
   }

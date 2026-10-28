@@ -9,7 +9,11 @@ describe('feedback contracts', () => {
         type: 'suggestion',
         feedback: '  A detailed suggestion for Monthloom.  ',
       }),
-    ).toEqual({ type: 'suggestion', feedback: 'A detailed suggestion for Monthloom.' });
+    ).toEqual({
+      type: 'suggestion',
+      anonymous: false,
+      feedback: 'A detailed suggestion for Monthloom.',
+    });
   });
 
   it.each([

@@ -8,7 +8,7 @@ export class FeedbackController {
 
   send = async (req: Request, res: Response): Promise<void> => {
     const input = sendFeedbackRequestSchema.parse(req.body);
-    await this.feedbackService.sendFeedback(req.authUser!, input);
+    await this.feedbackService.sendFeedback(input.anonymous ? null : req.authUser!, input);
     res.status(204).send();
   };
 }

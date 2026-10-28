@@ -8,14 +8,17 @@ export class FeedbackService {
     private readonly feedbackAddress: string,
   ) {}
 
-  sendFeedback(user: PublicUser, input: SendFeedbackRequest): Promise<void> {
+  sendFeedback(
+    user: Pick<PublicUser, 'id' | 'email' | 'displayName'> | null,
+    input: SendFeedbackRequest,
+  ): Promise<void> {
     return this.emailService.sendFeedback({
       to: this.feedbackAddress,
       feedbackType: input.type,
       feedback: input.feedback,
-      userId: user.id,
-      userEmail: user.email,
-      displayName: user.displayName,
+      identity: user
+        ? { userId: user.id, userEmail: user.email, displayName: user.displayName }
+        : undefined,
     });
   }
 }

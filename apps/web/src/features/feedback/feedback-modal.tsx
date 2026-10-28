@@ -32,7 +32,7 @@ export function FeedbackModal({ onClose }: { onClose?: () => void }) {
   } = useForm<SendFeedbackRequest>({
     resolver: zodResolver(sendFeedbackRequestSchema),
     mode: 'onBlur',
-    defaultValues: { type: 'suggestion', feedback: '' },
+    defaultValues: { type: 'suggestion', anonymous: false, feedback: '' },
   });
   const mutation = useMutation({
     mutationFn: sendFeedback,
@@ -55,7 +55,7 @@ export function FeedbackModal({ onClose }: { onClose?: () => void }) {
   }, [isOpen]);
 
   const open = () => {
-    reset({ type: 'suggestion', feedback: '' });
+    reset({ type: 'suggestion', anonymous: false, feedback: '' });
     mutation.reset();
     dialogRef.current?.showModal();
     setIsOpen(true);
@@ -150,6 +150,19 @@ export function FeedbackModal({ onClose }: { onClose?: () => void }) {
               <p className="feedbackHint">Up to 5,000 characters</p>
               <FieldError message={errors.feedback?.message} />
             </FormField>
+
+            <label className="feedbackAnonymous" htmlFor="feedback-anonymous">
+              <span>
+                <strong>Send anonymously</strong>
+                <small>Your name, email address, and user ID will not be included.</small>
+              </span>
+              <input
+                id="feedback-anonymous"
+                type="checkbox"
+                disabled={mutation.isPending}
+                {...register('anonymous')}
+              />
+            </label>
 
             <div className="feedbackActions">
               <Button

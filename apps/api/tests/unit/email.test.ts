@@ -37,9 +37,11 @@ it('escapes feedback while preserving line breaks in its template variables', as
     to: 'feedback@example.com',
     feedbackType: 'bug report',
     feedback: '<strong>Broken</strong>\nOn the dashboard',
-    userId: 'user-1',
-    userEmail: 'person@example.com',
-    displayName: 'Person',
+    identity: {
+      userId: 'user-1',
+      userEmail: 'person@example.com',
+      displayName: 'Person',
+    },
   });
 
   expect(sender.send).toHaveBeenCalledWith(
@@ -49,6 +51,26 @@ it('escapes feedback while preserving line breaks in its template variables', as
       variables: expect.objectContaining({
         FEEDBACK_TYPE: 'bug report',
         FEEDBACK: '&lt;strong&gt;Broken&lt;/strong&gt;<br>On the dashboard',
+        SUBMITTER: '<strong>Person</strong> (person@example.com)',
+        USER_REFERENCE: '<p style="color:#74675e;font-size:13px">User ID: user-1</p>',
+      }),
+    }),
+  );
+});
+
+it('composes anonymous feedback without identity variables', async () => {
+  const sender = mock<EmailSender>();
+  await new AutomatedEmailService(sender).sendFeedback({
+    to: 'feedback@example.com',
+    feedbackType: 'suggestion',
+    feedback: 'A private suggestion for the team.',
+  });
+
+  expect(sender.send).toHaveBeenCalledWith(
+    expect.objectContaining({
+      variables: expect.objectContaining({
+        SUBMITTER: '<strong>Anonymous user</strong>',
+        USER_REFERENCE: '',
       }),
     }),
   );

@@ -12,6 +12,7 @@ export const feedbackTypeSchema = z.enum(feedbackTypes);
 
 export const sendFeedbackRequestSchema = z.object({
   type: feedbackTypeSchema,
+  anonymous: z.boolean().default(false),
   feedback: z
     .string()
     .trim()
