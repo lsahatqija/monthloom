@@ -3,6 +3,12 @@ import { Constants, Defaults, type Locale, localeSchema } from '@monthloom/contr
 export const SUPPORTED_LOCALES = Constants.SUPPORTED_LOCALES;
 export const DEFAULT_LOCALE = Defaults.USER_LOCALE;
 export const LOCALE_COOKIE_NAME = 'monthloom-locale';
+export const LOCALE_NAMES: Record<Locale, string> = {
+  en: 'English',
+  sq: 'Shqip',
+  fr: 'Français',
+  tr: 'Türkçe',
+};
 
 export function resolveLocale(profileLocale: unknown, cookieLocale: unknown): Locale {
   const profileResult = localeSchema.safeParse(profileLocale);

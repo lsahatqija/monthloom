@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
 import { Alert, Button, FieldError, FormField, Input, Label } from '../../components/ui/index';
+import { setLocaleCookie } from '../../i18n/locale-cookie';
 import { isApiClientError } from '../../lib/api/errors';
 
 import { authKeys, login } from './auth.api';
@@ -25,7 +26,8 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
 
   const mutation = useMutation({
     mutationFn: login,
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      setLocaleCookie(data.user.locale);
       await queryClient.invalidateQueries({ queryKey: authKeys.me });
       router.push(redirectTo);
       router.refresh();

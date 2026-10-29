@@ -10,6 +10,7 @@
     "loggingOut": "Logging out..."
   },
   "Profile": {
+    "language": "Language",
     "restartOnboarding": "Restart onboarding tutorial"
   },
   "Finance": {

@@ -2,15 +2,20 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  Constants,
   updateProfileRequestSchema,
   type PublicUser,
   type UpdateProfileRequest,
 } from '@monthloom/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 
 import { ProfileAppearanceFields } from '../../components/profile-appearance-fields';
 import { Alert, Button, FieldError, FormField, Input, Label } from '../../components/ui/index';
+import { LOCALE_NAMES } from '../../i18n/config';
+import { setLocaleCookie } from '../../i18n/locale-cookie';
 import { isApiClientError } from '../../lib/api/errors';
 import { authKeys, sendEmailVerification } from '../auth/auth.api';
 
@@ -18,6 +23,8 @@ import { updateProfile } from './users.api';
 
 export function ProfileForm({ user }: { user: PublicUser }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const t = useTranslations('Profile');
 
   const {
     register,
@@ -41,8 +48,10 @@ export function ProfileForm({ user }: { user: PublicUser }) {
 
   const mutation = useMutation({
     mutationFn: updateProfile,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: authKeys.me });
+    onSuccess: (data) => {
+      setLocaleCookie(data.user.locale);
+      queryClient.setQueryData(authKeys.me, data);
+      router.refresh();
     },
     onError: (error) => {
       setError('root', {
@@ -95,6 +104,18 @@ export function ProfileForm({ user }: { user: PublicUser }) {
         <Label htmlFor="displayName">Display name</Label>
         <Input id="displayName" type="text" autoComplete="name" {...register('displayName')} />
         <FieldError message={errors.displayName?.message} />
+      </FormField>
+
+      <FormField>
+        <Label htmlFor="locale">{t('language')}</Label>
+        <select id="locale" className="input" {...register('locale')}>
+          {Constants.SUPPORTED_LOCALES.map((locale) => (
+            <option key={locale} value={locale} lang={locale}>
+              {LOCALE_NAMES[locale]}
+            </option>
+          ))}
+        </select>
+        <FieldError message={errors.locale?.message} />
       </FormField>
 
       <ProfileAppearanceFields

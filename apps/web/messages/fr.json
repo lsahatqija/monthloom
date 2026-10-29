@@ -10,6 +10,7 @@
     "loggingOut": "Déconnexion..."
   },
   "Profile": {
+    "language": "Langue",
     "restartOnboarding": "Redémarrer le guide de prise en main"
   },
   "Finance": {

@@ -10,6 +10,7 @@
     "loggingOut": "Çıkış yapılıyor..."
   },
   "Profile": {
+    "language": "Dil",
     "restartOnboarding": "Başlangıç eğitimini yeniden başlat"
   },
   "Finance": {

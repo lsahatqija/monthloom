@@ -117,15 +117,15 @@ Acceptance criteria:
 
 ## Phase 3: Add profile selection and preference synchronization
 
-- [ ] Add a language field to the profile form.
-- [ ] Display language names in their own language: English, Shqip, Français, Türkçe.
-- [ ] Include the selected locale in the existing profile update request.
-- [ ] On success, update or invalidate the current-user query.
-- [ ] Write `monthloom-locale=<locale>` with `Path=/`, `SameSite=Lax`, and a long lifetime.
-- [ ] Refresh the Next.js router so Server Components, metadata, providers, and `<html lang>` update.
-- [ ] Synchronize the locale cookie from `user.locale` after login.
-- [ ] Keep the locale cookie after logout so public pages retain the last preference.
-- [ ] Add integration tests for changing the locale and retaining it across refresh and login.
+- [x] Add a language field to the profile form.
+- [x] Display language names in their own language: English, Shqip, Français, Türkçe.
+- [x] Include the selected locale in the existing profile update request.
+- [x] On success, update or invalidate the current-user query.
+- [x] Write `monthloom-locale=<locale>` with `Path=/`, `SameSite=Lax`, and a long lifetime.
+- [x] Refresh the Next.js router so Server Components, metadata, providers, and `<html lang>` update.
+- [x] Synchronize the locale cookie from `user.locale` after login.
+- [x] Keep the locale cookie after logout so public pages retain the last preference.
+- [x] Add integration tests for changing the locale and retaining it across refresh and login.
 
 The cookie is a non-sensitive presentation preference and does not need to be `HttpOnly`. The user
 record is authoritative while authenticated; the cookie supports the first request and logged-out
