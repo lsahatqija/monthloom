@@ -2,26 +2,28 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 const SETTINGS_LINKS = [
-  { href: '/settings/profile', label: 'Profile' },
-  { href: '/settings/households', label: 'Households' },
-  { href: '/settings/sources', label: 'Sources' },
-  { href: '/settings/appearance', label: 'Appearance' },
+  { href: '/settings/profile', key: 'profile' },
+  { href: '/settings/households', key: 'households' },
+  { href: '/settings/sources', key: 'sources' },
+  { href: '/settings/appearance', key: 'appearance' },
 ] as const;
 
 export function SettingsNavigation() {
+  const t = useTranslations('Shell');
   const pathname = usePathname();
 
   return (
-    <nav className="settingsNavigation" aria-label="Settings">
+    <nav className="settingsNavigation" aria-label={t('settings')}>
       {SETTINGS_LINKS.map((link) => (
         <Link
           key={link.href}
           href={link.href}
           aria-current={pathname === link.href ? 'page' : undefined}
         >
-          {link.label}
+          {t(link.key)}
         </Link>
       ))}
     </nav>

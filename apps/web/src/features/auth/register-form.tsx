@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Defaults, registerRequestSchema, type RegisterRequest } from '@monthloom/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 
 import { ProfileAppearanceFields } from '../../components/profile-appearance-fields';
@@ -14,6 +15,7 @@ import { isApiClientError } from '../../lib/api/errors';
 import { authKeys, register as registerRequest } from './auth.api';
 
 export function RegisterForm({ redirectTo }: { redirectTo: string }) {
+  const t = useTranslations('Auth');
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -47,7 +49,7 @@ export function RegisterForm({ redirectTo }: { redirectTo: string }) {
       if (isApiClientError(error)) {
         setError('root', { message: error.message });
       } else {
-        setError('root', { message: 'Something went wrong. Please try again.' });
+        setError('root', { message: t('genericError') });
       }
     },
   });
@@ -56,24 +58,24 @@ export function RegisterForm({ redirectTo }: { redirectTo: string }) {
     <form
       onSubmit={handleSubmit((values) => mutation.mutate(values))}
       noValidate
-      aria-label="Create an account"
+      aria-label={t('createAccount')}
     >
       {errors.root?.message ? <Alert variant="error">{errors.root.message}</Alert> : null}
 
       <FormField>
-        <Label htmlFor="displayName">Display name</Label>
+        <Label htmlFor="displayName">{t('displayName')}</Label>
         <Input id="displayName" type="text" autoComplete="name" {...register('displayName')} />
         <FieldError message={errors.displayName?.message} />
       </FormField>
 
       <FormField>
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t('email')}</Label>
         <Input id="email" type="email" autoComplete="email" {...register('email')} />
         <FieldError message={errors.email?.message} />
       </FormField>
 
       <FormField>
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">{t('password')}</Label>
         <Input
           id="password"
           type="password"
@@ -97,7 +99,7 @@ export function RegisterForm({ redirectTo }: { redirectTo: string }) {
       />
 
       <Button type="submit" disabled={isSubmitting || mutation.isPending}>
-        {mutation.isPending ? 'Creating account...' : 'Create account'}
+        {mutation.isPending ? t('creatingAccount') : t('createAccount')}
       </Button>
     </form>
   );

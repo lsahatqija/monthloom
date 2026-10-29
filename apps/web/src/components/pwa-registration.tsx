@@ -2,6 +2,7 @@
 
 import { Download, MoreVertical, Pin, Plus, Share2 } from 'lucide-react';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import {
   createContext,
   type ReactNode,
@@ -28,7 +29,7 @@ type InstallPlatform = 'ios' | 'android' | 'windows' | 'macos' | 'desktop';
 
 interface InstallStep {
   icon: typeof Download;
-  text: string;
+  key: string;
 }
 
 interface PwaInstallContextValue {
@@ -39,7 +40,7 @@ interface PwaInstallContextValue {
 
 const PwaInstallContext = createContext<PwaInstallContextValue>({
   canOfferInstall: false,
-  installActionLabel: 'Install app',
+  installActionLabel: '',
   openInstallPrompt: () => undefined,
 });
 
@@ -83,68 +84,64 @@ function getInstallPlatform(navigatorValue: Navigator, mobileBrowser: boolean): 
 }
 
 function getManualInstallSteps(platform: InstallPlatform, userAgent: string): InstallStep[] {
-  const chromeBrowser =
-    /Chrome|CriOS/i.test(userAgent) && !/Edg|EdgiOS|OPR|Opera/i.test(userAgent);
+  const chromeBrowser = /Chrome|CriOS/i.test(userAgent) && !/Edg|EdgiOS|OPR|Opera/i.test(userAgent);
 
   if (platform === 'ios') {
     return [
-      { icon: Share2, text: 'Tap the Share button in your browser toolbar.' },
-      { icon: Plus, text: 'Choose Add to Home Screen.' },
-      { icon: Download, text: 'Turn on Open as Web App, then tap Add.' },
+      { icon: Share2, key: 'steps.iosShare' },
+      { icon: Plus, key: 'steps.iosHome' },
+      { icon: Download, key: 'steps.iosAdd' },
     ];
   }
 
   if (platform === 'android') {
     if (chromeBrowser) {
       return [
-        { icon: MoreVertical, text: 'Tap More (three dots) beside the address bar.' },
-        { icon: Download, text: 'Tap Install and create shortcut.' },
-        { icon: Plus, text: 'Tap Install, then follow the confirmation shown by Chrome.' },
+        { icon: MoreVertical, key: 'steps.androidChromeMenu' },
+        { icon: Download, key: 'steps.androidChromeShortcut' },
+        { icon: Plus, key: 'steps.androidChromeConfirm' },
       ];
     }
 
     return [
-      { icon: MoreVertical, text: 'Open your browser menu.' },
-      { icon: Download, text: 'Choose Install app or Add to Home screen.' },
-      { icon: Plus, text: 'Confirm the name, then tap Install or Add.' },
+      { icon: MoreVertical, key: 'steps.browserMenu' },
+      { icon: Download, key: 'steps.androidInstall' },
+      { icon: Plus, key: 'steps.androidConfirm' },
     ];
   }
 
   if (chromeBrowser) {
     return [
-      { icon: MoreVertical, text: 'Click More (three dots) in the top-right of Chrome.' },
-      { icon: Share2, text: 'Select Cast, save and share.' },
-      { icon: Download, text: 'Select Install page as app, then confirm Install.' },
+      { icon: MoreVertical, key: 'steps.chromeMenu' },
+      { icon: Share2, key: 'steps.chromeShare' },
+      { icon: Download, key: 'steps.chromeInstall' },
       {
         icon: Pin,
-        text:
-          platform === 'macos'
-            ? 'When Monthloom opens, right-click its Dock icon and select Options, then Keep in Dock.'
-            : 'When Monthloom opens, right-click its taskbar icon and select Pin to taskbar.',
+        key: platform === 'macos' ? 'steps.keepInDock' : 'steps.pinTaskbar',
       },
     ];
   }
 
   if (platform === 'macos') {
     return [
-      { icon: Share2, text: 'In Safari, open the Share menu.' },
-      { icon: Download, text: 'Choose Add to Dock.' },
-      { icon: Plus, text: 'Confirm the name, then click Add.' },
+      { icon: Share2, key: 'steps.safariShare' },
+      { icon: Download, key: 'steps.safariDock' },
+      { icon: Plus, key: 'steps.safariConfirm' },
     ];
   }
 
   if (/Firefox/i.test(userAgent)) {
     return [
-      { icon: Download, text: 'Click the web app button in the Firefox address bar.' },
-      { icon: Plus, text: 'Allow Firefox to install Monthloom as a web app.' },
-      { icon: Pin, text: 'Choose Yes when Firefox asks to pin it to the taskbar.' },
+      { icon: Download, key: 'steps.firefoxButton' },
+      { icon: Plus, key: 'steps.firefoxInstall' },
+      { icon: Pin, key: 'steps.firefoxPin' },
     ];
   }
 
   return [
-    { icon: MoreVertical, text: 'Open your browser menu.' },
-    { icon: Download, text: 'Choose Install Monthloom or Install page as app.' },
-    { icon: Pin, text: 'Open the app, right-click its taskbar icon, then choose Pin to taskbar.' },
+    { icon: MoreVertical, key: 'steps.browserMenu' },
+    { icon: Download, key: 'steps.desktopInstall' },
+    { icon: Pin, key: 'steps.desktopPin' },
   ];
 }
 
@@ -153,6 +150,7 @@ export function usePwaInstall() {
 }
 
 export function PwaRegistration({ children }: { children: ReactNode }) {
+  const t = useTranslations('Pwa');
   const [mobileBrowser, setMobileBrowser] = useState(false);
   const [eligibleSession, setEligibleSession] = useState(false);
   const [platform, setPlatform] = useState<InstallPlatform>('desktop');
@@ -226,15 +224,15 @@ export function PwaRegistration({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       canOfferInstall: eligibleSession && !installed,
-      installActionLabel: mobileBrowser ? 'Install app' : 'Pin to Taskbar',
+      installActionLabel: mobileBrowser ? t('installApp') : t('pinTaskbar'),
       openInstallPrompt,
     }),
-    [eligibleSession, installed, mobileBrowser, openInstallPrompt],
+    [eligibleSession, installed, mobileBrowser, openInstallPrompt, t],
   );
 
   const desktopBrowser = !mobileBrowser;
   const manualSteps = getManualInstallSteps(platform, userAgent);
-  const actionLabel = desktopBrowser ? 'Pin to Taskbar' : installEvent ? 'Install' : 'Show me how';
+  const actionLabel = desktopBrowser ? t('pinTaskbar') : installEvent ? t('install') : t('showHow');
 
   return (
     <PwaInstallContext.Provider value={value}>
@@ -248,39 +246,31 @@ export function PwaRegistration({ children }: { children: ReactNode }) {
           <Image src="/icons/icon-192.png" width="52" height="52" alt="" />
           <div className="installPromptCopy">
             <h2 id="install-prompt-title">
-              {desktopBrowser ? 'Keep Monthloom close' : 'Install Monthloom'}
+              {desktopBrowser ? t('desktopTitle') : t('mobileTitle')}
             </h2>
             {manualHelp ? (
               <ol className="installPromptSteps">
-                {manualSteps.map(({ icon: StepIcon, text }, index) => (
-                  <li key={text}>
+                {manualSteps.map(({ icon: StepIcon, key }, index) => (
+                  <li key={key}>
                     <span className="installPromptStepIcon" aria-hidden="true">
                       <StepIcon />
                     </span>
                     <span>
-                      <strong>{index + 1}.</strong> {text}
+                      <strong>{index + 1}.</strong> {t(key)}
                     </span>
                   </li>
                 ))}
               </ol>
             ) : (
-              <p>
-                {desktopBrowser
-                  ? 'Pin Monthloom for quick access without searching through browser tabs.'
-                  : 'Keep Monthloom on your home screen for quick, app-like access.'}
-              </p>
+              <p>{desktopBrowser ? t('desktopDescription') : t('mobileDescription')}</p>
             )}
           </div>
           <div className="installPromptActions">
             <button type="button" className="installPromptCancel" onClick={dismissPrompt}>
-              {manualHelp ? 'Close' : 'Not now'}
+              {manualHelp ? t('close') : t('notNow')}
             </button>
             {!manualHelp ? (
-              <button
-                type="button"
-                className="installPromptConfirm"
-                onClick={() => void install()}
-              >
+              <button type="button" className="installPromptConfirm" onClick={() => void install()}>
                 {actionLabel}
               </button>
             ) : null}

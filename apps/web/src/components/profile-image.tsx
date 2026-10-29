@@ -11,6 +11,7 @@ import starRosette from '@assets/profile-images/star-rosette.png';
 import steppedMedallion from '@assets/profile-images/stepped-medallion.png';
 import waveStripe from '@assets/profile-images/wave-stripe.png';
 import { Constants, type DesiredColor, type ProfileImage } from '@monthloom/contracts';
+import { useTranslations } from 'next-intl';
 import type { CSSProperties } from 'react';
 
 const PROFILE_IMAGE_ASSETS = {
@@ -35,6 +36,8 @@ interface ProfileImageProps {
 }
 
 export function ProfileImage({ image, color, size = 80 }: ProfileImageProps) {
+  const t = useTranslations('Profile');
+  const labels = useTranslations('Labels');
   const maskImage = `url("${PROFILE_IMAGE_ASSETS[image].src}")`;
   const style: CSSProperties = {
     width: size,
@@ -49,7 +52,10 @@ export function ProfileImage({ image, color, size = 80 }: ProfileImageProps) {
       className="profileImage"
       style={style}
       role="img"
-      aria-label={`${Constants.PROFILE_IMAGE_LABELS[image]} profile image in ${color}`}
+      aria-label={t('profileImageDescription', {
+        pattern: labels(`profileImages.${image}`),
+        color: labels(`colors.${color}`),
+      })}
     />
   );
 }

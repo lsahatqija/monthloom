@@ -32,20 +32,6 @@ export class Constants {
     'braided-border',
     'concentric-lozenge',
   ] as const;
-  static readonly PROFILE_IMAGE_LABELS = {
-    'diamond-kilim': 'Diamond Kilim',
-    'chevron-weave': 'Chevron Weave',
-    'lattice-loom': 'Lattice Loom',
-    'stepped-medallion': 'Stepped Medallion',
-    'hooked-diamond': 'Hooked Diamond',
-    'basket-weave': 'Basket Weave',
-    'wave-stripe': 'Wave Stripe',
-    'star-rosette': 'Star Rosette',
-    'hourglass-thread': 'Hourglass Thread',
-    'mosaic-grid': 'Mosaic Grid',
-    'braided-border': 'Braided Border',
-    'concentric-lozenge': 'Concentric Lozenge',
-  } as const;
   static readonly DESIRED_COLORS = [
     'slate',
     'red',

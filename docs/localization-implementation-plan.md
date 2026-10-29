@@ -149,25 +149,25 @@ Acceptance criteria:
 
 Migrate by feature so each pull request remains reviewable:
 
-- [ ] Shared shell: header, navigation, settings navigation, common controls, and app information.
-- [ ] Authentication: login, registration, password reset, and email verification.
-- [ ] User features: profile, appearance, password change, and feedback.
-- [ ] Files: upload, file list, empty states, and errors.
-- [ ] Household settings: membership, invitations, sources, and ownership actions.
-- [ ] Transactions: forms, recurrence, icons, colors, source selection, and confirmations.
-- [ ] Dashboard: summaries, month navigation, filters, sorting, table labels, and empty states.
-- [ ] Onboarding and PWA installation prompts.
-- [ ] Loading, not-found, route error, and global error states.
-- [ ] Page metadata and manifest descriptions where runtime localization is supported.
+- [x] Shared shell: header, navigation, settings navigation, common controls, and app information.
+- [x] Authentication: login, registration, password reset, and email verification.
+- [x] User features: profile, appearance, password change, and feedback.
+- [x] Files: upload, file list, empty states, and errors.
+- [x] Household settings: membership, invitations, sources, and ownership actions.
+- [x] Transactions: forms, recurrence, icons, colors, source selection, and confirmations.
+- [x] Dashboard: summaries, month navigation, filters, sorting, table labels, and empty states.
+- [x] Onboarding and PWA installation prompts.
+- [x] Loading, not-found, route error, and global error states.
+- [x] Page metadata and manifest descriptions where runtime localization is supported.
 
 Each feature migration must include:
 
-- [ ] Visible labels, headings, body copy, buttons, and links.
-- [ ] Alerts, success messages, confirmations, and empty states.
-- [ ] Placeholders and helper text.
-- [ ] `aria-label`, `title`, and meaningful `alt` text.
-- [ ] Interpolated strings and plural forms expressed as ICU messages.
-- [ ] Display labels for stable enum values such as expense types, recurrence units, icons, colors,
+- [x] Visible labels, headings, body copy, buttons, and links.
+- [x] Alerts, success messages, confirmations, and empty states.
+- [x] Placeholders and helper text.
+- [x] `aria-label`, `title`, and meaningful `alt` text.
+- [x] Interpolated strings and plural forms expressed as ICU messages.
+- [x] Display labels for stable enum values such as expense types, recurrence units, icons, colors,
       and profile-image keys.
 
 Stored identifiers such as `expense`, `month`, and `diamond-kilim` must remain unchanged. Move their

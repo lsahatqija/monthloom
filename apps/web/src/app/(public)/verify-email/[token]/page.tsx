@@ -1,14 +1,19 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 
 import { PageContainer } from '@/components/ui/index';
 import { VerifyEmail } from '@/features/auth/verify-email';
 
-export const metadata: Metadata = { title: 'Verify email' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Metadata');
+  return { title: t('verifyEmail') };
+}
 
-export default function VerifyEmailPage({ params }: { params: { token: string } }) {
+export default async function VerifyEmailPage({ params }: { params: { token: string } }) {
+  const t = await getTranslations('Pages.verifyEmail');
   return (
     <PageContainer>
-      <h1>Verify your email</h1>
+      <h1>{t('title')}</h1>
       <VerifyEmail token={params.token} />
     </PageContainer>
   );

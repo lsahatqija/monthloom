@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
 
 import { Alert, Button } from '../../components/ui/index';
@@ -9,6 +10,7 @@ import { isApiClientError } from '../../lib/api/errors';
 import { filesKeys, uploadFile } from './files.api';
 
 export function FileUploadForm() {
+  const t = useTranslations('Files');
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -21,13 +23,13 @@ export function FileUploadForm() {
       await queryClient.invalidateQueries({ queryKey: filesKeys.list });
     },
     onError: (uploadError) => {
-      setError(isApiClientError(uploadError) ? uploadError.message : 'Upload failed. Please try again.');
+      setError(isApiClientError(uploadError) ? uploadError.message : t('uploadError'));
     },
   });
 
   return (
     <form
-      aria-label="Upload an image"
+      aria-label={t('uploadImage')}
       onSubmit={(event) => {
         event.preventDefault();
         const file = inputRef.current?.files?.[0];
@@ -36,9 +38,11 @@ export function FileUploadForm() {
     >
       {error ? <Alert variant="error">{error}</Alert> : null}
 
-      <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
+      <div
+        style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}
+      >
         <label htmlFor="file-upload" className="label">
-          Choose an image (JPEG, PNG or WebP)
+          {t('chooseImage')}
         </label>
         <input
           id="file-upload"
@@ -48,7 +52,7 @@ export function FileUploadForm() {
           disabled={mutation.isPending}
         />
         <Button type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? 'Uploading...' : 'Upload'}
+          {mutation.isPending ? t('uploading') : t('upload')}
         </Button>
       </div>
     </form>

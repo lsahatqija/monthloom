@@ -5,6 +5,7 @@ import {
   type DesiredColor,
   type ProfileImage as ProfileImageValue,
 } from '@monthloom/contracts';
+import { useTranslations } from 'next-intl';
 import { type FocusEvent, useRef } from 'react';
 
 import { ProfileImage } from './profile-image';
@@ -36,6 +37,8 @@ export function ProfileAppearanceFields({
   profileImageError,
   desiredColorError,
 }: ProfileAppearanceFieldsProps) {
+  const t = useTranslations('Profile');
+  const labels = useTranslations('Labels');
   const profileImagePickerRef = useRef<HTMLDetailsElement>(null);
   const desiredColorPickerRef = useRef<HTMLDetailsElement>(null);
 
@@ -47,22 +50,22 @@ export function ProfileAppearanceFields({
           className="appearancePicker profileImagePicker"
           onBlur={closePickerOnBlur}
         >
-          <summary className="profileImagePickerTrigger" aria-label="Choose a carpet pattern">
+          <summary className="profileImagePickerTrigger" aria-label={t('choosePattern')}>
             <ProfileImage image={profileImage} color={desiredColor} size={96} />
           </summary>
           <div
             className="appearancePickerGrid patternPickerGrid"
             role="group"
-            aria-label="Carpet patterns"
+            aria-label={t('patterns')}
           >
             {Constants.PROFILE_IMAGES.map((image) => (
               <button
                 key={image}
                 type="button"
                 className="appearancePickerOption"
-                aria-label={Constants.PROFILE_IMAGE_LABELS[image]}
+                aria-label={labels(`profileImages.${image}`)}
                 aria-pressed={image === profileImage}
-                data-label={Constants.PROFILE_IMAGE_LABELS[image]}
+                data-label={labels(`profileImages.${image}`)}
                 onClick={() => {
                   onProfileImageChange(image);
                   profileImagePickerRef.current?.removeAttribute('open');
@@ -78,7 +81,7 @@ export function ProfileAppearanceFields({
 
       <FormField>
         <span id="desiredColorLabel" className="label">
-          Color
+          {t('color')}
         </span>
         <details
           ref={desiredColorPickerRef}
@@ -94,7 +97,7 @@ export function ProfileAppearanceFields({
               className="colorSwatch"
               style={{ backgroundColor: Constants.DESIRED_COLOR_HEX[desiredColor] }}
             />
-            <span id="desiredColorSelection">Choose a color</span>
+            <span id="desiredColorSelection">{t('chooseColor')}</span>
           </summary>
           <div
             className="appearancePickerGrid colorPickerGrid"
@@ -106,9 +109,9 @@ export function ProfileAppearanceFields({
                 key={color}
                 type="button"
                 className="appearancePickerOption"
-                aria-label={color.charAt(0).toUpperCase() + color.slice(1)}
+                aria-label={labels(`colors.${color}`)}
                 aria-pressed={color === desiredColor}
-                data-label={color.charAt(0).toUpperCase() + color.slice(1)}
+                data-label={labels(`colors.${color}`)}
                 onClick={() => {
                   onDesiredColorChange(color);
                   desiredColorPickerRef.current?.removeAttribute('open');

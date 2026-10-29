@@ -1,4 +1,4 @@
-export function LoadingIndicator({ label = 'Loading...' }: { label?: string }) {
+export function LoadingIndicator({ label }: { label: string }) {
   return (
     <span className="loadingIndicator" role="status">
       {label}

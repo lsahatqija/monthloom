@@ -1,12 +1,13 @@
 import { HOUSEHOLD_CURRENCIES } from '@monthloom/contracts';
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { TransactionSummary } from '../../src/features/finance/dashboard/summary';
+import { renderWithQuery } from '../render';
 
 describe('transaction summary', () => {
   it.each(HOUSEHOLD_CURRENCIES)('formats positive totals in %s', (currency) => {
-    render(
+    renderWithQuery(
       <TransactionSummary
         currency={currency}
         totals={{ income: 100, expenses: 20, savings: 10, balance: 80 }}
@@ -25,12 +26,8 @@ describe('transaction summary', () => {
     [0, /0/],
     [80, /\+.*80/],
   ])('shows a meaningful balance for %s', (balance, expected) => {
-    render(
-      <TransactionSummary
-        currency="EUR"
-        totals={{ income: 0, expenses: 0, balance }}
-        filtered
-      />,
+    renderWithQuery(
+      <TransactionSummary currency="EUR" totals={{ income: 0, expenses: 0, balance }} filtered />,
     );
 
     const recap = screen.getByRole('group', { name: 'Filtered recap' });

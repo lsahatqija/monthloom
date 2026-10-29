@@ -55,9 +55,7 @@ export function ProfileForm({ user }: { user: PublicUser }) {
     },
     onError: (error) => {
       setError('root', {
-        message: isApiClientError(error)
-          ? error.message
-          : 'Something went wrong. Please try again.',
+        message: isApiClientError(error) ? error.message : t('genericError'),
       });
     },
   });
@@ -68,40 +66,35 @@ export function ProfileForm({ user }: { user: PublicUser }) {
     <form
       onSubmit={handleSubmit((values) => mutation.mutate(values))}
       noValidate
-      aria-label="Update profile"
+      aria-label={t('updateProfile')}
     >
       {errors.root?.message ? <Alert variant="error">{errors.root.message}</Alert> : null}
-      {mutation.isSuccess ? <Alert>Profile updated.</Alert> : null}
+      {mutation.isSuccess ? <Alert>{t('updated')}</Alert> : null}
 
       {!user.emailVerified ? (
         <div className="emailVerificationPrompt">
-          <Alert>
-            Verify your email address to use password recovery, email invitations, and other email
-            features.
-          </Alert>
+          <Alert>{t('verifyEmailPrompt')}</Alert>
           {verificationMutation.isError ? (
             <Alert variant="error">
               {isApiClientError(verificationMutation.error)
                 ? verificationMutation.error.message
-                : 'The verification email could not be sent. Please try again.'}
+                : t('verificationSendError')}
             </Alert>
           ) : null}
-          {verificationMutation.isSuccess ? (
-            <Alert>{verificationMutation.data.message}</Alert>
-          ) : null}
+          {verificationMutation.isSuccess ? <Alert>{t('verificationSent')}</Alert> : null}
           <Button
             type="button"
             variant="secondary"
             disabled={verificationMutation.isPending || verificationMutation.isSuccess}
             onClick={() => verificationMutation.mutate()}
           >
-            {verificationMutation.isPending ? 'Sending...' : 'Verify Email'}
+            {verificationMutation.isPending ? t('sending') : t('verifyEmail')}
           </Button>
         </div>
       ) : null}
 
       <FormField>
-        <Label htmlFor="displayName">Display name</Label>
+        <Label htmlFor="displayName">{t('displayName')}</Label>
         <Input id="displayName" type="text" autoComplete="name" {...register('displayName')} />
         <FieldError message={errors.displayName?.message} />
       </FormField>
@@ -132,7 +125,7 @@ export function ProfileForm({ user }: { user: PublicUser }) {
       />
 
       <Button type="submit" disabled={isSubmitting || mutation.isPending}>
-        {mutation.isPending ? 'Saving...' : 'Save changes'}
+        {mutation.isPending ? t('saving') : t('saveChanges')}
       </Button>
     </form>
   );

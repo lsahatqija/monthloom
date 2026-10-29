@@ -1,6 +1,7 @@
 'use client';
 
 import type { HouseholdTransaction } from '@monthloom/contracts';
+import { useTranslations } from 'next-intl';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -13,6 +14,7 @@ export function TransactionMenu({
   onEdit: () => void;
   onRemove: () => void;
 }) {
+  const t = useTranslations('Finance');
   const [open, setOpen] = useState(false);
   const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
   const menuRef = useRef<HTMLDetailsElement>(null);
@@ -76,15 +78,15 @@ export function TransactionMenu({
       open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
-      <summary aria-label={`Actions for ${entry.source.displayName}`}>⋯</summary>
+      <summary aria-label={t('actionsFor', { source: entry.source.displayName })}>⋯</summary>
       {open && typeof document !== 'undefined'
         ? createPortal(
             <div ref={popoverRef} className="transactionMenuPopover" style={popoverPosition}>
               <button type="button" onClick={() => selectAction(onEdit)}>
-                Edit
+                {t('edit')}
               </button>
               <button type="button" onClick={() => selectAction(onRemove)}>
-                Remove
+                {t('remove')}
               </button>
             </div>,
             document.body,
@@ -93,4 +95,3 @@ export function TransactionMenu({
     </details>
   );
 }
-

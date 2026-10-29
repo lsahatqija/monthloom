@@ -1,7 +1,7 @@
 import { Defaults } from '@monthloom/contracts';
 import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
-import { getLocale } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 
 import { PwaRegistration } from '../components/pwa-registration';
@@ -15,23 +15,23 @@ import '../components/onboarding/onboarding.css';
 import '../features/finance/household-dashboard.css';
 import '../features/finance/household-settings.css';
 
-export const metadata: Metadata = {
-  title: {
-    default: 'Monthloom',
-    template: '%s | Monthloom',
-  },
-  description: 'Plan and share your monthly household finances.',
-  applicationName: 'Monthloom',
-  manifest: '/manifest.webmanifest',
-  icons: {
-    icon: [
-      { url: '/icons/icon-32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-    ],
-    shortcut: '/favicon.ico',
-    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Metadata');
+  return {
+    title: { default: 'Monthloom', template: '%s | Monthloom' },
+    description: t('description'),
+    applicationName: 'Monthloom',
+    manifest: '/manifest.webmanifest',
+    icons: {
+      icon: [
+        { url: '/icons/icon-32.png', sizes: '32x32', type: 'image/png' },
+        { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      ],
+      shortcut: '/favicon.ico',
+      apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    },
+  };
+}
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const locale = await getLocale();

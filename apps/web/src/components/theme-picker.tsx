@@ -1,8 +1,12 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 import { THEMES, useTheme } from './theme-provider';
 
 export function ThemePicker() {
+  const t = useTranslations('Profile.appearance');
+  const labels = useTranslations('Labels');
   const {
     darkHeaderInLightMode,
     setDarkHeaderInLightMode,
@@ -13,8 +17,8 @@ export function ThemePicker() {
   return (
     <div className="appearanceOptions">
       <fieldset className="themePicker">
-        <legend>App theme</legend>
-        <p className="fieldHint">Choose the color palette used throughout Monthloom.</p>
+        <legend>{t('theme')}</legend>
+        <p className="fieldHint">{t('themeDescription')}</p>
         <div className="themeOptions">
           {THEMES.map((theme) => (
             <button
@@ -31,15 +35,15 @@ export function ThemePicker() {
                 <span />
                 <span />
               </span>
-              <span>{theme.label}</span>
+              <span>{labels(`themes.${theme.id}`)}</span>
             </button>
           ))}
         </div>
       </fieldset>
       <label className="appearanceToggle">
         <span>
-          <strong>Dark header in light mode</strong>
-          <small>Use a dark, theme-tinted header while the rest of the app stays light.</small>
+          <strong>{t('darkHeader')}</strong>
+          <small>{t('darkHeaderDescription')}</small>
         </span>
         <input
           type="checkbox"

@@ -2,6 +2,7 @@
 
 import type { HouseholdTransaction, TransactionEditScope } from '@monthloom/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import type { MotionState } from '../../../components/motion/use-motion-presence';
@@ -20,6 +21,7 @@ export function RemoveTransactionDialog({
   onClose: () => void;
   motionState?: MotionState;
 }) {
+  const t = useTranslations('Finance');
   const queryClient = useQueryClient();
   const [scope, setScope] = useState<TransactionEditScope>(
     transaction.recurring ? 'current_and_future' : 'current',
@@ -50,21 +52,29 @@ export function RemoveTransactionDialog({
       >
         <div className="transactionModalHeader">
           <div>
-            <p className="transactionModalEyebrow">Remove entry</p>
-            <h2 id="remove-transaction-title">Remove transaction?</h2>
+            <p className="transactionModalEyebrow">{t('removeEntry')}</p>
+            <h2 id="remove-transaction-title">{t('removeTransactionTitle')}</h2>
           </div>
-          <button type="button" className="modalCloseButton" onClick={onClose} aria-label="Close">
+          <button
+            type="button"
+            className="modalCloseButton"
+            onClick={onClose}
+            aria-label={t('close')}
+          >
             <span aria-hidden="true">×</span>
           </button>
         </div>
         <div className="removeTransactionContent">
           <p>
-            This will remove <strong>{transaction.source.displayName}</strong> for{' '}
-            <strong>{transaction.amount}</strong>.
+            {t.rich('removeTransactionDescription', {
+              source: transaction.source.displayName,
+              amount: transaction.amount,
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
           {transaction.recurring ? (
             <fieldset className="transactionScope">
-              <legend>Which transactions should be removed?</legend>
+              <legend>{t('removeScope')}</legend>
               <label>
                 <input
                   type="radio"
@@ -72,7 +82,7 @@ export function RemoveTransactionDialog({
                   checked={scope === 'current_and_future'}
                   onChange={() => setScope('current_and_future')}
                 />
-                Current and future transactions
+                {t('currentAndFuture')}
               </label>
               <label>
                 <input
@@ -81,21 +91,21 @@ export function RemoveTransactionDialog({
                   checked={scope === 'past_current_and_future'}
                   onChange={() => setScope('past_current_and_future')}
                 />
-                Past, current and future transactions
+                {t('pastCurrentAndFuture')}
               </label>
             </fieldset>
           ) : null}
           {mutation.isError ? (
             <Alert variant="error">
-              {financeErrorMessage(mutation.error, 'We could not remove this transaction.')}
+              {financeErrorMessage(mutation.error, t('removeTransactionError'))}
             </Alert>
           ) : null}
           <div className="transactionFormActions">
             <Button variant="secondary" onClick={onClose} disabled={mutation.isPending}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
-              {mutation.isPending ? 'Removing…' : 'Remove'}
+              {mutation.isPending ? t('removing') : t('remove')}
             </Button>
           </div>
         </div>

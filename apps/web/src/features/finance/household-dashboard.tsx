@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { useMotionPresence } from '../../components/motion/use-motion-presence';
@@ -30,16 +31,14 @@ import { TransactionMenu } from './dashboard/transaction-menu';
 import {
   isUpcomingRecurringTransaction,
   summarizeTransactions,
-  transactionTypeLabel,
   type RecurringFilter,
   type TransactionFilters,
   type TransactionSortKey,
 } from './dashboard/transaction-view';
 import { useDashboardSelection } from './dashboard/use-dashboard-selection';
 import { useTransactionView } from './dashboard/use-transaction-view';
-import { FinancialIcon, financialIconLabel } from './financial-icon';
+import { FinancialIcon } from './financial-icon';
 import { TransactionForm } from './transaction-form';
-import { transactionTypeLabel as formatTransactionType } from './transaction-type';
 
 const transactionCollator = new Intl.Collator(undefined, {
   numeric: true,
@@ -82,25 +81,29 @@ export function shouldCollapseCurrentMonthButton(
 }
 
 function EntryIcon({ entry }: { entry: HouseholdTransaction }) {
+  const labels = useTranslations('Labels.financialIcons');
+  const label = labels(entry.icon);
   return (
-    <span
-      className="transactionIcon"
-      style={{ backgroundColor: entry.color }}
-      title={financialIconLabel(entry.icon)}
-    >
+    <span className="transactionIcon" style={{ backgroundColor: entry.color }} title={label}>
       <FinancialIcon name={entry.icon} size={18} />
-      <span className="srOnly">{financialIconLabel(entry.icon)}</span>
+      <span className="srOnly">{label}</span>
     </span>
   );
 }
 
 function RecurringIcon({ entry }: { entry: HouseholdTransaction }) {
+  const t = useTranslations('Finance');
   if (!entry.recurring) return null;
 
   const interval = entry.recurrenceInterval ?? Defaults.TRANSACTION_RECURRENCE_INTERVAL;
   const unit = entry.recurrenceUnit ?? Defaults.TRANSACTION_RECURRENCE_UNIT;
-  const schedule = `Every ${interval} ${unit}${interval === 1 ? '' : 's'}`;
-  const label = entry.expiresOn ? `${schedule}, until ${entry.expiresOn}` : schedule;
+  const schedule = t('recurrenceSchedule', {
+    interval,
+    unit: t(`recurrenceUnits.${unit}`, { interval }),
+  });
+  const label = entry.expiresOn
+    ? t('recurrenceUntil', { schedule, date: entry.expiresOn })
+    : schedule;
   return (
     <span className="transactionRecurringIcon" role="img" aria-label={label} title={label}>
       <RefreshCw aria-hidden="true" />
@@ -136,6 +139,7 @@ function SortableHeader({
   direction: 'ascending' | 'descending';
   onSort: (column: TransactionSortKey) => void;
 }) {
+  const t = useTranslations('Finance');
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [compact, setCompact] = useState(false);
   const HeaderIcon = transactionHeaderIcons[column];
@@ -168,7 +172,7 @@ function SortableHeader({
         ref={buttonRef}
         type="button"
         className={`transactionSortButton${compact ? ' isCompact' : ''}`}
-        aria-label={`Sort by ${label}`}
+        aria-label={t('sortBy', { label })}
         onClick={() => onSort(column)}
       >
         <HeaderIcon className="transactionHeaderIcon" aria-hidden="true" />
@@ -182,6 +186,8 @@ function SortableHeader({
 }
 
 export function HouseholdDashboard() {
+  const t = useTranslations('Finance');
+  const typeLabels = useTranslations('Labels.expenseTypes');
   const { month, setMonth, householdId, setHouseholdId } = useDashboardSelection();
   const [selectedYear, selectedMonthNumber] = month.split('-').map(Number);
   const currentMonthKey = monthKey(new Date());
@@ -425,24 +431,24 @@ export function HouseholdDashboard() {
   if (householdsQuery.isPending || (householdsQuery.data?.length && query.isPending)) {
     return (
       <div className="dashboardState">
-        <LoadingIndicator label="Loading household…" />
+        <LoadingIndicator label={t('loadingHousehold')} />
       </div>
     );
   }
   if (householdsQuery.isError) {
     return (
       <div className="dashboardState">
-        <Alert variant="error">We could not load your households.</Alert>
+        <Alert variant="error">{t('loadHouseholdsError')}</Alert>
       </div>
     );
   }
   if (householdsQuery.data?.length === 0) {
     return (
       <div className="dashboardState">
-        <h1>No households yet</h1>
-        <p>Create a household in settings, or wait until another member invites you.</p>
+        <h1>{t('noHouseholds')}</h1>
+        <p>{t('createOrWait')}</p>
         <Link href="/settings/households" className="button">
-          Open settings
+          {t('openSettings')}
         </Link>
       </div>
     );
@@ -451,17 +457,17 @@ export function HouseholdDashboard() {
     if (isApiClientError(query.error) && query.error.status === 404) {
       return (
         <div className="dashboardState">
-          <h1>Household unavailable</h1>
-          <p>Create a household in settings, or wait until another member invites you.</p>
+          <h1>{t('householdUnavailable')}</h1>
+          <p>{t('createOrWait')}</p>
           <Link href="/settings/households" className="button">
-            Open settings
+            {t('openSettings')}
           </Link>
         </div>
       );
     }
     return (
       <div className="dashboardState">
-        <Alert variant="error">We could not load your household.</Alert>
+        <Alert variant="error">{t('loadHouseholdError')}</Alert>
       </div>
     );
   }
@@ -531,10 +537,10 @@ export function HouseholdDashboard() {
           key: 'type',
           label:
             filters.type === 'income'
-              ? 'Income'
+              ? t('income')
               : filters.type === 'expense'
-                ? 'Expenses'
-                : formatTransactionType(filters.type.slice(8)),
+                ? t('expenses')
+                : typeLabels(filters.type.slice(8)),
         }
       : null,
     filters.userId !== 'all'
@@ -542,7 +548,7 @@ export function HouseholdDashboard() {
           key: 'userId',
           label:
             query.data.members.find((member) => member.id === filters.userId)?.displayName ??
-            'Selected user',
+            t('selectedUser'),
         }
       : null,
     filters.sourceId !== 'all'
@@ -550,22 +556,28 @@ export function HouseholdDashboard() {
           key: 'sourceId',
           label:
             query.data.sources.find((source) => source.id === filters.sourceId)?.displayName ??
-            'Selected source',
+            t('selectedSource'),
         }
       : null,
     filters.recurring !== 'all'
       ? {
           key: 'recurring',
-          label: filters.recurring === 'recurring' ? 'Recurring' : 'One-off',
+          label: filters.recurring === 'recurring' ? t('recurring') : t('oneOff'),
         }
       : null,
-    filters.dateFrom ? { key: 'dateFrom', label: `From ${filters.dateFrom}` } : null,
-    filters.dateTo ? { key: 'dateTo', label: `To ${filters.dateTo}` } : null,
+    filters.dateFrom ? { key: 'dateFrom', label: t('fromDate', { date: filters.dateFrom }) } : null,
+    filters.dateTo ? { key: 'dateTo', label: t('toDate', { date: filters.dateTo }) } : null,
     filters.amountOver
-      ? { key: 'amountOver', label: `Over ${money.format(Number(filters.amountOver))}` }
+      ? {
+          key: 'amountOver',
+          label: t('overAmount', { amount: money.format(Number(filters.amountOver)) }),
+        }
       : null,
     filters.amountUnder
-      ? { key: 'amountUnder', label: `Under ${money.format(Number(filters.amountUnder))}` }
+      ? {
+          key: 'amountUnder',
+          label: t('underAmount', { amount: money.format(Number(filters.amountUnder)) }),
+        }
       : null,
   ].filter((filter): filter is { key: keyof TransactionFilters; label: string } => Boolean(filter));
   if (activeFilters.length) lastActiveFiltersRef.current = activeFilters;
@@ -578,7 +590,7 @@ export function HouseholdDashboard() {
   return (
     <section
       className="householdDashboard"
-      aria-label="Household dashboard"
+      aria-label={t('householdDashboard')}
       aria-busy={query.isFetching}
     >
       <div className="dashboardHeading">
@@ -587,7 +599,7 @@ export function HouseholdDashboard() {
             {(householdsQuery.data?.length ?? 0) > 1 ? (
               <>
                 <label className="householdPicker">
-                  <span className="srOnly">Household</span>
+                  <span className="srOnly">{t('household')}</span>
                   <select
                     value={householdId}
                     onChange={(event) => {
@@ -598,7 +610,7 @@ export function HouseholdDashboard() {
                     {householdsQuery.data?.map((entry) => (
                       <option key={entry.id} value={entry.id}>
                         {entry.name}
-                        {entry.isPrimary ? ' (default)' : ''}
+                        {entry.isPrimary ? t('defaultSuffix') : ''}
                       </option>
                     ))}
                   </select>
@@ -614,15 +626,15 @@ export function HouseholdDashboard() {
           <div
             ref={monthNavigationRef}
             className={`monthNavigation${currentMonthButtonInPicker ? ' isCompact' : ''}`}
-            aria-label="Month navigation"
+            aria-label={t('monthNavigation')}
           >
             <button
               type="button"
               className={`currentMonthButton${month === currentMonthKey ? ' isHidden' : ''}`}
-              aria-label="Current month"
+              aria-label={t('currentMonth')}
               aria-hidden={month === currentMonthKey ? 'true' : undefined}
               tabIndex={month === currentMonthKey ? -1 : undefined}
-              title={month === currentMonthKey ? undefined : 'Current month'}
+              title={month === currentMonthKey ? undefined : t('currentMonth')}
               onClick={() => setMonth(currentMonthKey)}
             >
               <CalendarCheck aria-hidden="true" />
@@ -630,7 +642,7 @@ export function HouseholdDashboard() {
             <button
               type="button"
               className="monthNavigationButton"
-              aria-label="Previous month"
+              aria-label={t('previousMonth')}
               onClick={() => setMonth(shiftMonth(month, -1))}
             >
               <ChevronLeft aria-hidden="true" />
@@ -641,7 +653,7 @@ export function HouseholdDashboard() {
                   ref={monthPickerTriggerRef}
                   type="button"
                   className="monthPickerTrigger"
-                  aria-label={`Choose month, ${monthLabel}`}
+                  aria-label={t('chooseMonthValue', { month: monthLabel })}
                   aria-expanded={monthPickerOpen}
                   aria-controls="month-picker-popover"
                   onClick={() => setMonthPickerOpen((open) => !open)}
@@ -708,10 +720,10 @@ export function HouseholdDashboard() {
                   id="month-picker-popover"
                   className="monthPickerPopover"
                   role="group"
-                  aria-label="Choose month"
+                  aria-label={t('chooseMonth')}
                 >
                   <label>
-                    <span>Month</span>
+                    <span>{t('month')}</span>
                     <select
                       value={selectedMonthNumber}
                       onChange={(event) => {
@@ -727,7 +739,7 @@ export function HouseholdDashboard() {
                     </select>
                   </label>
                   <label>
-                    <span>Year</span>
+                    <span>{t('year')}</span>
                     <select
                       value={selectedYear}
                       onChange={(event) => {
@@ -753,7 +765,7 @@ export function HouseholdDashboard() {
                         setMonthPickerOpen(false);
                       }}
                     >
-                      Current month
+                      {t('currentMonth')}
                     </button>
                   ) : null}
                 </div>
@@ -762,7 +774,7 @@ export function HouseholdDashboard() {
             <button
               type="button"
               className="monthNavigationButton"
-              aria-label="Next month"
+              aria-label={t('nextMonth')}
               onClick={() => setMonth(shiftMonth(month, 1))}
             >
               <ChevronRight aria-hidden="true" />
@@ -773,7 +785,7 @@ export function HouseholdDashboard() {
       {savedDestinationMonth ? (
         <div className="transactionSavedNotice" role="status">
           <span>
-            Transaction saved to{' '}
+            {t('transactionSavedTo')}{' '}
             {new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(
               new Date(`${savedDestinationMonth}-01T12:00:00`),
             )}
@@ -787,7 +799,7 @@ export function HouseholdDashboard() {
                 setSavedDestinationMonth(null);
               }}
             >
-              View{' '}
+              {t('viewMonth')}{' '}
               {new Intl.DateTimeFormat(undefined, { month: 'long' }).format(
                 new Date(`${savedDestinationMonth}-01T12:00:00`),
               )}
@@ -815,9 +827,9 @@ export function HouseholdDashboard() {
 
       <div className="transactionPanel">
         <div className="transactionPanelHeading">
-          <h2>Activity</h2>
+          <h2>{t('activity')}</h2>
           <div className="transactionPanelActions">
-            <span>{transactions.length} entries</span>
+            <span>{t('entries', { count: transactions.length })}</span>
             <button
               ref={addTransactionTriggerRef}
               type="button"
@@ -825,15 +837,12 @@ export function HouseholdDashboard() {
               data-onboarding="add-transaction"
               onClick={() => setAddingTransaction(true)}
             >
-              Add transaction
+              {t('addTransaction')}
             </button>
           </div>
         </div>
         <div className="transactionFiltersRegion">
-          <details
-            className="transactionFilters"
-            open={filtersExpanded}
-          >
+          <details className="transactionFilters" open={filtersExpanded}>
             <summary
               ref={filterSummaryRef}
               onClick={(event) => {
@@ -843,13 +852,15 @@ export function HouseholdDashboard() {
             >
               <span className="transactionFilterTitle">
                 <SlidersHorizontal aria-hidden="true" />
-                Filters
+                {t('filters')}
                 {activeFilterCount ? (
                   <span className="transactionFilterCount">{activeFilterCount}</span>
                 ) : null}
               </span>
               <span className="transactionFilterHint">
-                {activeFilterCount ? `${filteredTransactions.length} matching` : 'Show options'}
+                {activeFilterCount
+                  ? t('matching', { count: filteredTransactions.length })
+                  : t('showOptions')}
               </span>
             </summary>
           </details>
@@ -868,45 +879,42 @@ export function HouseholdDashboard() {
               className="transactionFilterSheet"
               role="dialog"
               aria-modal={filtersExpanded && isMobileFilterSheet() ? 'true' : undefined}
-              aria-label="Transaction filters"
+              aria-label={t('transactionFilters')}
             >
               <div className="transactionFilterSheetHeader">
                 <div>
-                  <strong>Filter activity</strong>
-                  <span>Refine this month&apos;s activity</span>
+                  <strong>{t('filterActivity')}</strong>
+                  <span>{t('refineActivity')}</span>
                 </div>
-                <button type="button" aria-label="Close filters" onClick={closeFilters}>
+                <button type="button" aria-label={t('closeFilters')} onClick={closeFilters}>
                   <X aria-hidden="true" />
                 </button>
               </div>
               <div className="transactionFilterGroup transactionFilterGroupPrimary">
                 <div className="transactionFilterGroupFields">
                   <label className="transactionFilterField">
-                    <span>Type</span>
+                    <span>{t('type')}</span>
                     <select
                       value={filters.type}
                       onChange={(event) => updateFilter('type', event.target.value)}
                     >
-                      <option value="all">All types</option>
-                      <option value="income">Income</option>
-                      <option value="expense">All expenses</option>
+                      <option value="all">{t('allTypes')}</option>
+                      <option value="income">{t('income')}</option>
+                      <option value="expense">{t('allExpenses')}</option>
                       {expenseTypes.map((type) => (
                         <option key={type} value={`expense:${type}`}>
-                          {type
-                            .split('-')
-                            .map((word) => word[0]!.toUpperCase() + word.slice(1))
-                            .join(' ')}
+                          {typeLabels(type)}
                         </option>
                       ))}
                     </select>
                   </label>
                   <label className="transactionFilterField">
-                    <span>Source</span>
+                    <span>{t('source')}</span>
                     <select
                       value={filters.sourceId}
                       onChange={(event) => updateFilter('sourceId', event.target.value)}
                     >
-                      <option value="all">All sources</option>
+                      <option value="all">{t('allSources')}</option>
                       {query.data.sources.map((source) => (
                         <option key={source.id} value={source.id}>
                           {source.displayName}
@@ -919,12 +927,12 @@ export function HouseholdDashboard() {
               <div className="transactionFilterGroup transactionFilterGroupSecondary">
                 <div className="transactionFilterGroupFields">
                   <label className="transactionFilterField">
-                    <span>User</span>
+                    <span>{t('user')}</span>
                     <select
                       value={filters.userId}
                       onChange={(event) => updateFilter('userId', event.target.value)}
                     >
-                      <option value="all">All users</option>
+                      <option value="all">{t('allUsers')}</option>
                       {query.data.members.map((member) => (
                         <option key={member.id} value={member.id}>
                           {member.displayName}
@@ -933,16 +941,16 @@ export function HouseholdDashboard() {
                     </select>
                   </label>
                   <label className="transactionFilterField">
-                    <span>Recurring</span>
+                    <span>{t('recurring')}</span>
                     <select
                       value={filters.recurring}
                       onChange={(event) =>
                         updateFilter('recurring', event.target.value as RecurringFilter)
                       }
                     >
-                      <option value="all">All transactions</option>
-                      <option value="recurring">Recurring only</option>
-                      <option value="one-off">One-off only</option>
+                      <option value="all">{t('allTransactions')}</option>
+                      <option value="recurring">{t('recurringOnly')}</option>
+                      <option value="one-off">{t('oneOffOnly')}</option>
                     </select>
                   </label>
                 </div>
@@ -950,7 +958,7 @@ export function HouseholdDashboard() {
               <div className="transactionFilterGroup transactionFilterGroupDate">
                 <div className="transactionFilterGroupFields">
                   <label className="transactionFilterField">
-                    <span>From</span>
+                    <span>{t('from')}</span>
                     <input
                       type="date"
                       value={filters.dateFrom}
@@ -959,7 +967,7 @@ export function HouseholdDashboard() {
                     />
                   </label>
                   <label className="transactionFilterField">
-                    <span>To</span>
+                    <span>{t('to')}</span>
                     <input
                       type="date"
                       value={filters.dateTo}
@@ -972,18 +980,20 @@ export function HouseholdDashboard() {
               <div
                 className="transactionFilterGroup transactionFilterGroupAmount"
                 role="group"
-                aria-label={`Amount range in ${household.currency}`}
+                aria-label={t('amountRange', { currency: household.currency })}
               >
                 <div className="amountRangeControl">
                   <label className="amountRangeValue">
-                    <span className="srOnly">Minimum amount in {household.currency}</span>
+                    <span className="srOnly">
+                      {t('minimumAmount', { currency: household.currency })}
+                    </span>
                     <input
                       type="number"
                       inputMode="decimal"
                       min="0"
                       max={filters.amountUnder || amountRangeMax}
                       step="0.01"
-                      placeholder="Min"
+                      placeholder={t('min')}
                       value={filters.amountOver}
                       onChange={(event) => updateFilter('amountOver', event.target.value)}
                     />
@@ -992,7 +1002,7 @@ export function HouseholdDashboard() {
                   <div className="amountRangeSliders">
                     <input
                       type="range"
-                      aria-label={`Minimum amount in ${household.currency}`}
+                      aria-label={t('minimumAmount', { currency: household.currency })}
                       min="0"
                       max={amountRangeMax}
                       step="0.01"
@@ -1007,7 +1017,7 @@ export function HouseholdDashboard() {
                     />
                     <input
                       type="range"
-                      aria-label={`Maximum amount in ${household.currency}`}
+                      aria-label={t('maximumAmount', { currency: household.currency })}
                       min="0"
                       max={amountRangeMax}
                       step="0.01"
@@ -1022,14 +1032,16 @@ export function HouseholdDashboard() {
                     />
                   </div>
                   <label className="amountRangeValue">
-                    <span className="srOnly">Maximum amount in {household.currency}</span>
+                    <span className="srOnly">
+                      {t('maximumAmount', { currency: household.currency })}
+                    </span>
                     <input
                       type="number"
                       inputMode="decimal"
                       min={filters.amountOver || 0}
                       max={amountRangeMax}
                       step="0.01"
-                      placeholder="Max"
+                      placeholder={t('max')}
                       value={filters.amountUnder}
                       onChange={(event) => updateFilter('amountUnder', event.target.value)}
                     />
@@ -1039,11 +1051,14 @@ export function HouseholdDashboard() {
               </div>
               <div className="transactionFilterFooter">
                 <span aria-live="polite">
-                  Showing {filteredTransactions.length} of {transactions.length} entries
+                  {t('showingEntries', {
+                    shown: filteredTransactions.length,
+                    total: transactions.length,
+                  })}
                 </span>
                 {activeFilterCount ? (
                   <button type="button" onClick={resetFilters}>
-                    Clear filters
+                    {t('clearFilters')}
                   </button>
                 ) : null}
               </div>
@@ -1053,7 +1068,7 @@ export function HouseholdDashboard() {
         {filterChipsPresence.visible ? (
           <div
             className="transactionFilterChips"
-            aria-label="Active filters"
+            aria-label={t('activeFilters')}
             aria-hidden={filterChipsPresence.state === 'exiting' ? 'true' : undefined}
             data-motion={filterChipsPresence.state}
           >
@@ -1062,7 +1077,7 @@ export function HouseholdDashboard() {
                 key={filter.key}
                 type="button"
                 onClick={() => removeFilter(filter.key)}
-                aria-label={`Remove ${filter.label} filter`}
+                aria-label={t('removeFilter', { filter: filter.label })}
               >
                 <span>{filter.label}</span>
                 <X aria-hidden="true" />
@@ -1075,14 +1090,14 @@ export function HouseholdDashboard() {
             <table className="transactionTable">
               <thead>
                 <tr>
-                  <th className="transactionIconColumn" aria-label="Icon and color" />
-                  <th className="transactionRecurringColumn" aria-label="Recurring status" />
-                  {sortableHeader('date', 'Date', 'transactionDateColumn')}
-                  {sortableHeader('amount', 'Amount', 'transactionAmountColumn')}
-                  {sortableHeader('source', 'Source', 'transactionSourceColumn')}
-                  {sortableHeader('type', 'Type', 'transactionTypeColumn')}
-                  {sortableHeader('user', 'User', 'transactionUserColumn')}
-                  <th className="transactionActionsColumn" aria-label="Actions" />
+                  <th className="transactionIconColumn" aria-label={t('iconAndColor')} />
+                  <th className="transactionRecurringColumn" aria-label={t('recurringStatus')} />
+                  {sortableHeader('date', t('date'), 'transactionDateColumn')}
+                  {sortableHeader('amount', t('amount'), 'transactionAmountColumn')}
+                  {sortableHeader('source', t('source'), 'transactionSourceColumn')}
+                  {sortableHeader('type', t('type'), 'transactionTypeColumn')}
+                  {sortableHeader('user', t('user'), 'transactionUserColumn')}
+                  <th className="transactionActionsColumn" aria-label={t('actions')} />
                 </tr>
               </thead>
               <tbody>
@@ -1115,12 +1130,14 @@ export function HouseholdDashboard() {
                       {money.format(Number(entry.amount))}
                     </td>
                     <td className="transactionSourceColumn">
-                      {entry.projected ? <span className="srOnly">Projected: </span> : null}
+                      {entry.projected ? <span className="srOnly">{t('projected')}: </span> : null}
                       <span className="transactionSourceName" title={entry.source.displayName}>
                         {entry.source.displayName}
                       </span>
                     </td>
-                    <td className="transactionTypeColumn">{transactionTypeLabel(entry)}</td>
+                    <td className="transactionTypeColumn">
+                      {entry.kind === 'income' ? t('income') : typeLabels(entry.type ?? 'other')}
+                    </td>
                     <td className="transactionUserColumn">
                       <span className="transactionUser">
                         <ProfileImage
@@ -1146,13 +1163,13 @@ export function HouseholdDashboard() {
             </table>
           ) : transactions.length ? (
             <p className="transactionEmpty">
-              No transactions match these filters.{' '}
+              {t('noMatchingTransactions')}{' '}
               <button type="button" onClick={resetFilters}>
-                Clear filters
+                {t('clearFilters')}
               </button>
             </p>
           ) : (
-            <p className="transactionEmpty">No income or expenses recorded for this month.</p>
+            <p className="transactionEmpty">{t('noTransactionsThisMonth')}</p>
           )}
         </div>
       </div>

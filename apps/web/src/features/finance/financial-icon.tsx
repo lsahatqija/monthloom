@@ -106,10 +106,6 @@ const FINANCIAL_ICON_COMPONENTS = {
   'circle-ellipsis': CircleEllipsis,
 } satisfies Record<FinancialIconName, LucideIcon>;
 
-export function financialIconLabel(icon: FinancialIconName): string {
-  return icon.replaceAll('-', ' ').replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
 interface FinancialIconProps {
   name: FinancialIconName;
   size?: number;

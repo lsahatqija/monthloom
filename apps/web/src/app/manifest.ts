@@ -1,10 +1,12 @@
 import type { MetadataRoute } from 'next';
+import { getTranslations } from 'next-intl/server';
 
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const t = await getTranslations('Metadata');
   return {
     name: 'Monthloom',
     short_name: 'Monthloom',
-    description: 'Plan and share your monthly household finances.',
+    description: t('description'),
     start_url: '/',
     display: 'standalone',
     background_color: '#f7f5ef',

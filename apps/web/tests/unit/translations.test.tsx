@@ -2,7 +2,10 @@ import { render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 
-import messages from '../../messages/fr.json';
+import en from '../../messages/en.json';
+import fr from '../../messages/fr.json';
+import sq from '../../messages/sq.json';
+import tr from '../../messages/tr.json';
 import NotFound from '../../src/app/not-found';
 import { RestartOnboardingButton } from '../../src/components/onboarding/restart-onboarding-button';
 
@@ -18,6 +21,20 @@ vi.mock('next-intl/server', () => ({
 }));
 
 describe('translations', () => {
+  it('keeps every locale catalog structurally aligned', () => {
+    const keys = (messages: object): string[] =>
+      Object.entries(messages).flatMap(([key, value]) =>
+        value && typeof value === 'object'
+          ? keys(value as object).map((nestedKey) => `${key}.${nestedKey}`)
+          : key,
+      );
+    const englishKeys = keys(en).sort();
+
+    expect(keys(sq).sort()).toEqual(englishKeys);
+    expect(keys(fr).sort()).toEqual(englishKeys);
+    expect(keys(tr).sort()).toEqual(englishKeys);
+  });
+
   it('renders a translated Server Component', async () => {
     render(await NotFound());
 
@@ -30,7 +47,7 @@ describe('translations', () => {
 
   it('renders a translated Client Component', () => {
     render(
-      <NextIntlClientProvider locale="fr" messages={messages}>
+      <NextIntlClientProvider locale="fr" messages={fr}>
         <RestartOnboardingButton userId="user" />
       </NextIntlClientProvider>,
     );

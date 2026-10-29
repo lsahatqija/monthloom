@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { changePasswordRequestSchema, type ChangePasswordRequest } from '@monthloom/contracts';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -13,25 +14,24 @@ import { requestPasswordReset } from '../auth/auth.api';
 import { changePassword } from './users.api';
 
 export function ChangePassword({ email }: { email: string }) {
+  const t = useTranslations('Profile');
   const [isOpen, setIsOpen] = useState(false);
   const [wasChanged, setWasChanged] = useState(false);
   const resetMutation = useMutation({ mutationFn: requestPasswordReset });
 
   return (
     <>
-      {wasChanged ? <Alert>Password changed successfully.</Alert> : null}
-      {resetMutation.isSuccess ? <Alert>{resetMutation.data.message}</Alert> : null}
+      {wasChanged ? <Alert>{t('passwordChanged')}</Alert> : null}
+      {resetMutation.isSuccess ? <Alert>{t('resetLinkSent')}</Alert> : null}
       {resetMutation.isError ? (
         <Alert variant="error">
-          {isApiClientError(resetMutation.error)
-            ? resetMutation.error.message
-            : 'Something went wrong. Please try again.'}
+          {isApiClientError(resetMutation.error) ? resetMutation.error.message : t('genericError')}
         </Alert>
       ) : null}
       <div className="settingsPanel settingsSecurityPanel">
         <div>
-          <h3>Password</h3>
-          <p>Update the password you use to sign in.</p>
+          <h3>{t('password')}</h3>
+          <p>{t('passwordDescription')}</p>
         </div>
         <div className="settingsSecurityActions">
           <Button
@@ -40,7 +40,7 @@ export function ChangePassword({ email }: { email: string }) {
             disabled={resetMutation.isPending}
             onClick={() => resetMutation.mutate({ email })}
           >
-            {resetMutation.isPending ? 'Sending...' : 'Email reset link'}
+            {resetMutation.isPending ? t('sending') : t('emailResetLink')}
           </Button>
           <Button
             type="button"
@@ -50,7 +50,7 @@ export function ChangePassword({ email }: { email: string }) {
               setIsOpen(true);
             }}
           >
-            Change Password
+            {t('changePassword')}
           </Button>
         </div>
       </div>
@@ -74,6 +74,7 @@ function ChangePasswordModal({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const t = useTranslations('Profile');
   const {
     register,
     handleSubmit,
@@ -96,9 +97,7 @@ function ChangePasswordModal({
         return;
       }
       setError('root', {
-        message: isApiClientError(error)
-          ? error.message
-          : 'Something went wrong. Please try again.',
+        message: isApiClientError(error) ? error.message : t('genericError'),
       });
     },
   });
@@ -126,15 +125,15 @@ function ChangePasswordModal({
       >
         <div className="transactionModalHeader">
           <div>
-            <p className="transactionModalEyebrow">Account security</p>
-            <h2 id="change-password-title">Change Password</h2>
+            <p className="transactionModalEyebrow">{t('accountSecurity')}</p>
+            <h2 id="change-password-title">{t('changePassword')}</h2>
           </div>
           <button
             type="button"
             className="modalCloseButton"
             disabled={mutation.isPending}
             onClick={onClose}
-            aria-label="Close change password modal"
+            aria-label={t('closePasswordModal')}
           >
             <span aria-hidden="true">×</span>
           </button>
@@ -148,7 +147,7 @@ function ChangePasswordModal({
           {errors.root?.message ? <Alert variant="error">{errors.root.message}</Alert> : null}
 
           <FormField>
-            <Label htmlFor="currentPassword">Current password</Label>
+            <Label htmlFor="currentPassword">{t('currentPassword')}</Label>
             <Input
               id="currentPassword"
               type="password"
@@ -161,7 +160,7 @@ function ChangePasswordModal({
           </FormField>
 
           <FormField>
-            <Label htmlFor="newPassword">New password</Label>
+            <Label htmlFor="newPassword">{t('newPassword')}</Label>
             <Input
               id="newPassword"
               type="password"
@@ -173,7 +172,7 @@ function ChangePasswordModal({
           </FormField>
 
           <FormField>
-            <Label htmlFor="confirmNewPassword">Confirm new password</Label>
+            <Label htmlFor="confirmNewPassword">{t('confirmNewPassword')}</Label>
             <Input
               id="confirmNewPassword"
               type="password"
@@ -191,10 +190,10 @@ function ChangePasswordModal({
               disabled={mutation.isPending}
               onClick={onClose}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? 'Changing…' : 'Change Password'}
+              {mutation.isPending ? t('changing') : t('changePassword')}
             </Button>
           </div>
         </form>
