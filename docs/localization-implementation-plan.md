@@ -43,17 +43,17 @@ reason codes with its own localization library and catalogs.
 
 ## Phase 1: Add the locale contract and persistence
 
-- [ ] Add `SUPPORTED_LOCALES = ['en', 'sq', 'fr', 'tr']` to the shared contracts.
-- [ ] Export a Zod `localeSchema` and inferred `Locale` type.
-- [ ] Add `USER_LOCALE = 'en'` to `Defaults`.
-- [ ] Add a non-null `locale` varchar column with an `en` default to the users table.
-- [ ] Generate and review a Drizzle migration; existing users must receive `en`.
-- [ ] Add `locale` to `User`, `CreateUserData`, and `UpdateUserData` in the API.
-- [ ] Add `locale` to `PublicUser` and `UpdateProfileRequest` in the shared contracts.
-- [ ] Update the PostgreSQL user adapter and `toPublicUser` serialization.
-- [ ] Update API/OpenAPI schemas, user fixtures, mocks, and typed test users.
-- [ ] Add contract tests for all supported locales and rejection of unsupported values.
-- [ ] Add an API integration test proving that an updated locale persists and appears in `/auth/me`.
+- [x] Add `SUPPORTED_LOCALES = ['en', 'sq', 'fr', 'tr']` to the shared contracts.
+- [x] Export a Zod `localeSchema` and inferred `Locale` type.
+- [x] Add `USER_LOCALE = 'en'` to `Defaults`.
+- [x] Add a non-null `locale` varchar column with an `en` default to the users table.
+- [x] Generate and review a Drizzle migration; existing users must receive `en`.
+- [x] Add `locale` to `User`, `CreateUserData`, and `UpdateUserData` in the API.
+- [x] Add `locale` to `PublicUser` and `UpdateProfileRequest` in the shared contracts.
+- [x] Update the PostgreSQL user adapter and `toPublicUser` serialization.
+- [x] Update API/OpenAPI schemas, user fixtures, mocks, and typed test users.
+- [x] Add contract tests for all supported locales and rejection of unsupported values.
+- [x] Add an API integration test proving that an updated locale persists and appears in `/auth/me`.
 
 Use a varchar rather than a PostgreSQL enum because supported languages are expected to grow. The
 shared schema remains the application-level allowlist.

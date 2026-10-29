@@ -1,4 +1,4 @@
-import type { DesiredColor, ProfileImage, UserRole } from '@monthloom/contracts';
+import type { DesiredColor, Locale, ProfileImage, UserRole } from '@monthloom/contracts';
 
 /** Backend-internal user entity. Includes the password hash; never exposed to transport layer. */
 export interface User {
@@ -9,6 +9,7 @@ export interface User {
   displayName: string;
   profileImage: ProfileImage;
   desiredColor: DesiredColor;
+  locale: Locale;
   role: UserRole;
   createdAt: Date;
   updatedAt: Date;
@@ -20,6 +21,7 @@ export interface CreateUserData {
   displayName: string;
   profileImage: ProfileImage;
   desiredColor: DesiredColor;
+  locale: Locale;
   role?: UserRole;
 }
 
@@ -29,4 +31,5 @@ export interface UpdateUserData {
   displayName?: string;
   profileImage?: ProfileImage;
   desiredColor?: DesiredColor;
+  locale?: Locale;
 }

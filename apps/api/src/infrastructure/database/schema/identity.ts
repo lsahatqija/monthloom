@@ -23,6 +23,7 @@ export const users = pgTable(
     displayName: varchar('display_name', { length: Constants.DISPLAY_NAME_MAX_LENGTH }).notNull(),
     profileImage: profileImageEnum('profile_image').notNull().default(Defaults.USER_PROFILE_IMAGE),
     desiredColor: desiredColorEnum('desired_color').notNull().default(Defaults.USER_DESIRED_COLOR),
+    locale: varchar('locale', { length: 35 }).notNull().default(Defaults.USER_LOCALE),
     role: userRoleEnum('role').notNull().default('user'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

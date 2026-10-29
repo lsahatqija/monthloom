@@ -14,6 +14,7 @@ export function toPublicUser(user: User): PublicUser {
     displayName: user.displayName,
     profileImage: user.profileImage,
     desiredColor: user.desiredColor,
+    locale: user.locale,
     role: user.role,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),

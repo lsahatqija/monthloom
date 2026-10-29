@@ -30,7 +30,12 @@ describe('HTTP middleware and health', () => {
     await agent
       .patch(`${api}/users/me`)
       .set('Origin', 'http://localhost:3000')
-      .send({ displayName: 'Yes', profileImage: 'diamond-kilim', desiredColor: 'indigo' })
+      .send({
+        displayName: 'Yes',
+        profileImage: 'diamond-kilim',
+        desiredColor: 'indigo',
+        locale: 'en',
+      })
       .expect(200);
   });
 });

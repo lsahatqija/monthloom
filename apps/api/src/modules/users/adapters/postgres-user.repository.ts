@@ -1,3 +1,4 @@
+import { localeSchema } from '@monthloom/contracts';
 import { eq } from 'drizzle-orm';
 
 import type { Database } from '../../../infrastructure/database/client.js';
@@ -14,6 +15,7 @@ function toDomainUser(record: typeof users.$inferSelect): User {
     displayName: record.displayName,
     profileImage: record.profileImage,
     desiredColor: record.desiredColor,
+    locale: localeSchema.parse(record.locale),
     role: record.role,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
@@ -42,6 +44,7 @@ export class PostgresUserRepository implements UserRepository {
         displayName: input.displayName,
         profileImage: input.profileImage,
         desiredColor: input.desiredColor,
+        locale: input.locale,
         role: input.role ?? 'user',
       })
       .returning();

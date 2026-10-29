@@ -1,5 +1,6 @@
 import {
   Constants,
+  Defaults,
   type ForgotPasswordRequest,
   type LoginRequest,
   type PublicUser,
@@ -56,6 +57,7 @@ export class AuthService {
       displayName: input.displayName,
       profileImage: input.profileImage,
       desiredColor: input.desiredColor,
+      locale: Defaults.USER_LOCALE,
     });
 
     const sessionToken = await this.createSession(user.id);

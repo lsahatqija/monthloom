@@ -11,6 +11,7 @@ describe('users', () => {
     expect(result).not.toHaveProperty('passwordHash');
     expect(result.createdAt).toBe('2026-01-01T00:00:00.000Z');
     expect(result.email).toBe(user.email);
+    expect(result.locale).toBe('en');
   });
 
   it('returns not found for an unknown user', async () => {

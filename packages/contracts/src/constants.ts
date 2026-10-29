@@ -1,5 +1,6 @@
 /** Shared values used by validation, persistence, and user-interface controls. */
 export class Constants {
+  static readonly SUPPORTED_LOCALES = ['en', 'sq', 'fr', 'tr'] as const;
   static readonly RECURRENCE_UNITS = ['day', 'week', 'month', 'year'] as const;
   static readonly RECURRENCE_INTERVAL_MAX = 99;
   static readonly DISPLAY_NAME_MIN_LENGTH = 1;

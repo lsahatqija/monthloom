@@ -32,6 +32,7 @@ export function ProfileForm({ user }: { user: PublicUser }) {
       displayName: user.displayName,
       profileImage: user.profileImage,
       desiredColor: user.desiredColor,
+      locale: user.locale,
     },
   });
 

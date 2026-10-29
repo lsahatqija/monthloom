@@ -10,6 +10,7 @@ describe('Defaults', () => {
     expect(Constants.FINANCIAL_ICONS).toContain(Defaults.TRANSACTION_ICON);
     expect(Constants.FINANCIAL_ICONS).toContain(Defaults.INCOME_TRANSACTION_ICON);
     expect(Constants.EXPENSE_TYPES).toContain(Defaults.TRANSACTION_TYPE);
+    expect(Constants.SUPPORTED_LOCALES).toContain(Defaults.USER_LOCALE);
   });
 
   it('uses a valid color for new households and transactions', () => {
