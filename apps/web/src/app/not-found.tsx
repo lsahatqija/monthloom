@@ -1,17 +1,17 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 
 import { EmptyState, PageContainer } from '../components/ui/index';
 
-export default function NotFound() {
+export default async function NotFound() {
+  const t = await getTranslations('Common');
+
   return (
     <PageContainer>
-      <EmptyState
-        title="Page not found"
-        description="The page you are looking for does not exist or may have moved."
-      />
+      <EmptyState title={t('pageNotFoundTitle')} description={t('pageNotFoundDescription')} />
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <Link href="/" className="button">
-          Go home
+          {t('goHome')}
         </Link>
       </div>
     </PageContainer>

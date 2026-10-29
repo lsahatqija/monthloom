@@ -1,6 +1,6 @@
 import type { PublicUser, MeResponse } from '@monthloom/contracts';
 import { cookies } from 'next/headers';
-
+import { cache } from 'react';
 
 import { webConfig } from '../config/env';
 
@@ -9,7 +9,7 @@ import { webConfig } from '../config/env';
  * cookie to the backend. Used by Server Component layouts/pages to gate protected routes
  * without ever trusting client-side state.
  */
-export async function getServerUser(): Promise<PublicUser | null> {
+export const getServerUser = cache(async (): Promise<PublicUser | null> => {
   const cookieHeader = cookies().toString();
 
   const response = await fetch(`${webConfig.internalApiUrl}/api/v1/auth/me`, {
@@ -21,4 +21,4 @@ export async function getServerUser(): Promise<PublicUser | null> {
 
   const data = (await response.json()) as MeResponse;
   return data.user;
-}
+});

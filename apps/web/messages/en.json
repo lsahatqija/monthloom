@@ -1,0 +1,18 @@
+{
+  "Common": {
+    "loading": "Loading...",
+    "pageNotFoundTitle": "Page not found",
+    "pageNotFoundDescription": "The page you are looking for does not exist or may have moved.",
+    "goHome": "Go home"
+  },
+  "Auth": {
+    "logout": "Log out",
+    "loggingOut": "Logging out..."
+  },
+  "Profile": {
+    "restartOnboarding": "Restart onboarding tutorial"
+  },
+  "Finance": {
+    "transactions": "{count, plural, =0 {No transactions} one {# transaction} other {# transactions}}"
+  }
+}

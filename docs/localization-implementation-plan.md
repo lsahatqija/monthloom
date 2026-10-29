@@ -77,18 +77,18 @@ Acceptance criteria:
 
 ## Phase 2: Configure `next-intl` in the web application
 
-- [ ] Add `next-intl` to `apps/web`.
-- [ ] Enable the `next-intl` plugin in `apps/web/next.config.mjs`.
-- [ ] Create `apps/web/src/i18n/config.ts` with supported locales and the fallback locale.
-- [ ] Create `apps/web/src/i18n/request.ts` to resolve the locale and load its catalog.
-- [ ] Create initial `en.json`, `sq.json`, `fr.json`, and `tr.json` catalogs.
-- [ ] Organize messages into feature namespaces such as `Common`, `Auth`, `Profile`, and `Finance`.
-- [ ] Cache `getServerUser()` per request so root and nested layouts do not duplicate `/auth/me`.
-- [ ] Wrap the application with `NextIntlClientProvider` in the root layout.
-- [ ] Set `<html lang>` from the resolved locale rather than hard-coding `en`.
-- [ ] Load only the selected locale's messages for a request.
-- [ ] Update the web test render helper to provide an English internationalization context.
-- [ ] Add one server-rendered and one client-rendered translation test.
+- [x] Add `next-intl` to `apps/web`.
+- [x] Enable the `next-intl` plugin in `apps/web/next.config.mjs`.
+- [x] Create `apps/web/src/i18n/config.ts` with supported locales and the fallback locale.
+- [x] Create `apps/web/src/i18n/request.ts` to resolve the locale and load its catalog.
+- [x] Create initial `en.json`, `sq.json`, `fr.json`, and `tr.json` catalogs.
+- [x] Organize messages into feature namespaces such as `Common`, `Auth`, `Profile`, and `Finance`.
+- [x] Cache `getServerUser()` per request so root and nested layouts do not duplicate `/auth/me`.
+- [x] Wrap the application with `NextIntlClientProvider` in the root layout.
+- [x] Set `<html lang>` from the resolved locale rather than hard-coding `en`.
+- [x] Load only the selected locale's messages for a request.
+- [x] Update the web test render helper to provide an English internationalization context.
+- [x] Add one server-rendered and one client-rendered translation test.
 
 Locale resolution:
 
