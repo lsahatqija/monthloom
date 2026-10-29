@@ -44,17 +44,21 @@ export class FileService {
 
   async upload(input: UploadFileInput): Promise<FileMetadata> {
     if (!config.upload.allowedMimeTypes.includes(input.declaredMimeType)) {
-      throw new ValidationError('Unsupported file type.', {
-        file: [`Only ${config.upload.allowedMimeTypes.join(', ')} are allowed.`],
-      });
+      throw new ValidationError(
+        'Unsupported file type.',
+        { file: [`Only ${config.upload.allowedMimeTypes.join(', ')} are allowed.`] },
+        'FILE_TYPE_UNSUPPORTED',
+      );
     }
 
     // Inspect the actual file content instead of trusting the client-provided MIME type.
     const detected = await fileTypeFromBuffer(input.buffer);
     if (!detected || !config.upload.allowedMimeTypes.includes(detected.mime)) {
-      throw new ValidationError('The file content does not match an allowed image type.', {
-        file: ['The file content does not match a supported image type.'],
-      });
+      throw new ValidationError(
+        'The file content does not match an allowed image type.',
+        { file: ['The file content does not match a supported image type.'] },
+        'FILE_CONTENT_INVALID',
+      );
     }
 
     const extension = EXTENSION_BY_MIME_TYPE[detected.mime] ?? path.extname(input.originalName);

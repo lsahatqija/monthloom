@@ -16,7 +16,7 @@ import { ProfileAppearanceFields } from '../../components/profile-appearance-fie
 import { Alert, Button, FieldError, FormField, Input, Label } from '../../components/ui/index';
 import { LOCALE_NAMES } from '../../i18n/config';
 import { setLocaleCookie } from '../../i18n/locale-cookie';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 import { authKeys, sendEmailVerification } from '../auth/auth.api';
 
 import { updateProfile } from './users.api';
@@ -25,6 +25,7 @@ export function ProfileForm({ user }: { user: PublicUser }) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const t = useTranslations('Profile');
+  const errorMessage = useApiErrorMessage();
 
   const {
     register,
@@ -55,7 +56,7 @@ export function ProfileForm({ user }: { user: PublicUser }) {
     },
     onError: (error) => {
       setError('root', {
-        message: isApiClientError(error) ? error.message : t('genericError'),
+        message: errorMessage(error, t('genericError')),
       });
     },
   });
@@ -76,9 +77,7 @@ export function ProfileForm({ user }: { user: PublicUser }) {
           <Alert>{t('verifyEmailPrompt')}</Alert>
           {verificationMutation.isError ? (
             <Alert variant="error">
-              {isApiClientError(verificationMutation.error)
-                ? verificationMutation.error.message
-                : t('verificationSendError')}
+              {errorMessage(verificationMutation.error, t('verificationSendError'))}
             </Alert>
           ) : null}
           {verificationMutation.isSuccess ? <Alert>{t('verificationSent')}</Alert> : null}

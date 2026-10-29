@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import { Alert, Button, LoadingIndicator } from '../../components/ui/index';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 
 import {
   copyHouseholdSources,
@@ -15,10 +15,6 @@ import {
   getHouseholdSources,
 } from './finance.api';
 import { SourceModal } from './source-modal';
-
-function errorMessage(error: unknown, fallback: string): string {
-  return isApiClientError(error) ? error.message : fallback;
-}
 
 interface CopySourcesModalProps {
   households: ManagedHousehold[];
@@ -34,6 +30,7 @@ function CopySourcesModal({
   onComplete,
 }: CopySourcesModalProps) {
   const t = useTranslations('Finance');
+  const errorMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
   const [sourceHouseholdId, setSourceHouseholdId] = useState(initialSourceHouseholdId);
   const [targetHouseholdId, setTargetHouseholdId] = useState(
@@ -212,6 +209,7 @@ function CopySourcesModal({
 
 export function SourceSettings({ households }: { households: ManagedHousehold[] }) {
   const t = useTranslations('Finance');
+  const errorMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
   const [householdId, setHouseholdId] = useState(
     households.find((household) => household.isPrimary)?.id ?? households[0]?.id ?? '',

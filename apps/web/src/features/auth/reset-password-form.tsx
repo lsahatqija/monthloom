@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 
 import { Alert, Button, FieldError, FormField, Input, Label } from '../../components/ui/index';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 
 import { resetPassword } from './auth.api';
 
@@ -16,6 +16,7 @@ type ResetPasswordFields = Omit<ResetPasswordRequest, 'token'>;
 
 export function ResetPasswordForm({ token }: { token: string }) {
   const t = useTranslations('Auth');
+  const errorMessage = useApiErrorMessage();
   const {
     register,
     handleSubmit,
@@ -28,7 +29,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
     mutationFn: (values: ResetPasswordFields) => resetPassword({ token, ...values }),
     onError: (error) => {
       setError('root', {
-        message: isApiClientError(error) ? error.message : t('genericError'),
+        message: errorMessage(error, t('genericError')),
       });
     },
   });

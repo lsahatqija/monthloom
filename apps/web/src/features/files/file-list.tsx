@@ -5,13 +5,14 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 
 import { Button, Card, EmptyState, LoadingIndicator, Alert } from '../../components/ui/index';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 import { webConfig } from '../../lib/config/env';
 
 import { deleteFile, filesKeys, listFiles } from './files.api';
 
 export function FileList() {
   const t = useTranslations('Files');
+  const errorMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
 
   const query = useQuery({ queryKey: filesKeys.list, queryFn: listFiles });
@@ -26,11 +27,7 @@ export function FileList() {
   if (query.isLoading) return <LoadingIndicator label={t('loading')} />;
 
   if (query.isError) {
-    return (
-      <Alert variant="error">
-        {isApiClientError(query.error) ? query.error.message : t('loadError')}
-      </Alert>
-    );
+    return <Alert variant="error">{errorMessage(query.error, t('loadError'))}</Alert>;
   }
 
   const files = query.data?.files ?? [];

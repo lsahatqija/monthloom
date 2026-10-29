@@ -1,4 +1,4 @@
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import type { MotionState } from '../../../components/motion/use-motion-presence';
 
@@ -21,12 +21,13 @@ export function TransactionSummary({
   motionState?: MotionState;
 }) {
   const t = useTranslations('Finance');
-  const money = new Intl.NumberFormat(undefined, {
+  const locale = useLocale();
+  const money = new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
     currencyDisplay: 'narrowSymbol',
   });
-  const signedMoney = new Intl.NumberFormat(undefined, {
+  const signedMoney = new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
     currencyDisplay: 'narrowSymbol',

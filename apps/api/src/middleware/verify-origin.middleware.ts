@@ -25,7 +25,7 @@ export function verifyRequestOrigin(req: Request, _res: Response, next: NextFunc
   }
 
   if (!config.cors.allowedOrigins.includes(origin)) {
-    next(new AuthorizationError('Request origin is not allowed.'));
+    next(new AuthorizationError('Request origin is not allowed.', 'ORIGIN_NOT_ALLOWED'));
     return;
   }
 

@@ -9,12 +9,14 @@ import { useForm } from 'react-hook-form';
 
 import { Alert, Button, FieldError, FormField, Input, Label } from '../../components/ui/index';
 import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 import { requestPasswordReset } from '../auth/auth.api';
 
 import { changePassword } from './users.api';
 
 export function ChangePassword({ email }: { email: string }) {
   const t = useTranslations('Profile');
+  const errorMessage = useApiErrorMessage();
   const [isOpen, setIsOpen] = useState(false);
   const [wasChanged, setWasChanged] = useState(false);
   const resetMutation = useMutation({ mutationFn: requestPasswordReset });
@@ -24,9 +26,7 @@ export function ChangePassword({ email }: { email: string }) {
       {wasChanged ? <Alert>{t('passwordChanged')}</Alert> : null}
       {resetMutation.isSuccess ? <Alert>{t('resetLinkSent')}</Alert> : null}
       {resetMutation.isError ? (
-        <Alert variant="error">
-          {isApiClientError(resetMutation.error) ? resetMutation.error.message : t('genericError')}
-        </Alert>
+        <Alert variant="error">{errorMessage(resetMutation.error, t('genericError'))}</Alert>
       ) : null}
       <div className="settingsPanel settingsSecurityPanel">
         <div>
@@ -75,6 +75,7 @@ function ChangePasswordModal({
   onChanged: () => void;
 }) {
   const t = useTranslations('Profile');
+  const errorMessage = useApiErrorMessage();
   const {
     register,
     handleSubmit,
@@ -88,16 +89,12 @@ function ChangePasswordModal({
     mutationFn: changePassword,
     onSuccess: onChanged,
     onError: (error) => {
-      if (isApiClientError(error) && error.details?.currentPassword?.[0]) {
-        setError(
-          'currentPassword',
-          { message: error.details.currentPassword[0] },
-          { shouldFocus: true },
-        );
+      if (isApiClientError(error) && error.reason === 'CURRENT_PASSWORD_INCORRECT') {
+        setError('currentPassword', { message: errorMessage(error) }, { shouldFocus: true });
         return;
       }
       setError('root', {
-        message: isApiClientError(error) ? error.message : t('genericError'),
+        message: errorMessage(error, t('genericError')),
       });
     },
   });

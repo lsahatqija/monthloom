@@ -5,12 +5,13 @@ import { useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
 
 import { Alert, Button } from '../../components/ui/index';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 
 import { filesKeys, uploadFile } from './files.api';
 
 export function FileUploadForm() {
   const t = useTranslations('Files');
+  const errorMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +24,7 @@ export function FileUploadForm() {
       await queryClient.invalidateQueries({ queryKey: filesKeys.list });
     },
     onError: (uploadError) => {
-      setError(isApiClientError(uploadError) ? uploadError.message : t('uploadError'));
+      setError(errorMessage(uploadError, t('uploadError')));
     },
   });
 

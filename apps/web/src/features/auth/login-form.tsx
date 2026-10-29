@@ -10,12 +10,13 @@ import { useForm } from 'react-hook-form';
 
 import { Alert, Button, FieldError, FormField, Input, Label } from '../../components/ui/index';
 import { setLocaleCookie } from '../../i18n/locale-cookie';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 
 import { authKeys, login } from './auth.api';
 
 export function LoginForm({ redirectTo }: { redirectTo: string }) {
   const t = useTranslations('Auth');
+  const errorMessage = useApiErrorMessage();
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -34,13 +35,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
       router.push(redirectTo);
       router.refresh();
     },
-    onError: (error) => {
-      if (isApiClientError(error)) {
-        setError('root', { message: error.message });
-      } else {
-        setError('root', { message: t('genericError') });
-      }
-    },
+    onError: (error) => setError('root', { message: errorMessage(error, t('genericError')) }),
   });
 
   return (

@@ -55,6 +55,7 @@ describe('login form + validation + query + HTTP client', () => {
           {
             error: {
               code: 'AUTHENTICATION_ERROR',
+              reason: 'INVALID_CREDENTIALS',
               message: 'Invalid email or password.',
             },
           },

@@ -6,12 +6,13 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useRef } from 'react';
 
 import { Alert, LoadingIndicator } from '../../components/ui/index';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 
 import { authKeys, verifyEmail } from './auth.api';
 
 export function VerifyEmail({ token }: { token: string }) {
   const t = useTranslations('Auth');
+  const errorMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
   const attempted = useRef(false);
   const mutation = useMutation({
@@ -34,9 +35,7 @@ export function VerifyEmail({ token }: { token: string }) {
   if (mutation.isError) {
     return (
       <div className="authConfirmation">
-        <Alert variant="error">
-          {isApiClientError(mutation.error) ? mutation.error.message : t('verifyEmailError')}
-        </Alert>
+        <Alert variant="error">{errorMessage(mutation.error, t('verifyEmailError'))}</Alert>
         <Link className="button" href="/settings/profile">
           {t('goToProfile')}
         </Link>

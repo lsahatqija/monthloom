@@ -8,12 +8,13 @@ import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 
 import { Alert, Button, FieldError, FormField, Input, Label } from '../../components/ui/index';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 
 import { requestPasswordReset } from './auth.api';
 
 export function ForgotPasswordForm() {
   const t = useTranslations('Auth');
+  const errorMessage = useApiErrorMessage();
   const {
     register,
     handleSubmit,
@@ -24,7 +25,7 @@ export function ForgotPasswordForm() {
     mutationFn: requestPasswordReset,
     onError: (error) => {
       setError('root', {
-        message: isApiClientError(error) ? error.message : t('genericError'),
+        message: errorMessage(error, t('genericError')),
       });
     },
   });

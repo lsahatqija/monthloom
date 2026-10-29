@@ -7,7 +7,7 @@ import { useState } from 'react';
 
 import type { MotionState } from '../../../components/motion/use-motion-presence';
 import { Alert, Button } from '../../../components/ui/index';
-import { financeErrorMessage } from '../api/errors';
+import { useApiErrorMessage } from '../../../lib/api/localized-error';
 import { financeKeys, removeHouseholdTransaction } from '../finance.api';
 
 export function RemoveTransactionDialog({
@@ -22,6 +22,7 @@ export function RemoveTransactionDialog({
   motionState?: MotionState;
 }) {
   const t = useTranslations('Finance');
+  const errorMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
   const [scope, setScope] = useState<TransactionEditScope>(
     transaction.recurring ? 'current_and_future' : 'current',
@@ -97,7 +98,7 @@ export function RemoveTransactionDialog({
           ) : null}
           {mutation.isError ? (
             <Alert variant="error">
-              {financeErrorMessage(mutation.error, t('removeTransactionError'))}
+              {errorMessage(mutation.error, t('removeTransactionError'))}
             </Alert>
           ) : null}
           <div className="transactionFormActions">

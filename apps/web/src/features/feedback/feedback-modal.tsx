@@ -13,12 +13,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Alert, Button, FieldError, FormField, Label } from '../../components/ui';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 
 import { sendFeedback } from './feedback.api';
 
 export function FeedbackModal({ onClose }: { onClose?: () => void }) {
   const t = useTranslations('Feedback');
+  const errorMessage = useApiErrorMessage();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const {
@@ -36,7 +37,7 @@ export function FeedbackModal({ onClose }: { onClose?: () => void }) {
     mutationFn: sendFeedback,
     onError: (error) => {
       setError('root', {
-        message: isApiClientError(error) ? error.message : t('genericError'),
+        message: errorMessage(error, t('genericError')),
       });
     },
   });

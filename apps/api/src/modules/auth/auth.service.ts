@@ -47,7 +47,10 @@ export class AuthService {
 
     const existing = await this.userRepository.findByEmail(email);
     if (existing) {
-      throw new ConflictError('An account with this email already exists.');
+      throw new ConflictError(
+        'An account with this email already exists.',
+        'EMAIL_ALREADY_REGISTERED',
+      );
     }
 
     const passwordHash = await hashPassword(input.password);
@@ -134,7 +137,11 @@ export class AuthService {
       new Date(),
     );
     if (!reset) {
-      throw new ValidationError('This password reset link is invalid or has expired.');
+      throw new ValidationError(
+        'This password reset link is invalid or has expired.',
+        undefined,
+        'PASSWORD_RESET_TOKEN_INVALID',
+      );
     }
   }
 
@@ -165,7 +172,11 @@ export class AuthService {
       new Date(),
     );
     if (!verified) {
-      throw new ValidationError('This email verification link is invalid or has expired.');
+      throw new ValidationError(
+        'This email verification link is invalid or has expired.',
+        undefined,
+        'EMAIL_VERIFICATION_TOKEN_INVALID',
+      );
     }
   }
 

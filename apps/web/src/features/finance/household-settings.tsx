@@ -15,7 +15,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { ProfileImage } from '../../components/profile-image';
 import { Alert, Button, Input, LoadingIndicator } from '../../components/ui/index';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 
 import {
   createHousehold,
@@ -55,10 +55,6 @@ const defaultHousehold: CreateHouseholdRequest = {
   icon: Defaults.HOUSEHOLD_ICON,
   color: Defaults.HOUSEHOLD_COLOR,
 };
-
-function errorMessage(error: unknown, fallback: string): string {
-  return isApiClientError(error) ? error.message : fallback;
-}
 
 function HouseholdFields({
   value,
@@ -195,6 +191,7 @@ function HouseholdFields({
 
 function HouseholdCard({ household, user }: { household: ManagedHousehold; user: PublicUser }) {
   const t = useTranslations('Finance');
+  const errorMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<CreateHouseholdRequest>({
@@ -530,6 +527,7 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
 
 export function HouseholdSettings({ user }: { user: PublicUser }) {
   const t = useTranslations('Finance');
+  const errorMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState(defaultHousehold);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

@@ -6,7 +6,11 @@ import type {
 
 import { AuthorizationError, NotFoundError } from '../../shared/errors/index.js';
 
-import type { HouseholdRepository, SourceRepository, TransactionRepository } from './finance.repository.js';
+import type {
+  HouseholdRepository,
+  SourceRepository,
+  TransactionRepository,
+} from './finance.repository.js';
 import { requireHouseholdMember } from './household-access.js';
 
 export class TransactionService {
@@ -26,7 +30,10 @@ export class TransactionService {
       throw new AuthorizationError('The selected user is not a member of this household.');
     }
     if (!(await this.sources.getSource(householdId, input.sourceId))) {
-      throw new NotFoundError('The selected source was not found in this household.');
+      throw new NotFoundError(
+        'The selected source was not found in this household.',
+        'SOURCE_NOT_FOUND',
+      );
     }
     return this.transactions.createTransaction(householdId, input);
   }
@@ -42,14 +49,18 @@ export class TransactionService {
       throw new AuthorizationError('The selected user is not a member of this household.');
     }
     if (!(await this.sources.getSource(householdId, input.transaction.sourceId))) {
-      throw new NotFoundError('The selected source was not found in this household.');
+      throw new NotFoundError(
+        'The selected source was not found in this household.',
+        'SOURCE_NOT_FOUND',
+      );
     }
     const transaction = await this.transactions.updateTransaction(
       householdId,
       transactionId,
       input,
     );
-    if (!transaction) throw new NotFoundError('Transaction was not found.');
+    if (!transaction)
+      throw new NotFoundError('Transaction was not found.', 'TRANSACTION_NOT_FOUND');
     return transaction;
   }
 
@@ -61,8 +72,7 @@ export class TransactionService {
   ): Promise<void> {
     await requireHouseholdMember(this.households, householdId, requestingUserId);
     if (!(await this.transactions.removeTransaction(householdId, transactionId, scope))) {
-      throw new NotFoundError('Transaction was not found.');
+      throw new NotFoundError('Transaction was not found.', 'TRANSACTION_NOT_FOUND');
     }
   }
 }
-

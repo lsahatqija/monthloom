@@ -12,7 +12,7 @@ import {
 } from '@monthloom/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
@@ -20,9 +20,10 @@ import { useForm } from 'react-hook-form';
 import type { MotionState } from '../../components/motion/use-motion-presence';
 import { ProfileImage } from '../../components/profile-image';
 import { Alert, Button } from '../../components/ui/index';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 import { useCurrentUser } from '../auth/use-current-user';
 
-import { financeErrorMessage } from './api/errors';
+import { includesLocaleText } from './dashboard/transaction-view';
 import { createHouseholdTransaction, financeKeys, updateHouseholdTransaction } from './finance.api';
 import { FinancialIcon } from './financial-icon';
 import { SourceModal } from './source-modal';
@@ -268,9 +269,9 @@ function dateInMonth(month: string, today = todayDate()): string {
   return `${month}-${String(day).padStart(2, '0')}`;
 }
 
-function monthLabel(month: string): string {
+export function monthLabel(month: string, locale: string): string {
   const [year, monthNumber] = month.split('-').map(Number);
-  return new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(
+  return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(
     new Date(year!, monthNumber! - 1, 1),
   );
 }
@@ -315,6 +316,8 @@ export function TransactionForm({
   returnFocusTo,
 }: TransactionFormProps) {
   const t = useTranslations('Finance');
+  const errorMessage = useApiErrorMessage();
+  const locale = useLocale();
   const iconLabels = useTranslations('Labels.financialIcons');
   const typeLabels = useTranslations('Labels.expenseTypes');
   const dialogRef = useRef<HTMLElement>(null);
@@ -379,11 +382,12 @@ export function TransactionForm({
   const expiresOn = watch('expiresOn') ?? '';
   const destinationMonth = date ? date.slice(0, 7) : selectedMonth;
   const isCrossMonth = destinationMonth !== selectedMonth;
-  const destinationLabel = monthLabel(destinationMonth);
-  const selectedMonthLabel = monthLabel(selectedMonth);
+  const destinationLabel = monthLabel(destinationMonth, locale);
+  const selectedMonthLabel = monthLabel(selectedMonth, locale);
   const selectedMember = members.find((member) => member.id === userId) ?? members[0];
+  const sourceCollator = new Intl.Collator(locale, { numeric: true, sensitivity: 'base' });
   const currencySymbol =
-    new Intl.NumberFormat(undefined, {
+    new Intl.NumberFormat(locale, {
       style: 'currency',
       currency,
       currencyDisplay: 'narrowSymbol',
@@ -431,15 +435,15 @@ export function TransactionForm({
     'center',
   );
   const filteredSources = useMemo(() => {
-    const query = sourceQuery.trim().toLocaleLowerCase();
+    const query = sourceQuery.trim();
     if (!query) return availableSources;
 
     return availableSources.filter(
       (source) =>
-        source.displayName.toLocaleLowerCase().includes(query) ||
-        source.aliases.some((alias) => alias.toLocaleLowerCase().includes(query)),
+        includesLocaleText(source.displayName, query, locale) ||
+        source.aliases.some((alias) => includesLocaleText(alias, query, locale)),
     );
-  }, [availableSources, sourceQuery]);
+  }, [availableSources, locale, sourceQuery]);
 
   useEffect(() => {
     const currentUserId = currentUser.data?.user?.id;
@@ -543,7 +547,7 @@ export function TransactionForm({
           setAvailableSources((current) =>
             [...current, source].sort(
               (left, right) =>
-                left.displayName.localeCompare(right.displayName) ||
+                sourceCollator.compare(left.displayName, right.displayName) ||
                 left.id.localeCompare(right.id),
             ),
           );
@@ -1120,9 +1124,7 @@ export function TransactionForm({
           ) : null}
 
           {mutation.isError ? (
-            <Alert variant="error">
-              {financeErrorMessage(mutation.error, t('saveTransactionError'))}
-            </Alert>
+            <Alert variant="error">{errorMessage(mutation.error, t('saveTransactionError'))}</Alert>
           ) : null}
 
           <div className="transactionFormActions">

@@ -10,7 +10,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState, type FormEvent } from 'react';
 
 import { Alert, Button } from '../../components/ui/index';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 
 import { createHouseholdSource, financeKeys, updateHouseholdSource } from './finance.api';
 
@@ -30,6 +30,7 @@ export function SourceModal({
   onSaved,
 }: SourceModalProps) {
   const t = useTranslations('Finance');
+  const errorMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
   const [displayName, setDisplayName] = useState(source?.displayName ?? initialDisplayName);
   const [aliases, setAliases] = useState(
@@ -159,11 +160,10 @@ export function SourceModal({
 
           {mutation.isError ? (
             <Alert variant="error">
-              {isApiClientError(mutation.error)
-                ? mutation.error.message
-                : source
-                  ? t('updateSourceError')
-                  : t('createSourceError')}
+              {errorMessage(
+                mutation.error,
+                source ? t('updateSourceError') : t('createSourceError'),
+              )}
             </Alert>
           ) : null}
 

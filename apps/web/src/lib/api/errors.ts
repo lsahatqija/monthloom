@@ -4,6 +4,8 @@ import type { ApiErrorBody } from '@monthloom/contracts';
 export class ApiClientError extends Error {
   readonly status: number;
   readonly code: ApiErrorBody['code'];
+  readonly reason?: ApiErrorBody['reason'];
+  readonly params?: ApiErrorBody['params'];
   readonly details?: ApiErrorBody['details'];
   readonly requestId?: string;
 
@@ -12,6 +14,8 @@ export class ApiClientError extends Error {
     this.name = 'ApiClientError';
     this.status = status;
     this.code = body.code;
+    this.reason = body.reason;
+    this.params = body.params;
     this.details = body.details;
     this.requestId = body.requestId;
   }

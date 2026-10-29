@@ -390,7 +390,7 @@ describe('household dashboard', () => {
     const table = screen.getByRole('table');
     const recurring = within(table).getByRole('img', { name: 'Every 1 month' });
     const expiring = within(table).getByRole('img', {
-      name: 'Every 1 month, until 2026-12-31',
+      name: 'Every 1 month, until Dec 31, 2026',
     });
     expect(recurring.querySelector('.transactionRecurringEndpoint')).toBeNull();
     expect(expiring.querySelector('.transactionRecurringEndpoint')).toBeInTheDocument();

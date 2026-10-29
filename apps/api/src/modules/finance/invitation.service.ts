@@ -111,10 +111,13 @@ export class InvitationService {
   async getInvitation(token: string) {
     const invitation = await this.invitations.findInvitation(hashSessionToken(token));
     if (!invitation || invitation.acceptedAt) {
-      throw new NotFoundError('This household invitation is invalid or has already been used.');
+      throw new NotFoundError(
+        'This household invitation is invalid or has already been used.',
+        'INVITATION_INVALID',
+      );
     }
     if (invitation.expiresAt.getTime() <= Date.now()) {
-      throw new NotFoundError('This household invitation has expired.');
+      throw new NotFoundError('This household invitation has expired.', 'INVITATION_EXPIRED');
     }
     return {
       household: {
@@ -134,15 +137,20 @@ export class InvitationService {
       new Date(),
     );
     if (result.status === 'not_found' || result.status === 'used') {
-      throw new NotFoundError('This household invitation is invalid or has already been used.');
+      throw new NotFoundError(
+        'This household invitation is invalid or has already been used.',
+        'INVITATION_INVALID',
+      );
     }
     if (result.status === 'expired') {
-      throw new NotFoundError('This household invitation has expired.');
+      throw new NotFoundError('This household invitation has expired.', 'INVITATION_EXPIRED');
     }
     if (result.status === 'already_member') {
-      throw new ConflictError('You are already a member of this household.');
+      throw new ConflictError(
+        'You are already a member of this household.',
+        'ALREADY_HOUSEHOLD_MEMBER',
+      );
     }
     return { householdId: result.householdId };
   }
 }
-

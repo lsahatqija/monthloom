@@ -16,7 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { useMotionPresence } from '../../components/motion/use-motion-presence';
@@ -39,11 +39,6 @@ import { useDashboardSelection } from './dashboard/use-dashboard-selection';
 import { useTransactionView } from './dashboard/use-transaction-view';
 import { FinancialIcon } from './financial-icon';
 import { TransactionForm } from './transaction-form';
-
-const transactionCollator = new Intl.Collator(undefined, {
-  numeric: true,
-  sensitivity: 'base',
-});
 
 function monthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -93,6 +88,7 @@ function EntryIcon({ entry }: { entry: HouseholdTransaction }) {
 
 function RecurringIcon({ entry }: { entry: HouseholdTransaction }) {
   const t = useTranslations('Finance');
+  const locale = useLocale();
   if (!entry.recurring) return null;
 
   const interval = entry.recurrenceInterval ?? Defaults.TRANSACTION_RECURRENCE_INTERVAL;
@@ -102,7 +98,12 @@ function RecurringIcon({ entry }: { entry: HouseholdTransaction }) {
     unit: t(`recurrenceUnits.${unit}`, { interval }),
   });
   const label = entry.expiresOn
-    ? t('recurrenceUntil', { schedule, date: entry.expiresOn })
+    ? t('recurrenceUntil', {
+        schedule,
+        date: new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
+          new Date(`${entry.expiresOn}T12:00:00`),
+        ),
+      })
     : schedule;
   return (
     <span className="transactionRecurringIcon" role="img" aria-label={label} title={label}>
@@ -188,19 +189,26 @@ function SortableHeader({
 export function HouseholdDashboard() {
   const t = useTranslations('Finance');
   const typeLabels = useTranslations('Labels.expenseTypes');
+  const locale = useLocale();
+  const monthYearFormatter = useMemo(
+    () => new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }),
+    [locale],
+  );
+  const monthFormatter = useMemo(
+    () => new Intl.DateTimeFormat(locale, { month: 'long' }),
+    [locale],
+  );
+  const abbreviatedMonthFormatter = useMemo(
+    () => new Intl.DateTimeFormat(locale, { month: 'short' }),
+    [locale],
+  );
   const { month, setMonth, householdId, setHouseholdId } = useDashboardSelection();
   const [selectedYear, selectedMonthNumber] = month.split('-').map(Number);
   const currentMonthKey = monthKey(new Date());
-  const monthLabel = new Intl.DateTimeFormat(undefined, {
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date(selectedYear!, selectedMonthNumber! - 1, 1));
-  const monthName = new Intl.DateTimeFormat(undefined, { month: 'long' }).format(
-    new Date(selectedYear!, selectedMonthNumber! - 1, 1),
-  );
-  const abbreviatedMonthName = new Intl.DateTimeFormat(undefined, { month: 'short' }).format(
-    new Date(selectedYear!, selectedMonthNumber! - 1, 1),
-  );
+  const selectedMonthDate = new Date(selectedYear!, selectedMonthNumber! - 1, 1);
+  const monthLabel = monthYearFormatter.format(selectedMonthDate);
+  const monthName = monthFormatter.format(selectedMonthDate);
+  const abbreviatedMonthName = abbreviatedMonthFormatter.format(selectedMonthDate);
   const shortYear = `'${String(selectedYear).slice(-2)}`;
   const monthNameWithShortYear = `${monthName} ${shortYear}`;
   const abbreviatedMonthNameWithShortYear = `${abbreviatedMonthName} ${shortYear}`;
@@ -208,14 +216,10 @@ export function HouseholdDashboard() {
     () =>
       Array.from({ length: 12 }, (_, index) => ({
         value: index + 1,
-        label: new Intl.DateTimeFormat(undefined, { month: 'long' }).format(
-          new Date(2024, index, 1),
-        ),
-        abbreviatedLabel: new Intl.DateTimeFormat(undefined, { month: 'short' }).format(
-          new Date(2024, index, 1),
-        ),
+        label: monthFormatter.format(new Date(2024, index, 1)),
+        abbreviatedLabel: abbreviatedMonthFormatter.format(new Date(2024, index, 1)),
       })),
-    [],
+    [abbreviatedMonthFormatter, monthFormatter],
   );
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -495,19 +499,24 @@ export function HouseholdDashboard() {
       onSort={sortBy}
     />
   );
-  const money = new Intl.NumberFormat(undefined, {
+  const money = new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: household.currency,
     currencyDisplay: 'narrowSymbol',
   });
-  const date = new Intl.DateTimeFormat(undefined, { day: '2-digit', month: 'short' });
+  const date = new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short' });
+  const filterDate = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });
+  const transactionCollator = new Intl.Collator(locale, {
+    numeric: true,
+    sensitivity: 'base',
+  });
   const expenseTypes = Array.from(
     new Set(
       transactions
         .filter((transaction) => transaction.kind === 'expense' && transaction.type)
         .map((transaction) => transaction.type!),
     ),
-  ).sort(transactionCollator.compare);
+  ).sort((left, right) => transactionCollator.compare(typeLabels(left), typeLabels(right)));
   const amountRangeMax = Math.max(
     100,
     Math.ceil(
@@ -565,8 +574,22 @@ export function HouseholdDashboard() {
           label: filters.recurring === 'recurring' ? t('recurring') : t('oneOff'),
         }
       : null,
-    filters.dateFrom ? { key: 'dateFrom', label: t('fromDate', { date: filters.dateFrom }) } : null,
-    filters.dateTo ? { key: 'dateTo', label: t('toDate', { date: filters.dateTo }) } : null,
+    filters.dateFrom
+      ? {
+          key: 'dateFrom',
+          label: t('fromDate', {
+            date: filterDate.format(new Date(`${filters.dateFrom}T12:00:00`)),
+          }),
+        }
+      : null,
+    filters.dateTo
+      ? {
+          key: 'dateTo',
+          label: t('toDate', {
+            date: filterDate.format(new Date(`${filters.dateTo}T12:00:00`)),
+          }),
+        }
+      : null,
     filters.amountOver
       ? {
           key: 'amountOver',
@@ -786,10 +809,7 @@ export function HouseholdDashboard() {
         <div className="transactionSavedNotice" role="status">
           <span>
             {t('transactionSavedTo')}{' '}
-            {new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(
-              new Date(`${savedDestinationMonth}-01T12:00:00`),
-            )}
-            .
+            {monthYearFormatter.format(new Date(`${savedDestinationMonth}-01T12:00:00`))}.
           </span>
           {savedDestinationMonth !== month ? (
             <button
@@ -800,9 +820,7 @@ export function HouseholdDashboard() {
               }}
             >
               {t('viewMonth')}{' '}
-              {new Intl.DateTimeFormat(undefined, { month: 'long' }).format(
-                new Date(`${savedDestinationMonth}-01T12:00:00`),
-              )}
+              {monthFormatter.format(new Date(`${savedDestinationMonth}-01T12:00:00`))}
             </button>
           ) : null}
         </div>

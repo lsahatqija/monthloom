@@ -4,17 +4,14 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 
 import { Alert, LoadingIndicator } from '../../components/ui/index';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 
 import { financeKeys, getHouseholds } from './finance.api';
 import { SourceSettings } from './source-settings';
 
-function errorMessage(error: unknown, fallback: string): string {
-  return isApiClientError(error) ? error.message : fallback;
-}
-
 export function HouseholdSourceSettings() {
   const t = useTranslations('Finance');
+  const errorMessage = useApiErrorMessage();
   const query = useQuery({ queryKey: financeKeys.households(), queryFn: getHouseholds });
 
   if (query.isPending) return <LoadingIndicator label={t('loadingHouseholds')} />;

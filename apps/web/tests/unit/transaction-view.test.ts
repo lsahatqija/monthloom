@@ -4,9 +4,11 @@ import { describe, expect, it } from 'vitest';
 import {
   emptyTransactionFilters,
   filterAndSortTransactions,
+  includesLocaleText,
   isUpcomingRecurringTransaction,
   summarizeTransactions,
 } from '../../src/features/finance/dashboard/transaction-view';
+import { monthLabel } from '../../src/features/finance/transaction-form';
 
 function transaction(
   id: string,
@@ -45,7 +47,7 @@ describe('transaction view', () => {
     ];
     const filters = { ...emptyTransactionFilters, type: 'expense' };
     expect(
-      filterAndSortTransactions(entries, filters, 'amount', 'ascending').map(({ id }) => id),
+      filterAndSortTransactions(entries, filters, 'amount', 'ascending', 'en').map(({ id }) => id),
     ).toEqual(['large-expense', 'small-expense']);
   });
 
@@ -57,10 +59,38 @@ describe('transaction view', () => {
     ];
 
     expect(
-      filterAndSortTransactions(entries, emptyTransactionFilters, 'date', 'descending').map(
+      filterAndSortTransactions(entries, emptyTransactionFilters, 'date', 'descending', 'en').map(
         ({ id }) => id,
       ),
     ).toEqual(['latest', 'middle', 'oldest']);
+  });
+
+  it('sorts displayed names with Turkish collation', () => {
+    const entries = [
+      transaction('dotted', 'expense', '10.00', {
+        user: { ...transaction('base', 'expense', '1').user, displayName: 'İpek' },
+      }),
+      transaction('dotless', 'expense', '10.00', {
+        user: { ...transaction('base', 'expense', '1').user, displayName: 'Işık' },
+      }),
+    ];
+
+    expect(
+      filterAndSortTransactions(entries, emptyTransactionFilters, 'user', 'ascending', 'tr').map(
+        ({ id }) => id,
+      ),
+    ).toEqual(['dotless', 'dotted']);
+  });
+
+  it('uses the selected locale for Turkish search case-folding', () => {
+    expect(includesLocaleText('İstanbul', 'istanbul', 'tr')).toBe(true);
+    expect(includesLocaleText('İstanbul', 'istanbul', 'en')).toBe(false);
+  });
+
+  it('formats month labels with the selected locale', () => {
+    expect(monthLabel('2026-03', 'en')).toBe('March 2026');
+    expect(monthLabel('2026-03', 'fr')).toBe('mars 2026');
+    expect(monthLabel('2026-03', 'tr')).toBe('Mart 2026');
   });
 
   it('calculates filtered totals without changing the server summary', () => {

@@ -22,7 +22,11 @@ export class SourceService {
   ) {
     await requireHouseholdMember(this.households, householdId, requestingUserId);
     const source = await this.sources.createSource(householdId, input);
-    if (!source) throw new ConflictError('A source with this display name already exists.');
+    if (!source)
+      throw new ConflictError(
+        'A source with this display name already exists.',
+        'SOURCE_NAME_CONFLICT',
+      );
     return source;
   }
 
@@ -39,9 +43,13 @@ export class SourceService {
   ) {
     await requireHouseholdMember(this.households, householdId, requestingUserId);
     const source = await this.sources.updateSource(householdId, sourceId, input);
-    if (source === 'not_found') throw new NotFoundError('Source was not found.');
+    if (source === 'not_found')
+      throw new NotFoundError('Source was not found.', 'SOURCE_NOT_FOUND');
     if (source === 'conflict') {
-      throw new ConflictError('A source with this display name already exists.');
+      throw new ConflictError(
+        'A source with this display name already exists.',
+        'SOURCE_NAME_CONFLICT',
+      );
     }
     return source;
   }
@@ -53,9 +61,10 @@ export class SourceService {
   ): Promise<void> {
     await requireHouseholdMember(this.households, householdId, requestingUserId);
     const result = await this.sources.deleteSource(householdId, sourceId);
-    if (result === 'not_found') throw new NotFoundError('Source was not found.');
+    if (result === 'not_found')
+      throw new NotFoundError('Source was not found.', 'SOURCE_NOT_FOUND');
     if (result === 'in_use') {
-      throw new ConflictError('Sources used by transactions cannot be deleted.');
+      throw new ConflictError('Sources used by transactions cannot be deleted.', 'SOURCE_IN_USE');
     }
   }
 
@@ -79,8 +88,8 @@ export class SourceService {
       input.targetHouseholdId,
       input.sourceIds,
     );
-    if (!result) throw new NotFoundError('One or more selected sources were not found.');
+    if (!result)
+      throw new NotFoundError('One or more selected sources were not found.', 'SOURCE_NOT_FOUND');
     return result;
   }
 }
-

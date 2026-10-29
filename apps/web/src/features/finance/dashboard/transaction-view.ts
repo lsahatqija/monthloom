@@ -1,7 +1,5 @@
 import type { HouseholdTransaction } from '@monthloom/contracts';
 
-import { transactionTypeLabel as formatTransactionType } from '../transaction-type';
-
 export type TransactionSortKey = 'date' | 'amount' | 'user' | 'source' | 'type';
 export type SortDirection = 'ascending' | 'descending';
 export type RecurringFilter = 'all' | 'recurring' | 'one-off';
@@ -28,11 +26,8 @@ export const emptyTransactionFilters: TransactionFilters = {
   amountUnder: '',
 };
 
-const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
-
-export function transactionTypeLabel(transaction: HouseholdTransaction): string {
-  if (transaction.kind === 'income') return 'Income';
-  return transaction.type ? formatTransactionType(transaction.type) : 'Other';
+export function includesLocaleText(value: string, query: string, locale: string): boolean {
+  return value.toLocaleLowerCase(locale).includes(query.toLocaleLowerCase(locale));
 }
 
 function localDateKey(date: Date): string {
@@ -57,7 +52,11 @@ export function filterAndSortTransactions(
   filters: TransactionFilters,
   sortKey: TransactionSortKey,
   sortDirection: SortDirection,
+  locale: string,
+  typeLabel: (transaction: HouseholdTransaction) => string = (transaction) =>
+    transaction.kind === 'income' ? 'income' : (transaction.type ?? 'other'),
 ) {
+  const collator = new Intl.Collator(locale, { numeric: true, sensitivity: 'base' });
   const filtered = transactions.filter((transaction) => {
     if (filters.type === 'income' && transaction.kind !== 'income') return false;
     if (filters.type === 'expense' && transaction.kind !== 'expense') return false;
@@ -89,7 +88,7 @@ export function filterAndSortTransactions(
       case 'source':
         return collator.compare(first.source.displayName, second.source.displayName);
       case 'type':
-        return collator.compare(transactionTypeLabel(first), transactionTypeLabel(second));
+        return collator.compare(typeLabel(first), typeLabel(second));
       case 'date':
         return first.date.localeCompare(second.date);
     }

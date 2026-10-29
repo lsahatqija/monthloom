@@ -7,14 +7,10 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 import { Alert, Button, LoadingIndicator } from '../../components/ui/index';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 
 import { acceptHouseholdInvitation, financeKeys, getHouseholdInvitation } from './finance.api';
 import { HouseholdIcon } from './household-icon';
-
-function errorMessage(error: unknown, fallback: string): string {
-  return isApiClientError(error) ? error.message : fallback;
-}
 
 export function HouseholdInvitationPrompt({
   token,
@@ -24,6 +20,7 @@ export function HouseholdInvitationPrompt({
   user: PublicUser | null;
 }) {
   const t = useTranslations('Finance');
+  const errorMessage = useApiErrorMessage();
   const router = useRouter();
   const queryClient = useQueryClient();
   const invitationPath = `/invite/${token}`;

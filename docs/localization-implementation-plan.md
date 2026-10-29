@@ -192,15 +192,15 @@ Acceptance criteria:
 
 ## Phase 5: Make formatting and text operations locale-aware
 
-- [ ] Replace `Intl.DateTimeFormat(undefined, ...)` with `next-intl` formatters or an explicit
+- [x] Replace `Intl.DateTimeFormat(undefined, ...)` with `next-intl` formatters or an explicit
       selected locale.
-- [ ] Replace `Intl.NumberFormat(undefined, ...)` in financial displays.
-- [ ] Replace locale-implicit `Intl.Collator` instances used for displayed sorting.
-- [ ] Format month labels, transaction dates, and summaries with the selected locale.
-- [ ] Continue using the household's configured currency when formatting money.
-- [ ] Pass the selected locale when case-folding user-facing search text, especially for Turkish.
-- [ ] Keep deliberately locale-independent domain normalization unchanged.
-- [ ] Add representative tests for dates, money, sorting, search, and pluralization.
+- [x] Replace `Intl.NumberFormat(undefined, ...)` in financial displays.
+- [x] Replace locale-implicit `Intl.Collator` instances used for displayed sorting.
+- [x] Format month labels, transaction dates, and summaries with the selected locale.
+- [x] Continue using the household's configured currency when formatting money.
+- [x] Pass the selected locale when case-folding user-facing search text, especially for Turkish.
+- [x] Keep deliberately locale-independent domain normalization unchanged.
+- [x] Add representative tests for dates, money, sorting, search, and pluralization.
 
 Likely hotspots:
 
@@ -220,17 +220,17 @@ Acceptance criteria:
 The web app currently displays API `message` values and validation detail strings directly. These
 must become fallbacks rather than the primary client contract.
 
-- [ ] Add an optional stable `reason` and optional `params` to the API error body.
-- [ ] Define shared reason-code types for user-facing API failures.
-- [ ] Preserve `code` as the broad HTTP error category.
-- [ ] Preserve the English `message` for logging, diagnostics, and older clients.
-- [ ] Give shared Zod validation failures stable machine-readable reason codes.
-- [ ] Map API and validation reasons to web catalog messages.
-- [ ] Stop displaying `ApiClientError.message` directly in components.
-- [ ] Display a localized generic fallback when a reason is absent or unknown.
-- [ ] Translate success states from the operation performed instead of rendering API response prose.
-- [ ] Update auth, users, finance, files, feedback, middleware, contracts, and OpenAPI documentation.
-- [ ] Add tests for known reason mapping, interpolation parameters, and unknown-reason fallback.
+- [x] Add an optional stable `reason` and optional `params` to the API error body.
+- [x] Define shared reason-code types for user-facing API failures.
+- [x] Preserve `code` as the broad HTTP error category.
+- [x] Preserve the English `message` for logging, diagnostics, and older clients.
+- [x] Give shared Zod validation failures stable machine-readable reason codes.
+- [x] Map API and validation reasons to web catalog messages.
+- [x] Stop displaying `ApiClientError.message` directly in components.
+- [x] Display a localized generic fallback when a reason is absent or unknown.
+- [x] Translate success states from the operation performed instead of rendering API response prose.
+- [x] Update auth, users, finance, files, feedback, middleware, contracts, and OpenAPI documentation.
+- [x] Add tests for known reason mapping, interpolation parameters, and unknown-reason fallback.
 
 Example response:
 

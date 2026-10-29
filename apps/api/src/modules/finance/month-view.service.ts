@@ -2,7 +2,11 @@ import type { HouseholdMonthResponse } from '@monthloom/contracts';
 
 import { NotFoundError } from '../../shared/errors/index.js';
 
-import type { HouseholdRepository, SourceRepository, TransactionRepository } from './finance.repository.js';
+import type {
+  HouseholdRepository,
+  SourceRepository,
+  TransactionRepository,
+} from './finance.repository.js';
 import { requireHouseholdMember } from './household-access.js';
 import { serializeHousehold } from './household-serialization.js';
 import { fromCents, toCents } from './rules/money.js';
@@ -16,7 +20,8 @@ export class MonthViewService {
 
   async getPrimaryMonth(userId: string, month: string): Promise<HouseholdMonthResponse> {
     const household = await this.households.findPrimaryHousehold(userId);
-    if (!household) throw new NotFoundError('You do not have an active household yet.');
+    if (!household)
+      throw new NotFoundError('You do not have an active household yet.', 'HOUSEHOLD_NOT_FOUND');
     return this.getHouseholdMonth(household.id, userId, month);
   }
 
@@ -27,7 +32,7 @@ export class MonthViewService {
   ): Promise<HouseholdMonthResponse> {
     await requireHouseholdMember(this.households, householdId, userId);
     const household = await this.households.findHousehold(householdId);
-    if (!household) throw new NotFoundError('Household was not found.');
+    if (!household) throw new NotFoundError('Household was not found.', 'HOUSEHOLD_NOT_FOUND');
 
     const [transactions, members, sources] = await Promise.all([
       this.transactions.getMonth(householdId, month),
@@ -59,4 +64,3 @@ export class MonthViewService {
     };
   }
 }
-

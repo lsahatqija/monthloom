@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { NextIntlClientProvider, useTranslations } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import en from '../../messages/en.json';
@@ -19,6 +19,17 @@ vi.mock('next-intl/server', () => ({
     return (key: keyof typeof messages) => messages[key];
   },
 }));
+
+function TransactionCounts() {
+  const t = useTranslations('Finance');
+  return (
+    <>
+      <span>{t('transactions', { count: 0 })}</span>
+      <span>{t('transactions', { count: 1 })}</span>
+      <span>{t('transactions', { count: 2 })}</span>
+    </>
+  );
+}
 
 describe('translations', () => {
   it('keeps every locale catalog structurally aligned', () => {
@@ -55,5 +66,17 @@ describe('translations', () => {
     expect(
       screen.getByRole('button', { name: 'Redémarrer le guide de prise en main' }),
     ).toBeVisible();
+  });
+
+  it('renders locale-aware ICU plural forms', () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <TransactionCounts />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByText('No transactions')).toBeVisible();
+    expect(screen.getByText('1 transaction')).toBeVisible();
+    expect(screen.getByText('2 transactions')).toBeVisible();
   });
 });
