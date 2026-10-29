@@ -157,6 +157,7 @@ export class Constants {
   /** Categories used to group and filter expenses independently of their icon. */
   static readonly EXPENSE_TYPES = [
     'allowance',
+    'beauty',
     'cafe',
     'childcare',
     'clothing',
@@ -164,6 +165,7 @@ export class Constants {
     'dining',
     'education',
     'entertainment',
+    'footwear',
     'furniture',
     'gifts',
     'groceries',
@@ -171,6 +173,7 @@ export class Constants {
     'housing',
     'insurance',
     'legal',
+    'lunch-break',
     'personal-care',
     'pets',
     'pharmacy',
