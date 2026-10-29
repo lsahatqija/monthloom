@@ -64,14 +64,15 @@ export class AuthService {
     });
 
     const sessionToken = await this.createSession(user.id);
-    let verification: { tokenHash: string; url: string } | undefined;
+    let verification: { tokenHash: string; url: string; expiresAt: Date } | undefined;
     try {
       verification = await this.createEmailVerificationToken(user.id);
       await this.emailService.sendWelcome({
         to: user.email,
         displayName: user.displayName,
         verificationUrl: verification.url,
-        expiresIn: '24 hours',
+        expiresAt: verification.expiresAt,
+        locale: user.locale,
       });
     } catch (error) {
       if (verification) {
@@ -121,7 +122,8 @@ export class AuthService {
         to: user.email,
         displayName: user.displayName,
         url: new URL(`/reset-password/${token}`, config.web.publicUrl).toString(),
-        expiresIn: '1 hour',
+        expiresAt,
+        locale: user.locale,
       });
     } catch (error) {
       await this.sessionRepository.deletePasswordResetToken(tokenHash).catch(() => undefined);
@@ -155,7 +157,8 @@ export class AuthService {
         to: user.email,
         displayName: user.displayName,
         url: verification.url,
-        expiresIn: '24 hours',
+        expiresAt: verification.expiresAt,
+        locale: user.locale,
       });
     } catch (error) {
       await this.sessionRepository
@@ -211,17 +214,19 @@ export class AuthService {
 
   private async createEmailVerificationToken(
     userId: string,
-  ): Promise<{ tokenHash: string; url: string }> {
+  ): Promise<{ tokenHash: string; url: string; expiresAt: Date }> {
     const token = generateSessionToken();
     const tokenHash = hashSessionToken(token);
+    const expiresAt = new Date(Date.now() + Constants.EMAIL_VERIFICATION_TTL_MS);
     await this.sessionRepository.createEmailVerificationToken({
       userId,
       tokenHash,
-      expiresAt: new Date(Date.now() + Constants.EMAIL_VERIFICATION_TTL_MS),
+      expiresAt,
     });
     return {
       tokenHash,
       url: new URL(`/verify-email/${token}`, config.web.publicUrl).toString(),
+      expiresAt,
     };
   }
 }

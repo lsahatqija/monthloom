@@ -1,6 +1,7 @@
 import {
   Constants,
   type CreateHouseholdInvitationRequest,
+  type Locale,
   type PublicUser,
 } from '@monthloom/contracts';
 
@@ -18,6 +19,7 @@ export interface InvitationEmailNotifier {
     householdName: string;
     invitationUrl: string;
     expiresAt: Date;
+    locale: Locale;
   }): Promise<void>;
 }
 
@@ -86,6 +88,7 @@ export class InvitationService {
             householdName: household.name,
             invitationUrl: new URL(`/invite/${token}`, config.web.publicUrl).toString(),
             expiresAt,
+            locale: invitingUser.locale,
           });
           return { recipient, sent: true } as const;
         } catch (error) {

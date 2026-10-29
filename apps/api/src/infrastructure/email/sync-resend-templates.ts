@@ -1,7 +1,7 @@
 import { Resend } from 'resend';
 
 import { config } from '../../config/index.js';
-import { resendTemplateDefinitions } from '../../modules/email/resend-template-definitions.js';
+import { selectResendTemplateDefinitions } from '../../modules/email/resend-template-definitions.js';
 
 async function syncTemplates(): Promise<void> {
   const managementKey = config.email.resendAdminKey ?? config.email.resendApiKey;
@@ -14,9 +14,7 @@ async function syncTemplates(): Promise<void> {
   const resend = new Resend(managementKey);
   const from = `${config.email.from.name} <${config.email.from.address}>`;
   const requestedAlias = process.argv[2];
-  const definitions = requestedAlias
-    ? resendTemplateDefinitions.filter((definition) => definition.alias === requestedAlias)
-    : resendTemplateDefinitions;
+  const definitions = selectResendTemplateDefinitions(requestedAlias);
 
   if (definitions.length === 0) {
     throw new Error(`Unknown Resend template alias: ${requestedAlias}`);
@@ -30,7 +28,7 @@ async function syncTemplates(): Promise<void> {
       replyTo: config.email.replyTo,
       subject: definition.subject,
       html: definition.html,
-      variables: definition.variables.map((item) => ({ ...item })),
+      variables: definition.variables.map((item: { key: string; type: 'string' }) => ({ ...item })),
     };
     const existing = await resend.templates.get(definition.alias);
 

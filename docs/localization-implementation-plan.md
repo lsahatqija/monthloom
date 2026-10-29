@@ -257,19 +257,19 @@ Acceptance criteria:
 
 ## Phase 7: Localize user-facing email
 
-- [ ] Add locale-specific content for welcome, verification, password reset, invitation, and monthly
+- [x] Add locale-specific content for welcome, verification, password reset, invitation, and monthly
       balance emails.
-- [ ] Select the stored recipient locale for emails associated with an existing user.
-- [ ] Use the inviting user's locale for an invitation recipient without an account.
-- [ ] Localize subjects, previews, headings, body text, buttons, and automated-message footers.
-- [ ] Set the email HTML `lang` attribute.
-- [ ] Format email dates, expiry times, month labels, and money using the selected locale.
-- [ ] Generate and synchronize locale-specific Resend aliases, for example
+- [x] Select the stored recipient locale for emails associated with an existing user.
+- [x] Use the inviting user's locale for an invitation recipient without an account.
+- [x] Localize subjects, previews, headings, body text, buttons, and automated-message footers.
+- [x] Set the email HTML `lang` attribute.
+- [x] Format email dates, expiry times, month labels, and money using the selected locale.
+- [x] Generate and synchronize locale-specific Resend aliases, for example
       `monthloom-password-reset-fr`.
-- [ ] Keep internal feedback notifications in operational English unless an operator preference is
+- [x] Keep internal feedback notifications in operational English unless an operator preference is
       introduced later.
-- [ ] Add unit tests for locale selection and representative rendered email content.
-- [ ] Verify the template synchronization command handles every supported locale.
+- [x] Add unit tests for locale selection and representative rendered email content.
+- [x] Verify the template synchronization command handles every supported locale.
 
 Likely files:
 
@@ -283,6 +283,32 @@ Acceptance criteria:
 - User-facing transactional email follows the selected or defined fallback locale.
 - Links and dynamic values remain intact in all localized templates.
 - Adding a locale has an explicit email-template checklist item.
+
+## Phase 8: Translate and review locale catalogs
+
+- [ ] Translate every value in `sq.json`, `fr.json`, and `tr.json`; do not leave English placeholder
+      copy except intentional brand names, technical identifiers, and user-provided content.
+- [ ] Preserve the complete English key structure in every locale catalog.
+- [ ] Preserve ICU arguments, plural/select branches, and rich-text tags exactly while translating
+      their surrounding prose.
+- [ ] Review Albanian, French, and Turkish financial terminology for consistent meanings across
+      dashboard, transactions, households, sources, and email.
+- [ ] Review authentication, validation, error, onboarding, PWA, metadata, accessibility, and
+      transactional-email copy for natural phrasing in each locale.
+- [ ] Check capitalization, punctuation, date/money context, and formal versus informal address for
+      consistency within each language.
+- [ ] Run catalog parity and ICU parsing tests after each locale is translated.
+- [ ] Perform a native-speaker or professional review before release and record any intentionally
+      untranslated values.
+- [ ] Smoke-test each locale at narrow and wide viewport sizes, including keyboard and screen-reader
+      labels.
+
+Acceptance criteria:
+
+- Albanian, French, and Turkish screens and user-facing email contain reviewed translations rather
+  than English fallback copy.
+- Every locale retains the same message keys, ICU variables, and rich-text placeholders as English.
+- Intentional untranslated values are documented and limited to brands, codes, and user content.
 
 ## Cross-cutting verification
 
