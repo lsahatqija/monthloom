@@ -16,6 +16,7 @@ export function createFinanceRouter(
   router.post('/', asyncHandler(financeController.createHousehold));
   router.get('/primary/month', asyncHandler(financeController.getPrimaryMonth));
   router.get('/:id/month', asyncHandler(financeController.getHouseholdMonth));
+  router.get('/:id/transactions', asyncHandler(financeController.getHouseholdTransactionRange));
   router.post('/:id/invitations', asyncHandler(financeController.createInvitation));
   router.get('/:id/sources', asyncHandler(financeController.listSources));
   router.post('/:id/sources', asyncHandler(financeController.createSource));

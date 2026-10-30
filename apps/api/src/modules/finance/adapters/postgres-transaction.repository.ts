@@ -33,8 +33,16 @@ export class PostgresTransactionRepository implements TransactionRepository {
     householdId: string,
     month: string,
   ): Promise<HouseholdMonthResponse['transactions']> {
-    const start = `${month}-01`;
-    const end = monthEnd(month);
+    return this.getRange(householdId, month, month);
+  }
+
+  async getRange(
+    householdId: string,
+    from: string,
+    to: string,
+  ): Promise<HouseholdMonthResponse['transactions']> {
+    const start = `${from}-01`;
+    const end = monthEnd(to);
     const selection = {
       id: incomes.id,
       date: incomes.date,
@@ -127,7 +135,7 @@ export class PostgresTransactionRepository implements TransactionRepository {
     ];
 
     const thisMonth = currentMonth();
-    if (month < thisMonth) {
+    if (to < thisMonth) {
       return actualTransactions.sort(
         (a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id),
       );
@@ -142,7 +150,7 @@ export class PostgresTransactionRepository implements TransactionRepository {
         and(
           eq(incomes.householdId, householdId),
           eq(incomes.recurring, true),
-          lt(incomes.date, start),
+          lt(incomes.date, end),
         ),
       );
     const recurringExpenseRows = await this.db
@@ -167,7 +175,7 @@ export class PostgresTransactionRepository implements TransactionRepository {
         and(
           eq(expenses.householdId, householdId),
           eq(expenses.recurring, true),
-          lt(expenses.date, start),
+          lt(expenses.date, end),
         ),
       );
     const history = [
@@ -177,12 +185,6 @@ export class PostgresTransactionRepository implements TransactionRepository {
         type: 'income' as const,
       })),
       ...recurringExpenseRows.map((row) => ({ ...row, kind: 'expense' as const })),
-      ...incomeRows
-        .filter((row) => row.recurring)
-        .map((row) => ({ ...row, kind: 'income' as const, type: 'income' as const })),
-      ...expenseRows
-        .filter((row) => row.recurring)
-        .map((row) => ({ ...row, kind: 'expense' as const })),
     ];
     const historiesBySeries = new Map<string, typeof history>();
     for (const row of history) {
@@ -205,14 +207,15 @@ export class PostgresTransactionRepository implements TransactionRepository {
       const first = series[series.length - 1]!;
       const projectedDates = recurringOccurrenceDates(
         first.date,
-        month,
+        to,
         latest.expiresOn,
         latest.recurrenceInterval,
         latest.recurrenceUnit,
       ).filter(
         (date) =>
-          date.startsWith(`${month}-`) &&
-          (month !== thisMonth || date >= new Date().toISOString().slice(0, 10)) &&
+          date >= start &&
+          date < end &&
+          date >= new Date().toISOString().slice(0, 10) &&
           !actualDatesBySeries.get(recurrenceId)?.has(date),
       );
       for (const projectedDate of projectedDates)

@@ -13,6 +13,7 @@ import type {
 import { HouseholdService } from '../../src/modules/finance/household.service.js';
 import { InvitationService } from '../../src/modules/finance/invitation.service.js';
 import { MonthViewService } from '../../src/modules/finance/month-view.service.js';
+import { RangeViewService } from '../../src/modules/finance/range-view.service.js';
 import { SourceService } from '../../src/modules/finance/source.service.js';
 import { TransactionService } from '../../src/modules/finance/transaction.service.js';
 import { user } from '../fixtures.js';
@@ -30,6 +31,7 @@ describe('finance service', () => {
     mock<Logger>(),
   );
   const monthViewService = new MonthViewService(households, sources, transactions);
+  const rangeViewService = new RangeViewService(households, sources, transactions);
   const sourceService = new SourceService(households, sources);
   const transactionService = new TransactionService(households, sources, transactions);
   const household = {
@@ -51,6 +53,25 @@ describe('finance service', () => {
       monthViewService.getHouseholdMonth(household.id, user.id, '2026-01'),
     ).rejects.toMatchObject({ statusCode: 403 });
     expect(transactions.getMonth).not.toHaveBeenCalled();
+  });
+
+  it('enforces range bounds and membership before reading transactions', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-06-15T12:00:00Z'));
+    try {
+      await expect(
+        rangeViewService.getHouseholdRange(household.id, user.id, '2021-05', '2026-06'),
+      ).rejects.toMatchObject({ statusCode: 400 });
+      expect(transactions.getRange).not.toHaveBeenCalled();
+
+      households.isMember.mockResolvedValue(false);
+      await expect(
+        rangeViewService.getHouseholdRange(household.id, user.id, '2021-06', '2027-06'),
+      ).rejects.toMatchObject({ statusCode: 403 });
+      expect(transactions.getRange).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('calculates decimal totals exactly and puts the current user first', async () => {

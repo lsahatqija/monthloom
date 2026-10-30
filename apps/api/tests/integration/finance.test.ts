@@ -1,8 +1,12 @@
-import { householdMonthResponseSchema } from '@monthloom/contracts';
+import {
+  householdMonthResponseSchema,
+  householdTransactionRangeResponseSchema,
+} from '@monthloom/contracts';
+import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 
 import { pool } from '../../src/infrastructure/database/client.js';
-import { api, household, register } from '../http.js';
+import { api, app, household, register } from '../http.js';
 
 describe('finance HTTP + PostgreSQL', () => {
   async function fixture() {
@@ -70,6 +74,11 @@ describe('finance HTTP + PostgreSQL', () => {
     vi.setSystemTime(new Date('2026-01-15T12:00:00Z'));
     try {
       const { agent, base, transaction } = await fixture();
+      await request(app).get(`${base}/transactions?from=2026-01&to=2026-01`).expect(401);
+      expect(
+        (await agent.get(`${base}/transactions?from=2026-01&to=2026-01`).expect(200)).body
+          .transactions,
+      ).toEqual([]);
       await agent
         .post(`${base}/transactions`)
         .send({ ...transaction, recurring: true, expiresOn: '2026-02-28' })
@@ -83,6 +92,54 @@ describe('finance HTTP + PostgreSQL', () => {
       });
       const march = await agent.get(`${base}/month?month=2026-03`).expect(200);
       expect(march.body.transactions).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('returns ordered realized and projected transactions across a cross-year range', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-01-15T12:00:00Z'));
+    try {
+      const { agent, base, transaction } = await fixture();
+      await agent
+        .post(`${base}/transactions`)
+        .send({
+          ...transaction,
+          date: '2025-12-31',
+          amount: '10.25',
+          recurring: true,
+          expiresOn: '2026-02-28',
+        })
+        .expect(201);
+      await agent
+        .post(`${base}/transactions`)
+        .send({ ...transaction, date: '2026-01-10', amount: '2.50' })
+        .expect(201);
+
+      const response = await agent.get(`${base}/transactions?from=2025-12&to=2026-02`).expect(200);
+      const range = householdTransactionRangeResponseSchema.parse(response.body);
+      expect(
+        range.transactions.map(({ date, amount, projected }) => ({ date, amount, projected })),
+      ).toEqual([
+        { date: '2025-12-31', amount: '10.25', projected: false },
+        { date: '2026-01-10', amount: '2.50', projected: false },
+        { date: '2026-01-31', amount: '10.25', projected: false },
+        { date: '2026-02-28', amount: '10.25', projected: true },
+      ]);
+
+      expect(
+        (await agent.get(`${base}/transactions?from=2026-02&to=2026-02`).expect(200)).body
+          .transactions,
+      ).toHaveLength(1);
+      expect(
+        (await agent.get(`${base}/transactions?from=2025-02&to=2026-01`).expect(200)).body
+          .transactions,
+      ).toHaveLength(3);
+      await agent.get(`${base}/transactions?from=2026-02&to=2026-01`).expect(400);
+      await agent.get(`${base}/transactions?from=2020-12&to=2026-01`).expect(400);
+      const outsider = await register();
+      await outsider.agent.get(`${base}/transactions?from=2026-01&to=2026-01`).expect(403);
     } finally {
       vi.useRealTimers();
     }

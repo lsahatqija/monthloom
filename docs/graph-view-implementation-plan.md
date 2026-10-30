@@ -530,31 +530,31 @@ Serve one authorized, bounded collection containing the raw transactions needed 
 
 ### Tasks
 
-- [ ] Add shared range query and response schemas and exported TypeScript types.
-- [ ] Enforce `from <= to`, five-year past, and one-year future limits.
-- [ ] Record whether the range implementation requires a database schema change. The expected
+- [x] Add shared range query and response schemas and exported TypeScript types.
+- [x] Enforce `from <= to`, five-year past, and one-year future limits.
+- [x] Record whether the range implementation requires a database schema change. The expected
       result is `no`; do not create a migration without a concrete persistence need.
-- [ ] If a database change is required, add an expand-and-migrate migration, deterministic backfill,
+- [x] If a database change is required, add an expand-and-migrate migration, deterministic backfill,
       old-schema-to-new-schema integration fixture, data-preservation assertions, rollback-compatible
       API behavior, and deployment/restore notes before merging dependent range code.
-- [ ] Extend the transaction repository interface with a range operation.
-- [ ] Implement realized income and expense range queries.
-- [ ] Generalize projection generation across multiple months without duplicating occurrences.
-- [ ] Add a range-view service method with household membership enforcement.
-- [ ] Add the controller method and `GET /:id/transactions` route.
-- [ ] Register the endpoint in module-local OpenAPI metadata.
-- [ ] Add the web API function, query key, and TanStack Query hook.
-- [ ] Update transaction mutation invalidation for household range queries.
+- [x] Extend the transaction repository interface with a range operation.
+- [x] Implement realized income and expense range queries.
+- [x] Generalize projection generation across multiple months without duplicating occurrences.
+- [x] Add a range-view service method with household membership enforcement.
+- [x] Add the controller method and `GET /:id/transactions` route.
+- [x] Register the endpoint in module-local OpenAPI metadata.
+- [x] Add the web API function, query key, and TanStack Query hook.
+- [x] Update transaction mutation invalidation for household range queries.
 
 ### Verification
 
-- [ ] Unit-test range validation and calendar-bound calculations.
-- [ ] Unit-test multi-month projection generation.
-- [ ] Integration-test authentication and household membership boundaries.
-- [ ] Integration-test empty, realized-only, projected-only, and mixed ranges.
-- [ ] Integration-test last-12-month and cross-year ranges.
-- [ ] Verify returned amounts remain exact decimal strings and ordered deterministically.
-- [ ] Verify Express routes and OpenAPI paths remain in exact sync.
+- [x] Unit-test range validation and calendar-bound calculations.
+- [x] Unit-test multi-month projection generation.
+- [x] Integration-test authentication and household membership boundaries.
+- [x] Integration-test empty, realized-only, projected-only, and mixed ranges.
+- [x] Integration-test last-12-month and cross-year ranges.
+- [x] Verify returned amounts remain exact decimal strings and ordered deterministically.
+- [x] Verify Express routes and OpenAPI paths remain in exact sync.
 
 ### Definition of done
 
@@ -564,6 +564,23 @@ Serve one authorized, bounded collection containing the raw transactions needed 
 - No stored chart output or server-side graph aggregation is introduced.
 - The milestone either records that no database migration is required or contains a successfully
   rehearsed, backward-compatible migration that preserves all existing production data.
+
+### Milestone 2 result (2026-10-30)
+
+- The authenticated range endpoint returns household metadata, members, sources, and raw realized
+  and projected transactions for inclusive month bounds.
+- The API enforces ordered month keys and the five-years-past/one-year-future policy. Range reads
+  reuse one repository projection path with existing monthly reads, preserve exact decimal strings,
+  omit projected duplicates when a realized series occurrence exists, and sort by date then ID.
+- The web client exposes the range request, household-scoped query keys, and a TanStack Query hook.
+  Existing transaction mutation invalidation already targets the `finance` key prefix, so it also
+  invalidates every new household range query.
+- No database schema change or migration is required. The existing transaction dates and recurrence
+  IDs provide all persisted data; clients can form collision-safe occurrence keys from transaction
+  ID, occurrence date, and projected state.
+- Production and test TypeScript checks pass. Contracts, API, and web lint pass with one pre-existing
+  onboarding hook warning. All 224 unit tests pass, and all 18 finance integration tests pass against
+  PostgreSQL. The route/OpenAPI synchronization test passes.
 
 ---
 

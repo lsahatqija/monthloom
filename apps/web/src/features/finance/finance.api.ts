@@ -9,6 +9,7 @@ import type {
   HouseholdDto,
   HouseholdInvitation,
   HouseholdMonthResponse,
+  HouseholdTransactionRangeResponse,
   HouseholdSource,
   HouseholdTransaction,
   ManagedHousehold,
@@ -93,6 +94,19 @@ export async function getHouseholdMonth(
     query: { month },
   });
   if (!data) throw new Error('Unexpected empty household response.');
+  return data;
+}
+
+export async function getHouseholdTransactionRange(
+  householdId: string,
+  from: string,
+  to: string,
+): Promise<HouseholdTransactionRangeResponse> {
+  const data = await apiClient.get<HouseholdTransactionRangeResponse>(
+    `households/${householdId}/transactions`,
+    { query: { from, to } },
+  );
+  if (!data) throw new Error('Unexpected empty household range response.');
   return data;
 }
 
