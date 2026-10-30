@@ -141,6 +141,13 @@
       "when": 1792584000001,
       "tag": "0019_add-expense-types",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793267086606,
+      "tag": "0020_pink_iron_monger",
+      "breakpoints": true
     }
   ]
 }

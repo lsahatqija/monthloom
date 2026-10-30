@@ -6,10 +6,11 @@ import {
   type HouseholdSource,
 } from '@monthloom/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState, type FormEvent } from 'react';
 
 import { Alert, Button } from '../../components/ui/index';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 
 import { createHouseholdSource, financeKeys, updateHouseholdSource } from './finance.api';
 
@@ -28,6 +29,8 @@ export function SourceModal({
   onClose,
   onSaved,
 }: SourceModalProps) {
+  const t = useTranslations('Finance');
+  const errorMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
   const [displayName, setDisplayName] = useState(source?.displayName ?? initialDisplayName);
   const [aliases, setAliases] = useState(
@@ -78,9 +81,9 @@ export function SourceModal({
         <div className="transactionModalHeader">
           <div>
             <p className="transactionModalEyebrow">
-              {source ? 'Update transaction source' : 'New transaction source'}
+              {source ? t('updateTransactionSource') : t('newTransactionSource')}
             </p>
-            <h2 id="source-modal-title">{source ? 'Edit source' : 'Add new source'}</h2>
+            <h2 id="source-modal-title">{source ? t('editSource') : t('addNewSource')}</h2>
           </div>
           <button
             type="button"
@@ -88,7 +91,7 @@ export function SourceModal({
             data-onboarding="source-modal-close"
             disabled={mutation.isPending}
             onClick={onClose}
-            aria-label="Close source modal"
+            aria-label={t('closeSourceModal')}
           >
             <span aria-hidden="true">×</span>
           </button>
@@ -96,11 +99,11 @@ export function SourceModal({
 
         <form className="transactionForm sourceForm" onSubmit={submit}>
           <label className="transactionField">
-            <span>Source Display Name</span>
+            <span>{t('sourceDisplayName')}</span>
             <input
               value={displayName}
               maxLength={Constants.DISPLAY_NAME_MAX_LENGTH}
-              placeholder="e.g. Neighborhood Market"
+              placeholder={t('sourceNameExample')}
               autoFocus
               required
               disabled={mutation.isPending}
@@ -109,19 +112,16 @@ export function SourceModal({
           </label>
 
           <fieldset className="sourceAliases">
-            <legend>Aliases</legend>
-            <p>
-              Add names that may appear on bank records. The display name is always included as an
-              alias.
-            </p>
+            <legend>{t('aliases')}</legend>
+            <p>{t('aliasesDescription')}</p>
             {aliases.map((alias, index) => (
               <div className="sourceAliasRow" key={index}>
                 <label className="transactionField">
-                  <span>Alias {index + 1}</span>
+                  <span>{t('aliasNumber', { number: index + 1 })}</span>
                   <input
                     value={alias}
                     maxLength={Constants.DISPLAY_NAME_MAX_LENGTH}
-                    placeholder="e.g. NBRHD MKT 1042"
+                    placeholder={t('aliasExample')}
                     disabled={mutation.isPending}
                     onChange={(event) =>
                       setAliases((current) =>
@@ -142,7 +142,7 @@ export function SourceModal({
                     )
                   }
                 >
-                  Remove
+                  {t('remove')}
                 </Button>
               </div>
             ))}
@@ -153,16 +153,17 @@ export function SourceModal({
                 disabled={mutation.isPending}
                 onClick={() => setAliases((current) => [...current, ''])}
               >
-                Add alias
+                {t('addAlias')}
               </Button>
             ) : null}
           </fieldset>
 
           {mutation.isError ? (
             <Alert variant="error">
-              {isApiClientError(mutation.error)
-                ? mutation.error.message
-                : `We could not ${source ? 'update' : 'create'} this source.`}
+              {errorMessage(
+                mutation.error,
+                source ? t('updateSourceError') : t('createSourceError'),
+              )}
             </Alert>
           ) : null}
 
@@ -173,10 +174,10 @@ export function SourceModal({
               disabled={mutation.isPending}
               onClick={onClose}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button type="submit" disabled={mutation.isPending || !displayName.trim()}>
-              {mutation.isPending ? 'Saving…' : source ? 'Save changes' : 'Add source'}
+              {mutation.isPending ? t('saving') : source ? t('saveChanges') : t('addSource')}
             </Button>
           </div>
         </form>

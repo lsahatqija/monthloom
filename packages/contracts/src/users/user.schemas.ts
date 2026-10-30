@@ -7,6 +7,9 @@ export const userRoleSchema = z.enum(Constants.USER_ROLES);
 
 export type UserRole = z.infer<typeof userRoleSchema>;
 
+export const localeSchema = z.enum(Constants.SUPPORTED_LOCALES);
+export type Locale = z.infer<typeof localeSchema>;
+
 export const profileImageSchema = z.enum(Constants.PROFILE_IMAGES);
 export type ProfileImage = z.infer<typeof profileImageSchema>;
 
@@ -24,6 +27,7 @@ export const publicUserSchema = z.object({
     .max(Constants.DISPLAY_NAME_MAX_LENGTH),
   profileImage: profileImageSchema,
   desiredColor: desiredColorSchema,
+  locale: localeSchema,
   role: userRoleSchema,
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema,
@@ -38,6 +42,7 @@ export const updateProfileRequestSchema = z.object({
     .max(Constants.DISPLAY_NAME_MAX_LENGTH),
   profileImage: profileImageSchema,
   desiredColor: desiredColorSchema,
+  locale: localeSchema,
 });
 
 export type UpdateProfileRequest = z.infer<typeof updateProfileRequestSchema>;

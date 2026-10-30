@@ -5,14 +5,18 @@ import { loginRequestSchema, type LoginRequest } from '@monthloom/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 
 import { Alert, Button, FieldError, FormField, Input, Label } from '../../components/ui/index';
-import { isApiClientError } from '../../lib/api/errors';
+import { setLocaleCookie } from '../../i18n/locale-cookie';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 
 import { authKeys, login } from './auth.api';
 
 export function LoginForm({ redirectTo }: { redirectTo: string }) {
+  const t = useTranslations('Auth');
+  const errorMessage = useApiErrorMessage();
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -25,36 +29,31 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
 
   const mutation = useMutation({
     mutationFn: login,
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      setLocaleCookie(data.user.locale);
       await queryClient.invalidateQueries({ queryKey: authKeys.me });
       router.push(redirectTo);
       router.refresh();
     },
-    onError: (error) => {
-      if (isApiClientError(error)) {
-        setError('root', { message: error.message });
-      } else {
-        setError('root', { message: 'Something went wrong. Please try again.' });
-      }
-    },
+    onError: (error) => setError('root', { message: errorMessage(error, t('genericError')) }),
   });
 
   return (
     <form
       onSubmit={handleSubmit((values) => mutation.mutate(values))}
       noValidate
-      aria-label="Log in"
+      aria-label={t('login')}
     >
       {errors.root?.message ? <Alert variant="error">{errors.root.message}</Alert> : null}
 
       <FormField>
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t('email')}</Label>
         <Input id="email" type="email" autoComplete="email" {...register('email')} />
         <FieldError message={errors.email?.message} />
       </FormField>
 
       <FormField>
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">{t('password')}</Label>
         <Input
           id="password"
           type="password"
@@ -63,12 +62,12 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
         />
         <FieldError message={errors.password?.message} />
         <Link className="formAuxiliaryLink" href="/forgot-password">
-          Forgot password?
+          {t('forgotPassword')}
         </Link>
       </FormField>
 
       <Button type="submit" disabled={isSubmitting || mutation.isPending}>
-        {mutation.isPending ? 'Logging in...' : 'Log in'}
+        {mutation.isPending ? t('loggingIn') : t('login')}
       </Button>
     </form>
   );

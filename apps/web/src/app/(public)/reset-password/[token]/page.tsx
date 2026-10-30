@@ -1,15 +1,20 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 
 import { PageContainer } from '@/components/ui/index';
 import { ResetPasswordForm } from '@/features/auth/reset-password-form';
 
-export const metadata: Metadata = { title: 'Reset password' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Metadata');
+  return { title: t('resetPassword') };
+}
 
-export default function ResetPasswordPage({ params }: { params: { token: string } }) {
+export default async function ResetPasswordPage({ params }: { params: { token: string } }) {
+  const t = await getTranslations('Pages.resetPassword');
   return (
     <PageContainer>
-      <h1>Choose a new password</h1>
-      <p>Enter and confirm the new password for your account.</p>
+      <h1>{t('title')}</h1>
+      <p>{t('description')}</p>
       <ResetPasswordForm token={params.token} />
     </PageContainer>
   );

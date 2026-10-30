@@ -12,10 +12,15 @@ describe('user HTTP + PostgreSQL', () => {
         role: 'admin',
         profileImage: 'diamond-kilim',
         desiredColor: 'indigo',
+        locale: 'fr',
       })
       .expect(200);
-    const response = await agent.get(`${api}/users/me`).expect(200);
-    expect(response.body.user).toMatchObject({ displayName: 'Updated', role: 'user' });
+    const response = await agent.get(`${api}/auth/me`).expect(200);
+    expect(response.body.user).toMatchObject({
+      displayName: 'Updated',
+      locale: 'fr',
+      role: 'user',
+    });
     expect(response.body.user).not.toHaveProperty('passwordHash');
   });
 

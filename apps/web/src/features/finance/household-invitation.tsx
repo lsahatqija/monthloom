@@ -4,16 +4,13 @@ import type { PublicUser } from '@monthloom/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { Alert, Button, LoadingIndicator } from '../../components/ui/index';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 
 import { acceptHouseholdInvitation, financeKeys, getHouseholdInvitation } from './finance.api';
 import { HouseholdIcon } from './household-icon';
-
-function errorMessage(error: unknown): string {
-  return isApiClientError(error) ? error.message : 'Something went wrong. Please try again.';
-}
 
 export function HouseholdInvitationPrompt({
   token,
@@ -22,6 +19,8 @@ export function HouseholdInvitationPrompt({
   token: string;
   user: PublicUser | null;
 }) {
+  const t = useTranslations('Finance');
+  const errorMessage = useApiErrorMessage();
   const router = useRouter();
   const queryClient = useQueryClient();
   const invitationPath = `/invite/${token}`;
@@ -39,8 +38,9 @@ export function HouseholdInvitationPrompt({
     },
   });
 
-  if (query.isPending) return <LoadingIndicator label="Loading invitation..." />;
-  if (query.isError) return <Alert variant="error">{errorMessage(query.error)}</Alert>;
+  if (query.isPending) return <LoadingIndicator label={t('loadingInvitation')} />;
+  if (query.isError)
+    return <Alert variant="error">{errorMessage(query.error, t('genericError'))}</Alert>;
 
   const invitation = query.data;
   return (
@@ -49,41 +49,48 @@ export function HouseholdInvitationPrompt({
         <HouseholdIcon name={invitation.household.icon} size={28} />
       </span>
       <div>
-        <h1 id="invitation-heading">Join {invitation.household.name}?</h1>
-        <p>You have been invited to join this household and share its monthly finances.</p>
+        <h1 id="invitation-heading">
+          {t('joinHouseholdTitle', { household: invitation.household.name })}
+        </h1>
+        <p>{t('invitationDescription')}</p>
       </div>
 
-      {mutation.isError ? <Alert variant="error">{errorMessage(mutation.error)}</Alert> : null}
+      {mutation.isError ? (
+        <Alert variant="error">{errorMessage(mutation.error, t('genericError'))}</Alert>
+      ) : null}
 
       {user ? (
         <>
           <p>
-            Continue as <strong>{user.displayName}</strong>?
+            {t.rich('continueAs', {
+              name: user.displayName,
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
           <div className="invitationActions">
             <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
-              {mutation.isPending ? 'Joining...' : 'Yes, join household'}
+              {mutation.isPending ? t('joining') : t('joinHousehold')}
             </Button>
             <Link className="button buttonSecondary" href="/">
-              No, thanks
+              {t('noThanks')}
             </Link>
           </div>
         </>
       ) : (
         <>
-          <p>Create an account to accept this invitation. You will return here afterward.</p>
+          <p>{t('createAccountForInvitation')}</p>
           <div className="invitationActions">
             <Link className="button" href={`/register?next=${encodeURIComponent(invitationPath)}`}>
-              Create an account
+              {t('createAccount')}
             </Link>
             <Link
               className="button buttonSecondary"
               href={`/login?next=${encodeURIComponent(invitationPath)}`}
             >
-              Log in
+              {t('login')}
             </Link>
             <Link className="button buttonSecondary" href="/">
-              No, thanks
+              {t('noThanks')}
             </Link>
           </div>
         </>

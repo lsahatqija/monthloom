@@ -64,6 +64,9 @@ describe('authentication service', () => {
     email.sendPasswordReset.mockRejectedValue(new Error('offline'));
     sessions.deletePasswordResetToken.mockResolvedValue();
     await expect(service.requestPasswordReset({ email: user.email })).resolves.toBeUndefined();
+    expect(email.sendPasswordReset).toHaveBeenCalledWith(
+      expect.objectContaining({ locale: 'en', expiresAt: expect.any(Date) }),
+    );
     expect(sessions.deletePasswordResetToken).toHaveBeenCalledWith(
       sessions.createPasswordResetToken.mock.calls[0]![0].tokenHash,
     );

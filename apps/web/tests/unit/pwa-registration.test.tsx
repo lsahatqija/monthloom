@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -6,6 +6,7 @@ import {
   PwaRegistration,
   usePwaInstall,
 } from '../../src/components/pwa-registration';
+import { renderWithQuery } from '../render';
 
 function InstallMenuEntry() {
   const { canOfferInstall, openInstallPrompt } = usePwaInstall();
@@ -52,7 +53,7 @@ describe('PWA installation', () => {
       userChoice: Promise.resolve({ outcome: 'accepted', platform: 'web' }),
     });
 
-    render(
+    renderWithQuery(
       <PwaRegistration>
         <InstallMenuEntry />
       </PwaRegistration>,
@@ -78,7 +79,7 @@ describe('PWA installation', () => {
       userChoice: Promise.resolve({ outcome: 'dismissed', platform: 'web' }),
     });
 
-    render(
+    renderWithQuery(
       <PwaRegistration>
         <InstallMenuEntry />
       </PwaRegistration>,
@@ -98,7 +99,7 @@ describe('PWA installation', () => {
   it('shows step-by-step installation instructions on iOS', async () => {
     setDevice('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)');
 
-    render(
+    renderWithQuery(
       <PwaRegistration>
         <InstallMenuEntry />
       </PwaRegistration>,
@@ -113,7 +114,7 @@ describe('PWA installation', () => {
   it('offers browser-menu instructions when Opera does not expose an installer', async () => {
     setDevice('Mozilla/5.0 (Linux; Android 15; Mobile) OPR/92.0');
 
-    render(
+    renderWithQuery(
       <PwaRegistration>
         <InstallMenuEntry />
       </PwaRegistration>,
@@ -127,7 +128,7 @@ describe('PWA installation', () => {
   it('offers an unobtrusive taskbar action on desktop', async () => {
     setDevice('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0');
 
-    render(
+    renderWithQuery(
       <PwaRegistration>
         <InstallMenuEntry />
       </PwaRegistration>,

@@ -10,11 +10,12 @@ import {
   type UpdateHouseholdRequest,
 } from '@monthloom/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
 import { ProfileImage } from '../../components/profile-image';
 import { Alert, Button, Input, LoadingIndicator } from '../../components/ui/index';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 
 import {
   createHousehold,
@@ -27,7 +28,7 @@ import {
   setPrimaryHousehold,
   updateHousehold,
 } from './finance.api';
-import { HouseholdIcon, householdIconLabel } from './household-icon';
+import { HouseholdIcon } from './household-icon';
 
 const HOUSEHOLD_COLOR_OPTIONS = [
   Defaults.HOUSEHOLD_COLOR,
@@ -55,10 +56,6 @@ const defaultHousehold: CreateHouseholdRequest = {
   color: Defaults.HOUSEHOLD_COLOR,
 };
 
-function errorMessage(error: unknown): string {
-  return isApiClientError(error) ? error.message : 'Something went wrong. Please try again.';
-}
-
 function HouseholdFields({
   value,
   onChange,
@@ -68,6 +65,8 @@ function HouseholdFields({
   onChange: (value: CreateHouseholdRequest) => void;
   prefix: string;
 }) {
+  const t = useTranslations('Finance');
+  const iconLabels = useTranslations('Labels.householdIcons');
   const iconPickerRef = useRef<HTMLDetailsElement>(null);
   const colorPickerRef = useRef<HTMLDetailsElement>(null);
 
@@ -89,7 +88,7 @@ function HouseholdFields({
   return (
     <div className="householdFields">
       <label>
-        <span>Name</span>
+        <span>{t('name')}</span>
         <Input
           id={`${prefix}-name`}
           value={value.name}
@@ -99,7 +98,7 @@ function HouseholdFields({
         />
       </label>
       <label>
-        <span>Currency</span>
+        <span>{t('currency')}</span>
         <select
           id={`${prefix}-currency`}
           value={value.currency}
@@ -113,7 +112,7 @@ function HouseholdFields({
         </select>
       </label>
       <div className="householdField">
-        <span id={`${prefix}-icon-label`}>Icon</span>
+        <span id={`${prefix}-icon-label`}>{t('icon')}</span>
         <details
           ref={iconPickerRef}
           id={`${prefix}-icon`}
@@ -123,12 +122,12 @@ function HouseholdFields({
             <span className="selectedIconPreview" style={{ backgroundColor: value.color }}>
               <HouseholdIcon name={value.icon} size={20} />
             </span>
-            <span>{householdIconLabel(value.icon)}</span>
+            <span>{iconLabels(value.icon)}</span>
           </summary>
           <div className="iconPickerPopover">
-            <div className="iconPickerGrid" role="group" aria-label="Choose a household icon">
+            <div className="iconPickerGrid" role="group" aria-label={t('chooseHouseholdIcon')}>
               {Constants.HOUSEHOLD_ICONS.map((icon) => {
-                const label = householdIconLabel(icon);
+                const label = iconLabels(icon);
                 return (
                   <label
                     key={icon}
@@ -155,7 +154,7 @@ function HouseholdFields({
         </details>
       </div>
       <div className="householdField">
-        <span id={`${prefix}-color-label`}>Color</span>
+        <span id={`${prefix}-color-label`}>{t('color')}</span>
         <details
           ref={colorPickerRef}
           id={`${prefix}-color`}
@@ -166,7 +165,7 @@ function HouseholdFields({
             <span>{value.color.toUpperCase()}</span>
           </summary>
           <div className="colorPickerPopover">
-            <div className="colorOptions" role="group" aria-label="Choose a household color">
+            <div className="colorOptions" role="group" aria-label={t('chooseHouseholdColor')}>
               {HOUSEHOLD_COLOR_OPTIONS.map((color) => (
                 <label key={color} style={{ backgroundColor: color }} title={color}>
                   <input
@@ -191,6 +190,8 @@ function HouseholdFields({
 }
 
 function HouseholdCard({ household, user }: { household: ManagedHousehold; user: PublicUser }) {
+  const t = useTranslations('Finance');
+  const errorMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<CreateHouseholdRequest>({
@@ -220,7 +221,7 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
       setEditing(false);
       await refresh();
     },
-    onError: (mutationError) => setError(errorMessage(mutationError)),
+    onError: (mutationError) => setError(errorMessage(mutationError, t('genericError'))),
   });
 
   const save = () => {
@@ -251,7 +252,7 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
       setLinkCopied(true);
       setError(null);
     } catch {
-      setError('The invitation link could not be copied. Please copy it from the field.');
+      setError(t('copyInvitationError'));
     }
   };
 
@@ -275,10 +276,10 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
     if (isOwner && household.members.length === 1) return;
     const transferTo = isOwner ? newOwnerId : undefined;
     if (isOwner && !transferTo) {
-      setError('Select a new owner before leaving.');
+      setError(t('selectNewOwner'));
       return;
     }
-    if (window.confirm(`Leave ${household.name}?`)) {
+    if (window.confirm(t('leaveHouseholdConfirm', { household: household.name }))) {
       mutation.mutate(() => leaveHousehold(household.id, transferTo));
     }
   };
@@ -292,8 +293,8 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
         <div>
           <h3>{household.name}</h3>
           <p>
-            {household.members.length} {household.members.length === 1 ? 'member' : 'members'}
-            {household.isPrimary ? ' · Default household' : ''}
+            {t('membersCount', { count: household.members.length })}
+            {household.isPrimary ? t('defaultHouseholdSuffix') : ''}
           </p>
         </div>
       </div>
@@ -303,15 +304,13 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
       {editing ? (
         <div className="householdEditPanel">
           <HouseholdFields value={draft} onChange={setDraft} prefix={`edit-${household.id}`} />
-          <small>
-            Changing currency applies to all amounts in this household. Amounts are not converted.
-          </small>
+          <small>{t('currencyWarning')}</small>
           <div className="householdActions">
             <Button onClick={save} disabled={mutation.isPending || !draft.name.trim()}>
-              Save
+              {t('save')}
             </Button>
             <Button variant="secondary" onClick={() => setEditing(false)}>
-              Cancel
+              {t('cancel')}
             </Button>
           </div>
         </div>
@@ -329,7 +328,7 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
               setEditing(true);
             }}
           >
-            Edit
+            {t('edit')}
           </Button>
           {!household.isPrimary ? (
             <Button
@@ -337,7 +336,7 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
               onClick={() => mutation.mutate(() => setPrimaryHousehold(household.id))}
               disabled={mutation.isPending}
             >
-              Make default
+              {t('makeDefault')}
             </Button>
           ) : null}
         </div>
@@ -345,13 +344,13 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
 
       <div className="householdMembers">
         <div className="householdMembersHeading">
-          <h4>Members</h4>
+          <h4>{t('members')}</h4>
         </div>
         <div
           className="invitationModeSwitch"
           data-onboarding="household-invitations"
           role="group"
-          aria-label="Invitation method"
+          aria-label={t('invitationMethod')}
         >
           <button
             type="button"
@@ -359,7 +358,7 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
             disabled={mutation.isPending}
             onClick={() => setInvitationMode('link')}
           >
-            Share link
+            {t('shareLink')}
           </button>
           <button
             type="button"
@@ -367,7 +366,7 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
             disabled={mutation.isPending}
             onClick={() => setInvitationMode('email')}
           >
-            Email
+            {t('email')}
           </button>
         </div>
 
@@ -377,12 +376,12 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
               <div className="householdInvitationLink">
                 <Input
                   value={invitationLink}
-                  aria-label="Household invitation link"
+                  aria-label={t('householdInvitationLink')}
                   readOnly
                   onFocus={(event) => event.currentTarget.select()}
                 />
                 <Button type="button" onClick={copyInvitationLink}>
-                  {linkCopied ? 'Copied!' : 'Copy link'}
+                  {linkCopied ? t('copied') : t('copyLink')}
                 </Button>
               </div>
             ) : (
@@ -392,10 +391,10 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
                 disabled={mutation.isPending}
                 onClick={createLinkInvitation}
               >
-                {mutation.isPending ? 'Creating...' : 'Create invitation link'}
+                {mutation.isPending ? t('creating') : t('createInvitationLink')}
               </Button>
             )}
-            <small>Anyone with this single-use link can join. It expires in one hour.</small>
+            <small>{t('invitationLinkDescription')}</small>
           </div>
         ) : (
           <form
@@ -414,8 +413,8 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
                   setInvitationEmails(event.target.value);
                   setInvitationDelivery(null);
                 }}
-                placeholder="alex@example.com, sam@example.com"
-                aria-label="Email addresses to invite, separated by commas"
+                placeholder={t('invitationEmailExample')}
+                aria-label={t('invitationEmailLabel')}
                 required
               />
               <Button
@@ -423,23 +422,25 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
                 variant="secondary"
                 disabled={mutation.isPending || !invitationEmails.trim()}
               >
-                {mutation.isPending ? 'Sending...' : 'Send invitation'}
+                {mutation.isPending ? t('sending') : t('sendInvitation')}
               </Button>
             </div>
             <small>
-              Separate up to {Constants.HOUSEHOLD_INVITATION_MAX_RECIPIENTS} addresses with commas.
-              Each person receives a unique link that expires in one hour.
+              {t('invitationEmailDescription', {
+                count: Constants.HOUSEHOLD_INVITATION_MAX_RECIPIENTS,
+              })}
             </small>
             {invitationDelivery?.sentTo.length ? (
               <p className="householdInvitationConfirmation" role="status">
-                {invitationDelivery.sentTo.length === 1 ? 'Invitation' : 'Invitations'} sent to{' '}
-                {invitationDelivery.sentTo.join(', ')}.
+                {t('invitationsSent', {
+                  count: invitationDelivery.sentTo.length,
+                  emails: invitationDelivery.sentTo.join(', '),
+                })}
               </p>
             ) : null}
             {invitationDelivery?.failedTo.length ? (
               <Alert variant="error">
-                Could not send to {invitationDelivery.failedTo.join(', ')}. The field now contains
-                only these addresses so you can retry.
+                {t('invitationsFailed', { emails: invitationDelivery.failedTo.join(', ') })}
               </Alert>
             ) : null}
           </form>
@@ -451,8 +452,8 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
               <span>
                 <strong>{member.displayName}</strong>
                 <small>
-                  {member.id === household.ownerId ? 'Owner' : 'Member'}
-                  {member.id === user.id ? ' · You' : ''}
+                  {member.id === household.ownerId ? t('owner') : t('member')}
+                  {member.id === user.id ? t('youMarker') : ''}
                 </small>
               </span>
               {isOwner && member.id !== user.id ? (
@@ -461,12 +462,19 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
                   className="textDangerButton"
                   disabled={mutation.isPending}
                   onClick={() => {
-                    if (window.confirm(`Remove ${member.displayName} from ${household.name}?`)) {
+                    if (
+                      window.confirm(
+                        t('removeMemberConfirm', {
+                          member: member.displayName,
+                          household: household.name,
+                        }),
+                      )
+                    ) {
                       mutation.mutate(() => removeHouseholdMember(household.id, member.id));
                     }
                   }}
                 >
-                  Remove
+                  {t('remove')}
                 </button>
               ) : null}
             </li>
@@ -477,7 +485,7 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
       <div className="householdDangerZone">
         {isOwner && household.members.length > 1 ? (
           <label>
-            <span>Transfer ownership before leaving</span>
+            <span>{t('transferOwnership')}</span>
             <select value={newOwnerId} onChange={(event) => setNewOwnerId(event.target.value)}>
               {household.members
                 .filter((member) => member.id !== user.id)
@@ -494,13 +502,9 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
           className="textDangerButton"
           onClick={leave}
           disabled={mutation.isPending || (isOwner && household.members.length === 1)}
-          title={
-            isOwner && household.members.length === 1
-              ? 'Add another member or delete the household instead.'
-              : undefined
-          }
+          title={isOwner && household.members.length === 1 ? t('cannotLeaveSoleMember') : undefined}
         >
-          Leave household
+          {t('leaveHousehold')}
         </button>
         {isOwner ? (
           <button
@@ -508,12 +512,12 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
             className="textDangerButton"
             disabled={mutation.isPending}
             onClick={() => {
-              if (window.confirm(`Permanently delete ${household.name} and all of its data?`)) {
+              if (window.confirm(t('deleteHouseholdConfirm', { household: household.name }))) {
                 mutation.mutate(() => deleteHousehold(household.id));
               }
             }}
           >
-            Delete household
+            {t('deleteHousehold')}
           </button>
         ) : null}
       </div>
@@ -522,6 +526,8 @@ function HouseholdCard({ household, user }: { household: ManagedHousehold; user:
 }
 
 export function HouseholdSettings({ user }: { user: PublicUser }) {
+  const t = useTranslations('Finance');
+  const errorMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState(defaultHousehold);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -565,11 +571,11 @@ export function HouseholdSettings({ user }: { user: PublicUser }) {
   const createFormFields = (prefix: string) => (
     <>
       {createMutation.isError ? (
-        <Alert variant="error">{errorMessage(createMutation.error)}</Alert>
+        <Alert variant="error">{errorMessage(createMutation.error, t('genericError'))}</Alert>
       ) : null}
       <HouseholdFields value={draft} onChange={setDraft} prefix={prefix} />
       <Button type="submit" disabled={createMutation.isPending || !draft.name.trim()}>
-        {createMutation.isPending ? 'Creating…' : 'Create household'}
+        {createMutation.isPending ? t('creating') : t('createHousehold')}
       </Button>
     </>
   );
@@ -578,12 +584,12 @@ export function HouseholdSettings({ user }: { user: PublicUser }) {
     <section className="householdSettings" aria-labelledby="household-settings-heading">
       <div className="settingsSectionHeading">
         <div>
-          <h2 id="household-settings-heading">Households</h2>
-          <p>Create a household or manage the households you belong to.</p>
+          <h2 id="household-settings-heading">{t('households')}</h2>
+          <p>{t('manageHouseholdsDescription')}</p>
         </div>
         {hasHouseholds ? (
           <Button type="button" onClick={() => setIsCreateModalOpen(true)}>
-            Add Household
+            {t('addHouseholdAction')}
           </Button>
         ) : null}
       </div>
@@ -597,15 +603,17 @@ export function HouseholdSettings({ user }: { user: PublicUser }) {
             createMutation.mutate(draft);
           }}
         >
-          <h3>Add a household</h3>
+          <h3>{t('addHousehold')}</h3>
           {createFormFields('create-household')}
         </form>
       ) : null}
 
-      {query.isPending ? <LoadingIndicator label="Loading households…" /> : null}
-      {query.isError ? <Alert variant="error">{errorMessage(query.error)}</Alert> : null}
+      {query.isPending ? <LoadingIndicator label={t('loadingHouseholds')} /> : null}
+      {query.isError ? (
+        <Alert variant="error">{errorMessage(query.error, t('genericError'))}</Alert>
+      ) : null}
       {query.data?.length === 0 ? (
-        <p className="householdEmpty">You are not a member of any household yet.</p>
+        <p className="householdEmpty">{t('notHouseholdMember')}</p>
       ) : null}
       <div className="householdList">
         {query.data?.map((household) => (
@@ -628,15 +636,15 @@ export function HouseholdSettings({ user }: { user: PublicUser }) {
           >
             <div className="transactionModalHeader">
               <div>
-                <p className="transactionModalEyebrow">New household</p>
-                <h2 id="create-household-modal-title">Add a household</h2>
+                <p className="transactionModalEyebrow">{t('newHousehold')}</p>
+                <h2 id="create-household-modal-title">{t('addHousehold')}</h2>
               </div>
               <button
                 type="button"
                 className="modalCloseButton"
                 disabled={createMutation.isPending}
                 onClick={closeCreateModal}
-                aria-label="Close add household modal"
+                aria-label={t('closeAddHousehold')}
               >
                 <span aria-hidden="true">×</span>
               </button>

@@ -5,6 +5,8 @@ export function notFoundHandler(req: Request, res: Response): void {
   res.status(404).json({
     error: {
       code: 'NOT_FOUND',
+      reason: 'ROUTE_NOT_FOUND',
+      params: { method: req.method, path: req.originalUrl },
       message: `No route matches ${req.method} ${req.originalUrl}.`,
       requestId: req.id,
     },

@@ -65,29 +65,6 @@ const HOUSEHOLD_ICON_COMPONENTS = {
   'shared-house': School2,
 } satisfies Record<HouseholdIconName, LucideIcon>;
 
-const HOUSEHOLD_ICON_LABELS: Record<HouseholdIconName, string> = {
-  'small-house': 'Personal',
-  'family-house': 'House',
-  'large-house': 'Mansion',
-  'beach-house': 'Beach home',
-  'mountain-cabin': 'Mountain cabin',
-  cottage: 'Cottage',
-  farmhouse: 'Farmhouse',
-  townhouse: 'Townhouse',
-  'short-apartments': 'Apartment',
-  'tall-apartments': 'Apartment',
-  'office-building': 'Office',
-  rv: 'RV',
-  shack: 'Shack',
-  villa: 'Villa',
-  houseboat: 'Houseboat',
-  'shared-house': 'Shared home',
-};
-
-export function householdIconLabel(icon: HouseholdIconName): string {
-  return HOUSEHOLD_ICON_LABELS[icon];
-}
-
 interface HouseholdIconProps {
   name: HouseholdIconName;
   size?: number;

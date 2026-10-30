@@ -1,5 +1,6 @@
 /** Shared values used by validation, persistence, and user-interface controls. */
 export class Constants {
+  static readonly SUPPORTED_LOCALES = ['en', 'sq', 'fr', 'tr', 'de'] as const;
   static readonly RECURRENCE_UNITS = ['day', 'week', 'month', 'year'] as const;
   static readonly RECURRENCE_INTERVAL_MAX = 99;
   static readonly DISPLAY_NAME_MIN_LENGTH = 1;
@@ -31,20 +32,6 @@ export class Constants {
     'braided-border',
     'concentric-lozenge',
   ] as const;
-  static readonly PROFILE_IMAGE_LABELS = {
-    'diamond-kilim': 'Diamond Kilim',
-    'chevron-weave': 'Chevron Weave',
-    'lattice-loom': 'Lattice Loom',
-    'stepped-medallion': 'Stepped Medallion',
-    'hooked-diamond': 'Hooked Diamond',
-    'basket-weave': 'Basket Weave',
-    'wave-stripe': 'Wave Stripe',
-    'star-rosette': 'Star Rosette',
-    'hourglass-thread': 'Hourglass Thread',
-    'mosaic-grid': 'Mosaic Grid',
-    'braided-border': 'Braided Border',
-    'concentric-lozenge': 'Concentric Lozenge',
-  } as const;
   static readonly DESIRED_COLORS = [
     'slate',
     'red',

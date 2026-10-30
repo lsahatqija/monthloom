@@ -10,7 +10,11 @@ export class FileController {
 
   upload = async (req: Request, res: Response): Promise<void> => {
     if (!req.file) {
-      throw new ValidationError('A file is required.', { file: ['No file was uploaded.'] });
+      throw new ValidationError(
+        'A file is required.',
+        { file: ['No file was uploaded.'] },
+        'FILE_REQUIRED',
+      );
     }
 
     const metadata = await this.fileService.upload({
@@ -39,7 +43,10 @@ export class FileController {
     const { stream, record } = await this.fileService.getContentForOwner(id, req.authUser!.id);
 
     res.setHeader('Content-Type', record.mimeType);
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(record.originalName)}"`);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${encodeURIComponent(record.originalName)}"`,
+    );
     res.setHeader('Cache-Control', 'private, max-age=0, no-cache');
     stream.pipe(res);
   };

@@ -22,6 +22,8 @@ describe('API client', () => {
           {
             error: {
               code: 'VALIDATION_ERROR',
+              reason: 'INVALID_INPUT',
+              params: { field: 'email' },
               message: 'Invalid input',
               details: { email: ['Invalid email'] },
             },
@@ -32,6 +34,8 @@ describe('API client', () => {
     );
     await expect(apiClient.post('auth/login', {})).rejects.toMatchObject({
       message: 'Invalid input',
+      reason: 'INVALID_INPUT',
+      params: { field: 'email' },
       status: 400,
     });
   });
@@ -53,6 +57,29 @@ describe('API client', () => {
     await expect(apiClient.get('users/me')).rejects.toMatchObject({
       status: 502,
       message: 'The server returned an unexpected response.',
+    });
+  });
+  it('rejects unknown reason codes instead of exposing unmapped server prose', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        Response.json(
+          {
+            error: {
+              code: 'CONFLICT',
+              reason: 'NEW_UNMAPPED_REASON',
+              message: 'Server prose that must not reach the UI.',
+            },
+          },
+          { status: 409 },
+        ),
+      ),
+    );
+
+    await expect(apiClient.post('example')).rejects.toMatchObject({
+      code: 'INTERNAL_ERROR',
+      reason: undefined,
+      message: 'An unexpected error occurred.',
     });
   });
 });

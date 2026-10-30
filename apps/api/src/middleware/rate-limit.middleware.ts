@@ -8,7 +8,13 @@ export const generalRateLimiter = rateLimit({
   limit: config.rateLimit.general.maxRequests,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: { code: 'RATE_LIMITED', message: 'Too many requests. Please try again later.' } },
+  message: {
+    error: {
+      code: 'RATE_LIMITED',
+      reason: 'RATE_LIMITED',
+      message: 'Too many requests. Please try again later.',
+    },
+  },
 });
 
 /** Stricter limiter for authentication endpoints, to slow down credential guessing. */
@@ -18,7 +24,11 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: { code: 'RATE_LIMITED', message: 'Too many authentication attempts. Please try again later.' },
+    error: {
+      code: 'RATE_LIMITED',
+      reason: 'RATE_LIMITED',
+      message: 'Too many authentication attempts. Please try again later.',
+    },
   },
 });
 
@@ -31,6 +41,7 @@ export const passwordResetRateLimiter = rateLimit({
   message: {
     error: {
       code: 'RATE_LIMITED',
+      reason: 'RATE_LIMITED',
       message: 'Too many password reset attempts. Please try again later.',
     },
   },
@@ -45,6 +56,7 @@ export const emailVerificationRateLimiter = rateLimit({
   message: {
     error: {
       code: 'RATE_LIMITED',
+      reason: 'RATE_LIMITED',
       message: 'Too many email verification attempts. Please try again later.',
     },
   },

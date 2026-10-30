@@ -71,9 +71,11 @@ describe('finance service', () => {
   it('does not allow deletion of sources in use', async () => {
     households.isMember.mockResolvedValue(true);
     sources.deleteSource.mockResolvedValue('in_use');
-    await expect(sourceService.deleteSource(household.id, 'source', user.id)).rejects.toMatchObject({
-      statusCode: 409,
-    });
+    await expect(sourceService.deleteSource(household.id, 'source', user.id)).rejects.toMatchObject(
+      {
+        statusCode: 409,
+      },
+    );
   });
 
   it('rejects transaction writes from non-members', async () => {
@@ -110,6 +112,29 @@ describe('finance service', () => {
       ),
     ).rejects.toMatchObject({ statusCode: 403 });
     expect(invitations.createInvitation).not.toHaveBeenCalled();
+  });
+
+  it('uses the inviting user locale for recipients without an account', async () => {
+    const notifier = mock<AutomatedEmailService>();
+    const service = new InvitationService(households, invitations, notifier, mock<Logger>());
+    households.isMember.mockResolvedValue(true);
+    households.findHousehold.mockResolvedValue(household);
+
+    await service.createInvitation(
+      household.id,
+      {
+        ...user,
+        locale: 'tr',
+        emailVerified: true,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+      },
+      { mode: 'email', emails: ['invitee@example.com'] },
+    );
+
+    expect(notifier.sendHouseholdInvitation).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'invitee@example.com', locale: 'tr' }),
+    );
   });
 
   it('prevents an owner from leaving the last household member behind as nobody', async () => {

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 export interface NavItem {
@@ -10,11 +11,12 @@ export interface NavItem {
 }
 
 export function Nav({ items }: { items: NavItem[] }) {
+  const t = useTranslations('Shell');
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav aria-label="Main navigation">
+    <nav aria-label={t('mainNavigation')}>
       <button
         type="button"
         className="navToggle"
@@ -22,7 +24,7 @@ export function Nav({ items }: { items: NavItem[] }) {
         aria-controls="main-nav-list"
         onClick={() => setIsOpen((open) => !open)}
       >
-        Menu
+        {t('menu')}
       </button>
       <ul id="main-nav-list" className={`navList ${isOpen ? '' : 'navListHidden'}`.trim()}>
         {items.map((item) => {

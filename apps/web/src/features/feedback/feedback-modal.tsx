@@ -8,19 +8,18 @@ import {
 } from '@monthloom/contracts';
 import { useMutation } from '@tanstack/react-query';
 import { MessageSquareText, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Alert, Button, FieldError, FormField, Label } from '../../components/ui';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 
 import { sendFeedback } from './feedback.api';
 
-function feedbackTypeLabel(type: (typeof feedbackTypes)[number]) {
-  return type.charAt(0).toUpperCase() + type.slice(1);
-}
-
 export function FeedbackModal({ onClose }: { onClose?: () => void }) {
+  const t = useTranslations('Feedback');
+  const errorMessage = useApiErrorMessage();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const {
@@ -38,9 +37,7 @@ export function FeedbackModal({ onClose }: { onClose?: () => void }) {
     mutationFn: sendFeedback,
     onError: (error) => {
       setError('root', {
-        message: isApiClientError(error)
-          ? error.message
-          : 'Something went wrong. Please try again.',
+        message: errorMessage(error, t('genericError')),
       });
     },
   });
@@ -65,7 +62,7 @@ export function FeedbackModal({ onClose }: { onClose?: () => void }) {
     <>
       <button type="button" className="accountMenuItem" aria-haspopup="dialog" onClick={open}>
         <MessageSquareText aria-hidden="true" />
-        Feedback
+        {t('trigger')}
       </button>
       <dialog
         ref={dialogRef}
@@ -93,13 +90,13 @@ export function FeedbackModal({ onClose }: { onClose?: () => void }) {
       >
         <div className="transactionModalHeader">
           <div>
-            <p className="transactionModalEyebrow">Help shape Monthloom</p>
-            <h2 id="feedback-modal-title">Feedback</h2>
+            <p className="transactionModalEyebrow">{t('eyebrow')}</p>
+            <h2 id="feedback-modal-title">{t('title')}</h2>
           </div>
           <button
             type="button"
             className="modalCloseButton"
-            aria-label="Close feedback"
+            aria-label={t('close')}
             disabled={mutation.isPending}
             onClick={() => dialogRef.current?.close()}
           >
@@ -109,9 +106,9 @@ export function FeedbackModal({ onClose }: { onClose?: () => void }) {
 
         {mutation.isSuccess ? (
           <div className="feedbackSuccess">
-            <Alert>Thanks for helping us improve Monthloom. Your feedback has been sent.</Alert>
+            <Alert>{t('success')}</Alert>
             <Button type="button" onClick={() => dialogRef.current?.close()}>
-              Done
+              {t('done')}
             </Button>
           </div>
         ) : (
@@ -120,17 +117,15 @@ export function FeedbackModal({ onClose }: { onClose?: () => void }) {
             onSubmit={handleSubmit((input) => mutation.mutate(input))}
             noValidate
           >
-            <p className="feedbackIntro">
-              Tell us what is working, what is not, or what you would like to see next.
-            </p>
+            <p className="feedbackIntro">{t('intro')}</p>
             {errors.root?.message ? <Alert variant="error">{errors.root.message}</Alert> : null}
 
             <FormField>
-              <Label htmlFor="feedback-type">Feedback type</Label>
+              <Label htmlFor="feedback-type">{t('type')}</Label>
               <select id="feedback-type" disabled={mutation.isPending} {...register('type')}>
                 {feedbackTypes.map((type) => (
                   <option key={type} value={type}>
-                    {feedbackTypeLabel(type)}
+                    {t(`types.${type}`)}
                   </option>
                 ))}
               </select>
@@ -138,23 +133,23 @@ export function FeedbackModal({ onClose }: { onClose?: () => void }) {
             </FormField>
 
             <FormField>
-              <Label htmlFor="feedback-message">Your feedback</Label>
+              <Label htmlFor="feedback-message">{t('yourFeedback')}</Label>
               <textarea
                 id="feedback-message"
                 rows={8}
                 maxLength={5000}
-                placeholder="Describe your experience in as much detail as you can..."
+                placeholder={t('placeholder')}
                 disabled={mutation.isPending}
                 {...register('feedback')}
               />
-              <p className="feedbackHint">Up to 5,000 characters</p>
+              <p className="feedbackHint">{t('limit')}</p>
               <FieldError message={errors.feedback?.message} />
             </FormField>
 
             <label className="feedbackAnonymous" htmlFor="feedback-anonymous">
               <span>
-                <strong>Send anonymously</strong>
-                <small>Your name, email address, and user ID will not be included.</small>
+                <strong>{t('anonymous')}</strong>
+                <small>{t('anonymousDescription')}</small>
               </span>
               <input
                 id="feedback-anonymous"
@@ -171,10 +166,10 @@ export function FeedbackModal({ onClose }: { onClose?: () => void }) {
                 disabled={mutation.isPending}
                 onClick={() => dialogRef.current?.close()}
               >
-                Cancel
+                {t('cancel')}
               </Button>
               <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Sending…' : 'Send Feedback'}
+                {mutation.isPending ? t('sending') : t('send')}
               </Button>
             </div>
           </form>

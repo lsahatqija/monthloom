@@ -5,6 +5,7 @@ import { CircleUserRound, Database, Download, House, Palette } from 'lucide-reac
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
 import { LogoutButton } from '../../features/auth/logout-button';
@@ -54,6 +55,7 @@ function useMobileHeader() {
 }
 
 export function Header({ user }: { user: PublicUser | null }) {
+  const t = useTranslations('Shell');
   const { mode, toggleMode } = useTheme();
   const { canOfferInstall, installActionLabel, openInstallPrompt } = usePwaInstall();
   const pathname = usePathname();
@@ -82,7 +84,7 @@ export function Header({ user }: { user: PublicUser | null }) {
   return (
     <header className="header">
       <div className="headerInner">
-        <Link href="/" className="brand" aria-label="Monthloom home">
+        <Link href="/" className="brand" aria-label={t('monthloomHome')}>
           <Image
             className="brandLight"
             src="/brand/monthloom-horizontal-light.png"
@@ -107,8 +109,8 @@ export function Header({ user }: { user: PublicUser | null }) {
             href="/"
             className="iconButton"
             data-onboarding="home-button"
-            aria-label="Home"
-            title="Home"
+            aria-label={t('home')}
+            title={t('home')}
             aria-current={pathname === '/' ? 'page' : undefined}
             onClick={() => setIsOpen(false)}
           >
@@ -120,8 +122,8 @@ export function Header({ user }: { user: PublicUser | null }) {
               type="button"
               className="iconButton"
               onClick={toggleMode}
-              aria-label={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}
-              title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}
+              aria-label={mode === 'light' ? t('switchToDark') : t('switchToLight')}
+              title={mode === 'light' ? t('switchToDark') : t('switchToLight')}
             >
               {mode === 'light' ? <MoonIcon /> : <SunIcon />}
             </button>
@@ -133,7 +135,7 @@ export function Header({ user }: { user: PublicUser | null }) {
                 type="button"
                 className="iconButton"
                 data-onboarding="settings-menu"
-                aria-label="Open account menu"
+                aria-label={t('openAccountMenu')}
                 aria-expanded={isOpen}
                 aria-controls="account-menu"
                 onClick={() => setIsOpen((open) => !open)}
@@ -154,7 +156,7 @@ export function Header({ user }: { user: PublicUser | null }) {
                     onClick={() => setIsOpen(false)}
                   >
                     <House aria-hidden="true" />
-                    Home
+                    {t('home')}
                   </Link>
                   <Link
                     href="/settings/profile"
@@ -162,7 +164,7 @@ export function Header({ user }: { user: PublicUser | null }) {
                     aria-current={pathname === '/settings/profile' ? 'page' : undefined}
                   >
                     <CircleUserRound aria-hidden="true" />
-                    Profile
+                    {t('profile')}
                   </Link>
                   <Link
                     href="/settings/households"
@@ -171,7 +173,7 @@ export function Header({ user }: { user: PublicUser | null }) {
                     aria-current={pathname === '/settings/households' ? 'page' : undefined}
                   >
                     <House aria-hidden="true" />
-                    Households
+                    {t('households')}
                   </Link>
                   <Link
                     href="/settings/sources"
@@ -179,7 +181,7 @@ export function Header({ user }: { user: PublicUser | null }) {
                     aria-current={pathname === '/settings/sources' ? 'page' : undefined}
                   >
                     <Database aria-hidden="true" />
-                    Sources
+                    {t('sources')}
                   </Link>
                   <Link
                     href="/settings/appearance"
@@ -187,7 +189,7 @@ export function Header({ user }: { user: PublicUser | null }) {
                     aria-current={pathname === '/settings/appearance' ? 'page' : undefined}
                   >
                     <Palette aria-hidden="true" />
-                    Appearance
+                    {t('appearance')}
                   </Link>
                   {canOfferInstall ? (
                     <button
@@ -215,7 +217,7 @@ export function Header({ user }: { user: PublicUser | null }) {
                       }}
                     >
                       {mode === 'light' ? <MoonIcon /> : <SunIcon />}
-                      {mode === 'light' ? 'Dark mode' : 'Light mode'}
+                      {mode === 'light' ? t('darkMode') : t('lightMode')}
                     </button>
                   ) : null}
                   <FeedbackModal onClose={() => setIsOpen(false)} />
@@ -228,7 +230,7 @@ export function Header({ user }: { user: PublicUser | null }) {
               <button
                 type="button"
                 className="iconButton"
-                aria-label="Open navigation menu"
+                aria-label={t('openNavigationMenu')}
                 aria-expanded={isOpen}
                 aria-controls="account-menu"
                 onClick={() => setIsOpen((open) => !open)}
@@ -251,10 +253,10 @@ export function Header({ user }: { user: PublicUser | null }) {
                     </button>
                   ) : null}
                   <Link href="/login" className="accountMenuItem">
-                    Log in
+                    {t('login')}
                   </Link>
                   <Link href="/register" className="accountMenuItem">
-                    Register
+                    {t('register')}
                   </Link>
                   {isMobile && pathname === '/' ? (
                     <InfoModal triggerVariant="menuItem" onClose={() => setIsOpen(false)} />
@@ -269,17 +271,17 @@ export function Header({ user }: { user: PublicUser | null }) {
                       }}
                     >
                       {mode === 'light' ? <MoonIcon /> : <SunIcon />}
-                      {mode === 'light' ? 'Dark mode' : 'Light mode'}
+                      {mode === 'light' ? t('darkMode') : t('lightMode')}
                     </button>
                   ) : null}
                 </div>
               ) : null}
             </div>
           ) : (
-            <nav className="publicNav" aria-label="Account">
-              <Link href="/login">Log in</Link>
+            <nav className="publicNav" aria-label={t('account')}>
+              <Link href="/login">{t('login')}</Link>
               <Link href="/register" className="publicNavPrimary">
-                Register
+                {t('register')}
               </Link>
             </nav>
           )}

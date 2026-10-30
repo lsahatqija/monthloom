@@ -1,9 +1,14 @@
-import { expect, it } from 'vitest';
+import { Constants } from '@monthloom/contracts';
+import { describe, expect, it } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
 import type { EmailSender } from '../../src/infrastructure/email/email-sender.js';
 import { AutomatedEmailService } from '../../src/modules/email/automated-email.service.js';
-import { resendTemplateDefinitions } from '../../src/modules/email/resend-template-definitions.js';
+import {
+  localizedTemplateAlias,
+  resendTemplateDefinitions,
+  selectResendTemplateDefinitions,
+} from '../../src/modules/email/resend-template-definitions.js';
 
 it('uses the selected feedback type in the Resend template subject', () => {
   expect(
@@ -13,11 +18,13 @@ it('uses the selected feedback type in the Resend template subject', () => {
 
 it('escapes user-controlled values before passing them to email templates', async () => {
   const sender = mock<EmailSender>();
+  const expiresAt = new Date('2026-03-01T12:00:00Z');
   await new AutomatedEmailService(sender).sendWelcome({
     to: 'person@example.com',
     displayName: '<img onerror="alert(1)">',
     verificationUrl: 'https://example.com/?a=1&b=2',
-    expiresIn: '24 hours',
+    expiresAt,
+    locale: 'en',
   });
   expect(sender.send).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -25,10 +32,77 @@ it('escapes user-controlled values before passing them to email templates', asyn
       variables: {
         DISPLAY_NAME: '&lt;img onerror=&quot;alert(1)&quot;&gt;',
         VERIFICATION_URL: 'https://example.com/?a=1&amp;b=2',
-        EXPIRES_IN: '24 hours',
+        EXPIRES_AT: new Intl.DateTimeFormat('en', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'UTC',
+          timeZoneName: 'short',
+        }).format(expiresAt),
       },
     }),
   );
+});
+
+describe('localized product email', () => {
+  it('defines every user-facing template for every supported locale', () => {
+    for (const locale of Constants.SUPPORTED_LOCALES) {
+      for (const template of [
+        'welcome',
+        'email-verification',
+        'password-reset',
+        'household-invitation',
+        'monthly-balance',
+      ] as const) {
+        const definition = resendTemplateDefinitions.find(
+          (item) => item.alias === localizedTemplateAlias(template, locale),
+        );
+        expect(definition?.html).toContain(`<html lang="${locale}">`);
+      }
+    }
+    expect(resendTemplateDefinitions).toHaveLength(Constants.SUPPORTED_LOCALES.length * 5 + 1);
+    expect(selectResendTemplateDefinitions()).toHaveLength(resendTemplateDefinitions.length);
+    expect(selectResendTemplateDefinitions('monthloom-password-reset-fr')).toHaveLength(1);
+    expect(selectResendTemplateDefinitions('monthloom-welcome-fr')[0]).toMatchObject({
+      subject: 'Bienvenue sur Monthloom',
+    });
+    expect(selectResendTemplateDefinitions('monthloom-welcome-tr')[0]?.html).toContain(
+      'otomatik bir mesajdır',
+    );
+    expect(selectResendTemplateDefinitions('monthloom-welcome-de')[0]?.html).toContain(
+      'Hallo {{{DISPLAY_NAME}}}',
+    );
+  });
+
+  it('selects the locale alias and formats a monthly report with its locale and currency', async () => {
+    const sender = mock<EmailSender>();
+    await new AutomatedEmailService(sender).sendMonthlyReport({
+      to: 'person@example.com',
+      displayName: 'Person',
+      householdName: 'Maison',
+      month: '2026-03',
+      currency: 'EUR',
+      income: '1234.50',
+      expenses: '200',
+      leftover: '1034.50',
+      reportUrl: 'https://example.com',
+      locale: 'fr',
+    });
+
+    expect(sender.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        templateId: 'monthloom-monthly-balance-fr',
+        variables: expect.objectContaining({
+          MONTH_LABEL: 'mars 2026',
+          INCOME: new Intl.NumberFormat('fr', { style: 'currency', currency: 'EUR' }).format(
+            1234.5,
+          ),
+        }),
+      }),
+    );
+  });
 });
 
 it('escapes feedback while preserving line breaks in its template variables', async () => {

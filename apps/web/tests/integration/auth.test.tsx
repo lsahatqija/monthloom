@@ -3,13 +3,17 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LoginForm } from '../../src/features/auth/login-form';
+import { LogoutButton } from '../../src/features/auth/logout-button';
 import { renderWithQuery } from '../render';
 
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
 
 describe('login form + validation + query + HTTP client', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    document.cookie = 'monthloom-locale=; Path=/; Max-Age=0';
+  });
 
   it('shows validation errors without making a request', async () => {
     const fetch = vi.fn();
@@ -22,7 +26,7 @@ describe('login form + validation + query + HTTP client', () => {
   });
 
   it('submits credentials and refreshes auth state before navigating', async () => {
-    const fetch = vi.fn().mockResolvedValue(Response.json({ user: { id: 'user' } }));
+    const fetch = vi.fn().mockResolvedValue(Response.json({ user: { id: 'user', locale: 'tr' } }));
     vi.stubGlobal('fetch', fetch);
     const { client } = renderWithQuery(<LoginForm redirectTo="/dashboard" />);
     const invalidate = vi.spyOn(client, 'invalidateQueries');
@@ -39,6 +43,7 @@ describe('login form + validation + query + HTTP client', () => {
       }),
     );
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['auth', 'me'] });
+    expect(document.cookie).toContain('monthloom-locale=tr');
     expect(router.refresh).toHaveBeenCalled();
   });
 
@@ -50,6 +55,7 @@ describe('login form + validation + query + HTTP client', () => {
           {
             error: {
               code: 'AUTHENTICATION_ERROR',
+              reason: 'INVALID_CREDENTIALS',
               message: 'Invalid email or password.',
             },
           },
@@ -63,5 +69,16 @@ describe('login form + validation + query + HTTP client', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Log in' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Invalid email or password.');
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('keeps the remembered locale after logout', async () => {
+    document.cookie = 'monthloom-locale=fr; Path=/';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
+
+    renderWithQuery(<LogoutButton />);
+    await userEvent.click(screen.getByRole('button', { name: 'Log out' }));
+
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/'));
+    expect(document.cookie).toContain('monthloom-locale=fr');
   });
 });

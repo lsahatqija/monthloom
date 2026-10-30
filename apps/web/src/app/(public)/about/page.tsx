@@ -1,17 +1,19 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 
 import { PageContainer } from '../../../components/ui/index';
 
-export const metadata: Metadata = { title: 'About' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Metadata');
+  return { title: t('about') };
+}
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const t = await getTranslations('Pages.about');
   return (
     <PageContainer>
-      <h1>About Monthloom</h1>
-      <p>
-        Monthloom helps households track shared income and expenses, organize recurring entries,
-        and understand each month together.
-      </p>
+      <h1>{t('title')}</h1>
+      <p>{t('description')}</p>
     </PageContainer>
   );
 }

@@ -1,6 +1,8 @@
+import type { Locale } from '@monthloom/contracts';
+
 import type { EmailSender } from '../../infrastructure/email/index.js';
 
-import { resendTemplateAliases } from './resend-template-definitions.js';
+import { localizedTemplateAlias, resendTemplateAliases } from './resend-template-definitions.js';
 
 function escapeHtml(value: string): string {
   return value.replace(
@@ -11,21 +13,52 @@ function escapeHtml(value: string): string {
   );
 }
 
+function formatDateTime(value: Date, locale: Locale): string {
+  return escapeHtml(
+    new Intl.DateTimeFormat(locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'UTC',
+      timeZoneName: 'short',
+    }).format(value),
+  );
+}
+
+function formatMonth(month: string, locale: Locale): string {
+  const [year, monthNumber] = month.split('-').map(Number);
+  return escapeHtml(
+    new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+      new Date(Date.UTC(year!, monthNumber! - 1, 1)),
+    ),
+  );
+}
+
+function formatMoney(value: string | number, currency: string, locale: Locale): string {
+  return escapeHtml(
+    new Intl.NumberFormat(locale, { style: 'currency', currency }).format(Number(value)),
+  );
+}
+
 export interface LinkEmailInput {
   to: string;
   displayName: string;
   url: string;
+  locale: Locale;
 }
 
 export interface WelcomeEmailInput {
   to: string;
   displayName: string;
   verificationUrl: string;
-  expiresIn: string;
+  expiresAt: Date;
+  locale: Locale;
 }
 
 export interface PasswordResetEmailInput extends LinkEmailInput {
-  expiresIn: string;
+  expiresAt: Date;
 }
 
 export interface HouseholdInvitationEmailInput {
@@ -34,17 +67,20 @@ export interface HouseholdInvitationEmailInput {
   householdName: string;
   invitationUrl: string;
   expiresAt: Date;
+  locale: Locale;
 }
 
 export interface MonthlyReportEmailInput {
   to: string;
   displayName: string;
   householdName: string;
-  monthLabel: string;
-  income: string;
-  expenses: string;
-  leftover: string;
+  month: string;
+  currency: string;
+  income: string | number;
+  expenses: string | number;
+  leftover: string | number;
   reportUrl: string;
+  locale: Locale;
 }
 
 export interface FeedbackEmailInput {
@@ -67,25 +103,25 @@ export class AutomatedEmailService {
       kind: 'template',
       label: 'welcome',
       to: input.to,
-      templateId: resendTemplateAliases.welcome,
+      templateId: localizedTemplateAlias('welcome', input.locale),
       variables: {
         DISPLAY_NAME: escapeHtml(input.displayName),
         VERIFICATION_URL: escapeHtml(input.verificationUrl),
-        EXPIRES_IN: escapeHtml(input.expiresIn),
+        EXPIRES_AT: formatDateTime(input.expiresAt, input.locale),
       },
     });
   }
 
-  sendAccountVerification(input: LinkEmailInput & { expiresIn: string }): Promise<void> {
+  sendAccountVerification(input: LinkEmailInput & { expiresAt: Date }): Promise<void> {
     return this.sender.send({
       kind: 'template',
       label: 'account-verification',
       to: input.to,
-      templateId: resendTemplateAliases.emailVerification,
+      templateId: localizedTemplateAlias('email-verification', input.locale),
       variables: {
         DISPLAY_NAME: escapeHtml(input.displayName),
         VERIFICATION_URL: escapeHtml(input.url),
-        EXPIRES_IN: escapeHtml(input.expiresIn),
+        EXPIRES_AT: formatDateTime(input.expiresAt, input.locale),
       },
     });
   }
@@ -95,11 +131,11 @@ export class AutomatedEmailService {
       kind: 'template',
       label: 'password-reset',
       to: input.to,
-      templateId: resendTemplateAliases.passwordReset,
+      templateId: localizedTemplateAlias('password-reset', input.locale),
       variables: {
         DISPLAY_NAME: escapeHtml(input.displayName),
         RESET_URL: escapeHtml(input.url),
-        EXPIRES_IN: escapeHtml(input.expiresIn),
+        EXPIRES_AT: formatDateTime(input.expiresAt, input.locale),
       },
     });
   }
@@ -109,12 +145,12 @@ export class AutomatedEmailService {
       kind: 'template',
       label: 'household-invitation',
       to: input.to,
-      templateId: resendTemplateAliases.householdInvitation,
+      templateId: localizedTemplateAlias('household-invitation', input.locale),
       variables: {
         INVITER_NAME: escapeHtml(input.inviterName),
         HOUSEHOLD_NAME: escapeHtml(input.householdName),
         INVITATION_URL: escapeHtml(input.invitationUrl),
-        EXPIRES_AT: escapeHtml(input.expiresAt.toISOString()),
+        EXPIRES_AT: formatDateTime(input.expiresAt, input.locale),
       },
     });
   }
@@ -124,14 +160,14 @@ export class AutomatedEmailService {
       kind: 'template',
       label: 'monthly-balance',
       to: input.to,
-      templateId: resendTemplateAliases.monthlyBalance,
+      templateId: localizedTemplateAlias('monthly-balance', input.locale),
       variables: {
         DISPLAY_NAME: escapeHtml(input.displayName),
         HOUSEHOLD_NAME: escapeHtml(input.householdName),
-        MONTH_LABEL: escapeHtml(input.monthLabel),
-        INCOME: escapeHtml(input.income),
-        EXPENSES: escapeHtml(input.expenses),
-        LEFTOVER: escapeHtml(input.leftover),
+        MONTH_LABEL: formatMonth(input.month, input.locale),
+        INCOME: formatMoney(input.income, input.currency, input.locale),
+        EXPENSES: formatMoney(input.expenses, input.currency, input.locale),
+        LEFTOVER: formatMoney(input.leftover, input.currency, input.locale),
         REPORT_URL: escapeHtml(input.reportUrl),
       },
     });

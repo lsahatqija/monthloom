@@ -2,14 +2,17 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 
 import { Button, Card, EmptyState, LoadingIndicator, Alert } from '../../components/ui/index';
-import { isApiClientError } from '../../lib/api/errors';
+import { useApiErrorMessage } from '../../lib/api/localized-error';
 import { webConfig } from '../../lib/config/env';
 
 import { deleteFile, filesKeys, listFiles } from './files.api';
 
 export function FileList() {
+  const t = useTranslations('Files');
+  const errorMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
 
   const query = useQuery({ queryKey: filesKeys.list, queryFn: listFiles });
@@ -21,24 +24,26 @@ export function FileList() {
     },
   });
 
-  if (query.isLoading) return <LoadingIndicator label="Loading files..." />;
+  if (query.isLoading) return <LoadingIndicator label={t('loading')} />;
 
   if (query.isError) {
-    return (
-      <Alert variant="error">
-        {isApiClientError(query.error) ? query.error.message : 'Failed to load files.'}
-      </Alert>
-    );
+    return <Alert variant="error">{errorMessage(query.error, t('loadError'))}</Alert>;
   }
 
   const files = query.data?.files ?? [];
 
   if (files.length === 0) {
-    return <EmptyState title="No files yet" description="Upload an image above to see it here." />;
+    return <EmptyState title={t('emptyTitle')} description={t('emptyDescription')} />;
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 'var(--space-4)' }}>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+        gap: 'var(--space-4)',
+      }}
+    >
       {files.map((file) => (
         <Card key={file.id}>
           <Image
@@ -55,7 +60,7 @@ export function FileList() {
             onClick={() => deleteMutation.mutate(file.id)}
             disabled={deleteMutation.isPending}
           >
-            Delete
+            {t('delete')}
           </Button>
         </Card>
       ))}

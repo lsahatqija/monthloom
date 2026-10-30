@@ -12,16 +12,16 @@ import {
 } from 'react';
 
 export const THEMES = [
-  { id: 'linen-sage', label: 'Linen & Sage' },
-  { id: 'sea-glass', label: 'Sea Glass' },
-  { id: 'lavender-mist', label: 'Lavender Mist' },
-  { id: 'apricot-cotton', label: 'Apricot Cotton' },
-  { id: 'blue-hour', label: 'Blue Hour' },
-  { id: 'rosewood-ember', label: 'Rosewood Ember' },
-  { id: 'golden-hour', label: 'Golden Hour' },
-  { id: 'terracotta-grove', label: 'Terracotta Grove' },
-  { id: 'high-contrast', label: 'High Contrast' },
-  { id: 'monochrome', label: 'Monochrome' },
+  { id: 'linen-sage' },
+  { id: 'sea-glass' },
+  { id: 'lavender-mist' },
+  { id: 'apricot-cotton' },
+  { id: 'blue-hour' },
+  { id: 'rosewood-ember' },
+  { id: 'golden-hour' },
+  { id: 'terracotta-grove' },
+  { id: 'high-contrast' },
+  { id: 'monochrome' },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]['id'];

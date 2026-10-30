@@ -5,6 +5,7 @@
  * application layer can use the same initial configuration.
  */
 export class Defaults {
+  static readonly USER_LOCALE = 'en' as const;
   static readonly THEME = 'linen-sage' as const;
   static readonly COLOR_MODE = 'light' as const;
   static readonly DARK_HEADER_IN_LIGHT_MODE = false;

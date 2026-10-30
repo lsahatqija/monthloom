@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '../../components/ui/index';
 
@@ -16,6 +17,7 @@ function LogoutIcon() {
 }
 
 export function LogoutButton({ className }: { className?: string }) {
+  const t = useTranslations('Auth');
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -38,7 +40,7 @@ export function LogoutButton({ className }: { className?: string }) {
       disabled={mutation.isPending}
     >
       <LogoutIcon />
-      {mutation.isPending ? 'Logging out...' : 'Log out'}
+      {mutation.isPending ? t('loggingOut') : t('logout')}
     </Button>
   );
 }

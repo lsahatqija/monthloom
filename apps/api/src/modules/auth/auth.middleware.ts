@@ -19,7 +19,7 @@ export function createAuthMiddleware(authService: AuthService) {
   const requireAuth = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
     const user = await resolveUser(req);
     if (!user) {
-      next(new AuthenticationError('Authentication required.'));
+      next(new AuthenticationError('Authentication required.', 'AUTHENTICATION_REQUIRED'));
       return;
     }
     req.authUser = user;

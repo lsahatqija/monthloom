@@ -8,7 +8,9 @@ export async function requireHouseholdMember(
   userId: string,
 ): Promise<void> {
   if (!(await households.isMember(householdId, userId))) {
-    throw new AuthorizationError('You are not a member of this household.');
+    throw new AuthorizationError(
+      'You are not a member of this household.',
+      'HOUSEHOLD_ACCESS_DENIED',
+    );
   }
 }
-

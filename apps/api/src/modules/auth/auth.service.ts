@@ -1,5 +1,6 @@
 import {
   Constants,
+  Defaults,
   type ForgotPasswordRequest,
   type LoginRequest,
   type PublicUser,
@@ -46,7 +47,10 @@ export class AuthService {
 
     const existing = await this.userRepository.findByEmail(email);
     if (existing) {
-      throw new ConflictError('An account with this email already exists.');
+      throw new ConflictError(
+        'An account with this email already exists.',
+        'EMAIL_ALREADY_REGISTERED',
+      );
     }
 
     const passwordHash = await hashPassword(input.password);
@@ -56,17 +60,19 @@ export class AuthService {
       displayName: input.displayName,
       profileImage: input.profileImage,
       desiredColor: input.desiredColor,
+      locale: Defaults.USER_LOCALE,
     });
 
     const sessionToken = await this.createSession(user.id);
-    let verification: { tokenHash: string; url: string } | undefined;
+    let verification: { tokenHash: string; url: string; expiresAt: Date } | undefined;
     try {
       verification = await this.createEmailVerificationToken(user.id);
       await this.emailService.sendWelcome({
         to: user.email,
         displayName: user.displayName,
         verificationUrl: verification.url,
-        expiresIn: '24 hours',
+        expiresAt: verification.expiresAt,
+        locale: user.locale,
       });
     } catch (error) {
       if (verification) {
@@ -116,7 +122,8 @@ export class AuthService {
         to: user.email,
         displayName: user.displayName,
         url: new URL(`/reset-password/${token}`, config.web.publicUrl).toString(),
-        expiresIn: '1 hour',
+        expiresAt,
+        locale: user.locale,
       });
     } catch (error) {
       await this.sessionRepository.deletePasswordResetToken(tokenHash).catch(() => undefined);
@@ -132,7 +139,11 @@ export class AuthService {
       new Date(),
     );
     if (!reset) {
-      throw new ValidationError('This password reset link is invalid or has expired.');
+      throw new ValidationError(
+        'This password reset link is invalid or has expired.',
+        undefined,
+        'PASSWORD_RESET_TOKEN_INVALID',
+      );
     }
   }
 
@@ -146,7 +157,8 @@ export class AuthService {
         to: user.email,
         displayName: user.displayName,
         url: verification.url,
-        expiresIn: '24 hours',
+        expiresAt: verification.expiresAt,
+        locale: user.locale,
       });
     } catch (error) {
       await this.sessionRepository
@@ -163,7 +175,11 @@ export class AuthService {
       new Date(),
     );
     if (!verified) {
-      throw new ValidationError('This email verification link is invalid or has expired.');
+      throw new ValidationError(
+        'This email verification link is invalid or has expired.',
+        undefined,
+        'EMAIL_VERIFICATION_TOKEN_INVALID',
+      );
     }
   }
 
@@ -198,17 +214,19 @@ export class AuthService {
 
   private async createEmailVerificationToken(
     userId: string,
-  ): Promise<{ tokenHash: string; url: string }> {
+  ): Promise<{ tokenHash: string; url: string; expiresAt: Date }> {
     const token = generateSessionToken();
     const tokenHash = hashSessionToken(token);
+    const expiresAt = new Date(Date.now() + Constants.EMAIL_VERIFICATION_TTL_MS);
     await this.sessionRepository.createEmailVerificationToken({
       userId,
       tokenHash,
-      expiresAt: new Date(Date.now() + Constants.EMAIL_VERIFICATION_TTL_MS),
+      expiresAt,
     });
     return {
       tokenHash,
       url: new URL(`/verify-email/${token}`, config.web.publicUrl).toString(),
+      expiresAt,
     };
   }
 }

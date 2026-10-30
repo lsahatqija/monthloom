@@ -27,7 +27,7 @@ describe('authentication HTTP + PostgreSQL', () => {
 
   it('rejects duplicates, invalid input and incorrect credentials', async () => {
     const { email } = await register();
-    await request(app)
+    const duplicate = await request(app)
       .post(`${api}/auth/register`)
       .send({
         email,
@@ -37,11 +37,13 @@ describe('authentication HTTP + PostgreSQL', () => {
         desiredColor: 'indigo',
       })
       .expect(409);
+    expect(duplicate.body.error.reason).toBe('EMAIL_ALREADY_REGISTERED');
     const invalid = await request(app)
       .post(`${api}/auth/register`)
       .send({ email: 'invalid' })
       .expect(400);
     expect(invalid.body.error.code).toBe('VALIDATION_ERROR');
+    expect(invalid.body.error.reason).toBe('INVALID_INPUT');
     const wrong = await request(app)
       .post(`${api}/auth/login`)
       .send({ email, password: 'wrong' })
@@ -51,6 +53,7 @@ describe('authentication HTTP + PostgreSQL', () => {
       .send({ email: 'absent@example.com', password })
       .expect(401);
     expect(wrong.body.error.message).toBe(missing.body.error.message);
+    expect(wrong.body.error.reason).toBe('INVALID_CREDENTIALS');
   });
 
   it('verifies email once, resets the password once and revokes existing sessions', async () => {

@@ -1,19 +1,24 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 
 import { PageContainer } from '@/components/ui/index';
 import { ForgotPasswordForm } from '@/features/auth/forgot-password-form';
 
-export const metadata: Metadata = { title: 'Forgot password' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Metadata');
+  return { title: t('forgotPassword') };
+}
 
-export default function ForgotPasswordPage() {
+export default async function ForgotPasswordPage() {
+  const t = await getTranslations('Pages.forgotPassword');
   return (
     <PageContainer>
-      <h1>Forgot your password?</h1>
-      <p>Enter your account email and we will send you a secure reset link.</p>
+      <h1>{t('title')}</h1>
+      <p>{t('description')}</p>
       <ForgotPasswordForm />
       <p>
-        Remembered it? <Link href="/login">Back to log in</Link>
+        {t('remembered')} <Link href="/login">{t('backToLogin')}</Link>
       </p>
     </PageContainer>
   );

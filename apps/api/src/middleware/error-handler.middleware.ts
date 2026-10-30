@@ -31,7 +31,14 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     }
 
     res.status(err.statusCode).json({
-      error: { code: err.code, message: err.message, details: err.details, requestId },
+      error: {
+        code: err.code,
+        reason: err.reason,
+        params: err.params,
+        message: err.message,
+        details: err.details,
+        requestId,
+      },
     });
     return;
   }
@@ -40,6 +47,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     res.status(400).json({
       error: {
         code: 'VALIDATION_ERROR' satisfies ApiErrorCode,
+        reason: 'INVALID_INPUT',
         message: 'The submitted data is invalid.',
         details: zodErrorToDetails(err),
         requestId,
@@ -51,7 +59,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   if (err instanceof MulterError) {
     const code: ApiErrorCode = 'VALIDATION_ERROR';
     res.status(400).json({
-      error: { code, message: mapMulterMessage(err), requestId },
+      error: { code, reason: mapMulterReason(err), message: mapMulterMessage(err), requestId },
     });
     return;
   }
@@ -60,6 +68,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     res.status(400).json({
       error: {
         code: 'VALIDATION_ERROR' satisfies ApiErrorCode,
+        reason: 'INVALID_JSON',
         message: 'The request body is not valid JSON.',
         requestId,
       },
@@ -71,6 +80,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     res.status(413).json({
       error: {
         code: 'VALIDATION_ERROR' satisfies ApiErrorCode,
+        reason: 'PAYLOAD_TOO_LARGE',
         message: 'The request payload is too large.',
         requestId,
       },
@@ -83,6 +93,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   res.status(500).json({
     error: {
       code: 'INTERNAL_ERROR' satisfies ApiErrorCode,
+      reason: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred.',
       requestId,
     },
@@ -93,6 +104,12 @@ function mapMulterMessage(err: MulterError): string {
   if (err.code === 'LIMIT_FILE_SIZE') return 'The uploaded file exceeds the maximum allowed size.';
   if (err.code === 'LIMIT_UNEXPECTED_FILE') return 'Unexpected file field in the upload.';
   return 'The uploaded multipart data could not be processed.';
+}
+
+function mapMulterReason(err: MulterError) {
+  if (err.code === 'LIMIT_FILE_SIZE') return 'UPLOAD_TOO_LARGE' as const;
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') return 'UPLOAD_FIELD_INVALID' as const;
+  return 'UPLOAD_INVALID' as const;
 }
 
 function isPayloadTooLargeError(err: unknown): boolean {

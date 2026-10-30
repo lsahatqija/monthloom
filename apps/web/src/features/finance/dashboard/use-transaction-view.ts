@@ -1,4 +1,5 @@
 import { Defaults, type HouseholdTransaction } from '@monthloom/contracts';
+import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 
 import {
@@ -12,14 +13,20 @@ import {
 } from './transaction-view';
 
 export function useTransactionView(transactions: HouseholdTransaction[]) {
+  const locale = useLocale();
+  const t = useTranslations('Finance');
+  const typeLabels = useTranslations('Labels.expenseTypes');
   const [sortKey, setSortKey] = useState<TransactionSortKey>(Defaults.TRANSACTION_SORT_KEY);
   const [sortDirection, setSortDirection] = useState<SortDirection>(
     Defaults.TRANSACTION_SORT_DIRECTION,
   );
   const [filters, setFilters] = useState<TransactionFilters>(emptyTransactionFilters);
   const visibleTransactions = useMemo(
-    () => filterAndSortTransactions(transactions, filters, sortKey, sortDirection),
-    [filters, sortDirection, sortKey, transactions],
+    () =>
+      filterAndSortTransactions(transactions, filters, sortKey, sortDirection, locale, (entry) =>
+        entry.kind === 'income' ? t('income') : typeLabels(entry.type ?? 'other'),
+      ),
+    [filters, locale, sortDirection, sortKey, t, transactions, typeLabels],
   );
 
   const sortBy = (key: TransactionSortKey) => {
