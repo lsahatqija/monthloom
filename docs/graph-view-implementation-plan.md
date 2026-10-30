@@ -592,27 +592,27 @@ Turn raw range transactions into stable, chart-independent view models.
 
 ### Tasks
 
-- [ ] Add shared date iteration and integer-cent helpers where existing helpers are not reusable.
-- [ ] Implement daily and cumulative Balance aggregators.
-- [ ] Implement Category aggregators for user, source, and transaction type.
-- [ ] Implement Overview combine and compare aggregators.
-- [ ] Implement logarithmic radar normalization and raw-value retention.
-- [ ] Implement deterministic color and pattern assignment.
-- [ ] Define reusable formatter helpers for currency, percentage, day, and month labels.
-- [ ] Define projection-aware chart view-model types.
+- [x] Add shared date iteration and integer-cent helpers where existing helpers are not reusable.
+- [x] Implement daily and cumulative Balance aggregators.
+- [x] Implement Category aggregators for user, source, and transaction type.
+- [x] Implement Overview combine and compare aggregators.
+- [x] Implement logarithmic radar normalization and raw-value retention.
+- [x] Implement deterministic color and pattern assignment.
+- [x] Define reusable formatter helpers for currency, percentage, day, and month labels.
+- [x] Define projection-aware chart view-model types.
 
 ### Verification
 
-- [ ] Test zero-transaction days and ranges.
-- [ ] Test positive, negative, and zero daily/cumulative balances.
-- [ ] Test that cumulative calculations begin at zero and ignore earlier transactions.
-- [ ] Test every category grouping and all-group retention.
-- [ ] Test realized/projected splits and combined percentages.
-- [ ] Test Overview with one user, multiple users, combine, compare, and automatic all-user reset.
-- [ ] Test omission of zero-value radar dimensions.
-- [ ] Test normalization when all values are zero and when values differ by several orders of
+- [x] Test zero-transaction days and ranges.
+- [x] Test positive, negative, and zero daily/cumulative balances.
+- [x] Test that cumulative calculations begin at zero and ignore earlier transactions.
+- [x] Test every category grouping and all-group retention.
+- [x] Test realized/projected splits and combined percentages.
+- [x] Test Overview with one user, multiple users, combine, compare, and automatic all-user reset.
+- [x] Test omission of zero-value radar dimensions.
+- [x] Test normalization when all values are zero and when values differ by several orders of
       magnitude.
-- [ ] Test stable colors across reordered data and changed periods.
+- [x] Test stable colors across reordered data and changed periods.
 
 ### Definition of done
 
@@ -621,6 +621,22 @@ Turn raw range transactions into stable, chart-independent view models.
 - Given the same inputs and options, every aggregator returns deterministic output.
 - Realized and projected components can be presented separately without recomputing transaction
   data inside chart components.
+
+### Milestone 3 result (2026-10-30)
+
+- Pure frontend aggregators now produce projection-aware Balance, Category, and Overview view
+  models without React or chart-library imports.
+- Monetary parsing and totals use checked integer cents. Balance ranges include every calendar day,
+  cumulative data starts with an explicit zero anchor, and symmetric domains include every exposed
+  realized, projected, and combined value.
+- Category results retain every non-zero group, split realized/projected totals, calculate combined
+  percentages, and sort deterministically. Overview results support combine and compare modes,
+  automatically restore all users after an empty selection, retain raw cents, and share one
+  logarithmic scale across visible radar series.
+- Stable light/dark chart colors, overflow patterns, semantic series colors, and locale-aware
+  currency, percentage, day, and month formatters are available to later chart milestones.
+- All 151 web unit tests pass, including 15 focused aggregation cases. Web production TypeScript
+  checking and lint for the new aggregation files pass.
 
 ---
 
