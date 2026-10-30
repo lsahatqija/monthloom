@@ -71,6 +71,9 @@ describe('localized product email', () => {
     expect(selectResendTemplateDefinitions('monthloom-welcome-tr')[0]?.html).toContain(
       'otomatik bir mesajdır',
     );
+    expect(selectResendTemplateDefinitions('monthloom-welcome-de')[0]?.html).toContain(
+      'Hallo {{{DISPLAY_NAME}}}',
+    );
   });
 
   it('selects the locale alias and formats a monthly report with its locale and currency', async () => {

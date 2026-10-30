@@ -4,7 +4,8 @@
 
 This plan introduces user-selected localization to Monthloom without coupling the API or future
 applications to the Next.js translation layer. The first supported locales are English (`en`),
-Albanian (`sq`), French (`fr`), and Turkish (`tr`), with English as the default and fallback.
+Albanian (`sq`), French (`fr`), Turkish (`tr`), and German (`de`), with English as the default and
+fallback.
 
 The web application will use `next-intl`. Shared contracts and the API will expose locale values,
 locale-neutral data, and machine-readable outcomes. Each phase below should be independently
@@ -13,10 +14,10 @@ reviewable and leave the application deployable.
 ## Agreed decisions
 
 - Store a user's locale on their profile.
-- Use `en`, `sq`, `fr`, and `tr` as BCP 47 locale identifiers.
+- Use `en`, `sq`, `fr`, `tr`, and `de` as BCP 47 locale identifiers.
 - Use English when no saved or remembered preference exists.
 - Resolve the locale in this order: authenticated user profile, locale cookie, English.
-- Keep authenticated URLs locale-neutral; do not introduce `/en`, `/fr`, `/sq`, or `/tr` routes.
+- Keep authenticated URLs locale-neutral; do not introduce locale-prefixed routes.
 - Use JSON/ICU message catalogs organized by feature.
 - Keep locale, household currency, and timezone as separate concepts.
 - Keep API contracts independent of `next-intl` and web catalog keys.
@@ -43,7 +44,7 @@ reason codes with its own localization library and catalogs.
 
 ## Phase 1: Add the locale contract and persistence
 
-- [x] Add `SUPPORTED_LOCALES = ['en', 'sq', 'fr', 'tr']` to the shared contracts.
+- [x] Add `SUPPORTED_LOCALES = ['en', 'sq', 'fr', 'tr', 'de']` to the shared contracts.
 - [x] Export a Zod `localeSchema` and inferred `Locale` type.
 - [x] Add `USER_LOCALE = 'en'` to `Defaults`.
 - [x] Add a non-null `locale` varchar column with an `en` default to the users table.
@@ -72,7 +73,7 @@ Likely files:
 Acceptance criteria:
 
 - Existing users remain valid and default to English after migration.
-- The API accepts only the four supported locale values.
+- The API accepts only the five supported locale values.
 - The selected locale survives logout, login, and API restarts because it is stored on the user.
 
 ## Phase 2: Configure `next-intl` in the web application
@@ -81,7 +82,7 @@ Acceptance criteria:
 - [x] Enable the `next-intl` plugin in `apps/web/next.config.mjs`.
 - [x] Create `apps/web/src/i18n/config.ts` with supported locales and the fallback locale.
 - [x] Create `apps/web/src/i18n/request.ts` to resolve the locale and load its catalog.
-- [x] Create initial `en.json`, `sq.json`, `fr.json`, and `tr.json` catalogs.
+- [x] Create initial `en.json`, `sq.json`, `fr.json`, `tr.json`, and `de.json` catalogs.
 - [x] Organize messages into feature namespaces such as `Common`, `Auth`, `Profile`, and `Finance`.
 - [x] Cache `getServerUser()` per request so root and nested layouts do not duplicate `/auth/me`.
 - [x] Wrap the application with `NextIntlClientProvider` in the root layout.
@@ -106,6 +107,7 @@ apps/web/messages/
   sq.json
   fr.json
   tr.json
+  de.json
 ```
 
 Acceptance criteria:
@@ -118,7 +120,7 @@ Acceptance criteria:
 ## Phase 3: Add profile selection and preference synchronization
 
 - [x] Add a language field to the profile form.
-- [x] Display language names in their own language: English, Shqip, Français, Türkçe.
+- [x] Display language names in their own language: English, Shqip, Français, Türkçe, Deutsch.
 - [x] Include the selected locale in the existing profile update request.
 - [x] On success, update or invalidate the current-user query.
 - [x] Write `monthloom-locale=<locale>` with `Path=/`, `SameSite=Lax`, and a long lifetime.
@@ -286,55 +288,68 @@ Acceptance criteria:
 
 ## Phase 8: Translate and review locale catalogs
 
-- [ ] Translate every value in `sq.json`, `fr.json`, and `tr.json`; do not leave English placeholder
-      copy except intentional brand names, technical identifiers, and user-provided content.
-- [ ] Preserve the complete English key structure in every locale catalog.
-- [ ] Preserve ICU arguments, plural/select branches, and rich-text tags exactly while translating
+- [x] Translate every value in `sq.json`, `fr.json`, `tr.json`, and `de.json`; do not leave English
+      placeholder copy except intentional brand names, technical identifiers, and user-provided
+      content.
+- [x] Preserve the complete English key structure in every locale catalog.
+- [x] Preserve ICU arguments, plural/select branches, and rich-text tags exactly while translating
       their surrounding prose.
-- [ ] Review Albanian, French, and Turkish financial terminology for consistent meanings across
-      dashboard, transactions, households, sources, and email.
+- [ ] Review Albanian, French, Turkish, and German financial terminology for consistent meanings
+      across dashboard, transactions, households, sources, and email (native-speaker review).
 - [ ] Review authentication, validation, error, onboarding, PWA, metadata, accessibility, and
-      transactional-email copy for natural phrasing in each locale.
+      transactional-email copy for natural phrasing in each locale (native-speaker review).
 - [ ] Check capitalization, punctuation, date/money context, and formal versus informal address for
-      consistency within each language.
-- [ ] Run catalog parity and ICU parsing tests after each locale is translated.
+      consistency within each language (native-speaker review).
+- [x] Run catalog parity and ICU parsing tests after each locale is translated.
 - [ ] Perform a native-speaker or professional review before release and record any intentionally
-      untranslated values.
+      untranslated values. Intentional values are recorded in
+      `docs/localization-intentionally-untranslated.md`; reviewer sign-off is still required.
 - [ ] Smoke-test each locale at narrow and wide viewport sizes, including keyboard and screen-reader
       labels.
 
 Acceptance criteria:
 
-- Albanian, French, and Turkish screens and user-facing email contain reviewed translations rather
-  than English fallback copy.
+- Albanian, French, Turkish, and German screens and user-facing email contain reviewed translations
+  rather than English fallback copy.
 - Every locale retains the same message keys, ICU variables, and rich-text placeholders as English.
 - Intentional untranslated values are documented and limited to brands, codes, and user content.
 
 ## Cross-cutting verification
 
-- [ ] Add a catalog-parity test that compares every locale's keys with `en.json`.
-- [ ] Fail validation for missing, extra, or malformed ICU messages.
-- [ ] Add TypeScript message-key augmentation where it improves call-site safety.
-- [ ] Audit hard-coded web strings with `rg` after every feature migration.
+- [x] Add a catalog-parity test that compares every locale's keys with `en.json`.
+- [x] Fail validation for missing, extra, or malformed ICU messages, changed arguments,
+      plural/select branches, and rich-text tags.
+- [x] Evaluate TypeScript message-key augmentation. It was not added because existing keys derived
+      from typed domain enums would require casts or a wider call-site refactor, reducing its value.
+- [x] Audit hard-coded web strings with `rg` after every feature migration. The remaining English
+      prose is diagnostic or the self-contained, locale-mapped global error fallback.
 - [ ] Test at least one locale with longer text and verify narrow layouts do not clip controls.
 - [ ] Verify keyboard and screen-reader labels in each locale.
-- [ ] Run `pnpm typecheck`.
-- [ ] Run `pnpm lint`.
-- [ ] Run contract, API, and web tests.
-- [ ] Run the production build.
+- [x] Run `pnpm typecheck`.
+- [x] Run `pnpm lint` (passes with one pre-existing React hook dependency warning).
+- [x] Run contract, API, and web tests.
+- [ ] Run the production build. Compilation, type validation, and static-page generation pass, but
+      standalone output cannot create symlinks on the current Windows host (`EPERM`).
+
+Verification last run on 2026-10-30. The dedicated test database was started for the API integration
+suite and removed afterward.
 
 ## Definition of done
 
-- [ ] English, Albanian, French, and Turkish can be selected from profile settings.
-- [ ] The selected locale persists in the database and is restored on the first authenticated render.
-- [ ] The application does not flash English before rendering the selected locale.
-- [ ] `<html lang>` and localized metadata match the active locale.
-- [ ] All first-party UI and accessibility strings come from catalogs.
-- [ ] Dates, numbers, money, pluralization, sorting, and user-facing search honor the active locale.
-- [ ] Raw API prose is never presented as the primary user-facing message.
-- [ ] User-facing transactional email uses the appropriate locale.
-- [ ] Every catalog has the same keys and valid ICU syntax.
-- [ ] Typecheck, lint, tests, and production build pass.
+- [x] English, Albanian, French, Turkish, and German can be selected from profile settings.
+- [x] The selected locale persists in the database and is restored on the first authenticated render.
+- [x] The application does not flash English before rendering the selected locale.
+- [x] `<html lang>` and localized metadata match the active locale.
+- [x] All first-party UI and accessibility strings come from catalogs or the localized global-error
+      fallback that renders outside the provider.
+- [x] Dates, numbers, money, pluralization, sorting, and user-facing search honor the active locale.
+- [x] Raw API prose is never presented as the primary user-facing message.
+- [x] User-facing transactional email uses the appropriate locale.
+- [x] Every catalog has the same keys and valid ICU syntax.
+- [x] Typecheck, lint, and contract/API/web tests pass.
+- [ ] Production build passes on the release host; the current Windows host blocks standalone-output
+      symlink creation after successful compilation and static-page generation.
+- [ ] Native-speaker review and narrow/wide viewport accessibility smoke tests are signed off.
 
 ## Deferred work
 
@@ -355,5 +370,5 @@ The following work should be added only when a concrete need appears:
 - `global-error.tsx` renders outside the normal provider when the root layout fails; it needs a small
   self-contained locale fallback based on the synchronized cookie.
 - Installed PWA manifest metadata may remain cached after a user changes language.
-- Albanian, French, and Turkish translations require human review for financial terminology and
-  natural phrasing before release.
+- Albanian, French, Turkish, and German translations require human review for financial terminology
+  and natural phrasing before release.

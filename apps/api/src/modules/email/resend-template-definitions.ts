@@ -253,7 +253,9 @@ function localizedDefinitions(locale: Locale) {
         ? 'Bonjour'
         : locale === 'tr'
           ? 'Merhaba'
-          : 'Përshëndetje';
+          : locale === 'de'
+            ? 'Hallo'
+            : 'Përshëndetje';
   return [
     {
       name: `Monthloom welcome (${locale})`,

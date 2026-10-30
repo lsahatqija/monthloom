@@ -1,3 +1,5 @@
+import { parse, type MessageFormatElement } from '@formatjs/icu-messageformat-parser';
+import type { Locale } from '@monthloom/contracts';
 import { render, screen } from '@testing-library/react';
 import { NextIntlClientProvider, useTranslations } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
@@ -32,21 +34,58 @@ function TransactionCounts() {
   );
 }
 
-describe('translations', () => {
-  it('keeps every locale catalog structurally aligned', () => {
-    const keys = (messages: object): string[] =>
-      Object.entries(messages).flatMap(([key, value]) =>
-        value && typeof value === 'object'
-          ? keys(value as object).map((nestedKey) => `${key}.${nestedKey}`)
-          : key,
-      );
-    const englishKeys = keys(en).sort();
+const catalogs = { de, en, fr, sq, tr } satisfies Record<Locale, object>;
 
-    expect(keys(de).sort()).toEqual(englishKeys);
-    expect(keys(sq).sort()).toEqual(englishKeys);
-    expect(keys(fr).sort()).toEqual(englishKeys);
-    expect(keys(tr).sort()).toEqual(englishKeys);
+function messagesByKey(messages: object, prefix = ''): Record<string, string> {
+  return Object.entries(messages).reduce<Record<string, string>>((result, [key, value]) => {
+    const messageKey = prefix ? `${prefix}.${key}` : key;
+    return Object.assign(
+      result,
+      value && typeof value === 'object'
+        ? messagesByKey(value as object, messageKey)
+        : { [messageKey]: value as string },
+    );
+  }, {});
+}
+
+function icuSignature(elements: MessageFormatElement[], context = ''): string[] {
+  return elements.flatMap((element) => {
+    if (element.type === 0) return [];
+    if (element.type === 7) return [`${context}pound`];
+    if (element.type === 8) {
+      return [
+        `${context}tag:${element.value}`,
+        ...icuSignature(element.children, `${context}tag:${element.value}>`),
+      ];
+    }
+
+    const marker = `${context}${element.type}:${element.value}`;
+    if (element.type !== 5 && element.type !== 6) return [marker];
+
+    return [
+      `${marker}:${Object.keys(element.options).sort().join(',')}`,
+      ...Object.entries(element.options).flatMap(([branch, option]) =>
+        icuSignature(option.value, `${marker}>${branch}>`),
+      ),
+    ];
   });
+}
+
+describe('translations', () => {
+  it.each(Object.entries(catalogs).filter(([locale]) => locale !== 'en'))(
+    'keeps the %s catalog aligned with English and its ICU messages valid',
+    (_locale, catalog) => {
+      const englishMessages = messagesByKey(en);
+      const localizedMessages = messagesByKey(catalog);
+
+      expect(Object.keys(localizedMessages).sort()).toEqual(Object.keys(englishMessages).sort());
+      for (const [key, englishMessage] of Object.entries(englishMessages)) {
+        expect(icuSignature(parse(localizedMessages[key]!)).sort()).toEqual(
+          icuSignature(parse(englishMessage)).sort(),
+        );
+      }
+    },
+  );
 
   it('renders a translated Server Component', async () => {
     render(await NotFound());
