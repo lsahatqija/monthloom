@@ -10,6 +10,13 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   tr: 'Türkçe',
   de: 'Deutsch',
 };
+export const LOCALE_FLAGS: Record<Locale, string> = {
+  en: '/flags/gb.svg',
+  sq: '/flags/al.svg',
+  fr: '/flags/fr.svg',
+  tr: '/flags/tr.svg',
+  de: '/flags/de.svg',
+};
 
 export function resolveLocale(profileLocale: unknown, cookieLocale: unknown): Locale {
   const profileResult = localeSchema.safeParse(profileLocale);

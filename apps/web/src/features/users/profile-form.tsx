@@ -8,13 +8,15 @@ import {
   type UpdateProfileRequest,
 } from '@monthloom/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { ProfileAppearanceFields } from '../../components/profile-appearance-fields';
 import { Alert, Button, FieldError, FormField, Input, Label } from '../../components/ui/index';
-import { LOCALE_NAMES } from '../../i18n/config';
+import { LOCALE_FLAGS, LOCALE_NAMES } from '../../i18n/config';
 import { setLocaleCookie } from '../../i18n/locale-cookie';
 import { useApiErrorMessage } from '../../lib/api/localized-error';
 import { authKeys, sendEmailVerification } from '../auth/auth.api';
@@ -46,6 +48,19 @@ export function ProfileForm({ user }: { user: PublicUser }) {
 
   const profileImage = watch('profileImage');
   const desiredColor = watch('desiredColor');
+  const locale = watch('locale');
+  const languageSelectRef = useRef<HTMLDetailsElement>(null);
+  const localeField = register('locale');
+
+  useEffect(() => {
+    const close = (event: PointerEvent) => {
+      if (!languageSelectRef.current?.contains(event.target as Node)) {
+        languageSelectRef.current?.removeAttribute('open');
+      }
+    };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, []);
 
   const mutation = useMutation({
     mutationFn: updateProfile,
@@ -98,17 +113,57 @@ export function ProfileForm({ user }: { user: PublicUser }) {
         <FieldError message={errors.displayName?.message} />
       </FormField>
 
-      <FormField>
-        <Label htmlFor="locale">{t('language')}</Label>
-        <select id="locale" className="input" {...register('locale')}>
-          {Constants.SUPPORTED_LOCALES.map((locale) => (
-            <option key={locale} value={locale} lang={locale}>
-              {LOCALE_NAMES[locale]}
-            </option>
-          ))}
-        </select>
+      <fieldset className="formField languagePicker">
+        <legend className="label">{t('language')}</legend>
+        <details
+          ref={languageSelectRef}
+          className="languageSelect"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' && languageSelectRef.current?.open) {
+              event.preventDefault();
+              languageSelectRef.current.open = false;
+              languageSelectRef.current.querySelector('summary')?.focus();
+            }
+          }}
+        >
+          <summary className="input languageSelectTrigger" lang={locale}>
+            <Image
+              className="languageFlag"
+              src={LOCALE_FLAGS[locale]}
+              width={28}
+              height={21}
+              alt=""
+              aria-hidden="true"
+            />
+            <span>{LOCALE_NAMES[locale]}</span>
+          </summary>
+          <div className="languageSelectOptions">
+            {Constants.SUPPORTED_LOCALES.map((option) => (
+              <label key={option} className="languageSelectOption" lang={option}>
+                <input
+                  type="radio"
+                  value={option}
+                  {...localeField}
+                  onChange={(event) => {
+                    void localeField.onChange(event);
+                    languageSelectRef.current?.removeAttribute('open');
+                  }}
+                />
+                <Image
+                  className="languageFlag"
+                  src={LOCALE_FLAGS[option]}
+                  width={28}
+                  height={21}
+                  alt=""
+                  aria-hidden="true"
+                />
+                <span>{LOCALE_NAMES[option]}</span>
+              </label>
+            ))}
+          </div>
+        </details>
         <FieldError message={errors.locale?.message} />
-      </FormField>
+      </fieldset>
 
       <ProfileAppearanceFields
         profileImage={profileImage}

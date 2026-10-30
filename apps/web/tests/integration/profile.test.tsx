@@ -1,5 +1,5 @@
 import type { PublicUser } from '@monthloom/contracts';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -33,12 +33,31 @@ describe('profile locale preference', () => {
     vi.stubGlobal('fetch', fetch);
     renderWithQuery(<ProfileForm user={user} />);
 
-    expect(screen.getByRole('option', { name: 'English' })).toHaveAttribute('lang', 'en');
-    expect(screen.getByRole('option', { name: 'Shqip' })).toHaveAttribute('lang', 'sq');
-    expect(screen.getByRole('option', { name: 'Français' })).toHaveAttribute('lang', 'fr');
-    expect(screen.getByRole('option', { name: 'Türkçe' })).toHaveAttribute('lang', 'tr');
+    const languagePicker = screen.getByRole('group', { name: 'Language' });
+    const languageTrigger = languagePicker.querySelector('summary');
+    expect(languageTrigger).toHaveTextContent('English');
+    expect(languageTrigger?.querySelector('img')).toHaveAttribute('src', '/flags/gb.svg');
+    await userEvent.click(languageTrigger!);
 
-    await userEvent.selectOptions(screen.getByLabelText('Language'), 'fr');
+    const english = within(languagePicker).getByRole('radio', { name: 'English' });
+    expect(english.closest('label')).toHaveAttribute('lang', 'en');
+    expect(english.closest('label')?.querySelector('img')).toHaveAttribute('src', '/flags/gb.svg');
+    expect(
+      within(languagePicker).getByRole('radio', { name: 'Shqip' }).closest('label'),
+    ).toHaveAttribute('lang', 'sq');
+    expect(
+      within(languagePicker).getByRole('radio', { name: 'Français' }).closest('label'),
+    ).toHaveAttribute('lang', 'fr');
+    expect(
+      within(languagePicker).getByRole('radio', { name: 'Türkçe' }).closest('label'),
+    ).toHaveAttribute('lang', 'tr');
+    expect(
+      within(languagePicker).getByRole('radio', { name: 'Deutsch' }).closest('label'),
+    ).toHaveAttribute('lang', 'de');
+
+    await userEvent.click(within(languagePicker).getByRole('radio', { name: 'Français' }));
+    expect(languageTrigger?.parentElement).not.toHaveAttribute('open');
+    expect(languageTrigger).toHaveTextContent('Français');
     await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() => expect(router.refresh).toHaveBeenCalled());
