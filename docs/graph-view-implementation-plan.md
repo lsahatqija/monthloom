@@ -112,6 +112,44 @@ branch deployable.
 - Axis labels, tooltips, legends, summaries, and the data table show actual currency values rather
   than only normalized values.
 
+### Production data and database migrations
+
+- Production already contains user data. Preserving that data is a release requirement for every
+  milestone.
+- The planned graph feature is database-schema-neutral by default: the range endpoint should read
+  the existing income, expense, recurrence, household, member, and source tables without changing
+  their stored representation.
+- Shared Zod transport schemas may be extended without a database migration when the persisted data
+  model does not change. Database schema changes must never be implied merely by a transport schema
+  change.
+- If implementation discovers that a database change is necessary, it belongs to the milestone
+  that first needs it. For this plan, the earliest expected decision point is Milestone 2, before
+  range API code relies on a persistent occurrence key or new index.
+- Never edit an already-applied migration. Add a new ordered migration under the existing Drizzle
+  migration system.
+- Production migrations must be backward-compatible with both the previously deployed API and the
+  new API so an application-image rollback remains possible.
+- Prefer an expand-and-migrate rollout:
+  1. Add nullable columns, new tables, or non-conflicting indexes without removing or reinterpreting
+     existing fields.
+  2. Backfill existing rows deterministically and idempotently.
+  3. Validate row counts, null counts, uniqueness, relationships, and representative finance totals.
+  4. Deploy code that can read the migrated representation while remaining compatible with old
+     rows during the rollout.
+  5. Add stricter constraints only after the backfill is proven complete.
+  6. Defer destructive cleanup to a later, separately reviewed release.
+- A schema-changing pull request must include migration tests starting from the full previously
+  released schema with representative existing data. Tests must prove both data preservation and
+  application behavior after migration; creating only a fresh database is insufficient.
+- Rehearse every data-transforming migration against a production-shaped database copy or an
+  anonymized snapshot before release. Record expected runtime and locking behavior.
+- The production updater already creates a pre-deployment backup and the API runs migrations before
+  accepting traffic. A schema-changing release must verify that the backup completed successfully,
+  identify the restore procedure, and include post-migration checks before the release is considered
+  healthy.
+- A destructive or non-backward-compatible migration must not use the automatic deployment channel.
+  It requires an explicit maintenance plan, tested restore path, and product-owner approval.
+
 ## UX and data behavior specification
 
 ### URL state
@@ -306,8 +344,10 @@ The endpoint:
 
 Projected transactions currently reuse a source transaction ID, so frontend keys and any new range
 logic must use a collision-safe occurrence identity such as `id + date + projected`. The contract
-may introduce an explicit occurrence key if testing shows that this is safer across recurrence
-edits.
+may introduce a computed occurrence key if testing shows that this is safer across recurrence
+edits. Prefer a computed transport field over a new persisted column. If persistence is genuinely
+required, Milestone 2 must add and validate the backward-compatible migration before the range API
+depends on it.
 
 ### Repository and recurrence strategy
 
@@ -397,13 +437,13 @@ extracting reusable controls.
 
 ### Tasks
 
-- [ ] Run and record the existing lint, typecheck, unit, integration, and build gates.
-- [ ] Add or verify characterization tests for current-month and future-month projections.
-- [ ] Cover recurring series with daily, weekly, monthly, and yearly intervals across month
+- [x] Run and record the existing lint, typecheck, unit, integration, and build gates.
+- [x] Add or verify characterization tests for current-month and future-month projections.
+- [x] Cover recurring series with daily, weekly, monthly, and yearly intervals across month
       boundaries.
-- [ ] Cover recurrence expiration, edited series, and realized occurrences replacing projections.
-- [ ] Add focused tests for current Home household/month URL restoration.
-- [ ] Record the current Home bundle size for comparison after adding Recharts.
+- [x] Cover recurrence expiration, edited series, and realized occurrences replacing projections.
+- [x] Add focused tests for current Home household/month URL restoration.
+- [x] Record the current Home bundle size for comparison after adding Recharts.
 
 ### Definition of done
 
@@ -411,6 +451,25 @@ extracting reusable controls.
 - Current recurrence and URL-selection behavior is captured by tests that would fail on an
   accidental semantic change.
 - The bundle baseline is recorded in the implementation pull request or project notes.
+
+### Milestone 0 result (2026-10-30)
+
+- Lint passed with one pre-existing `react-hooks/exhaustive-deps` warning in
+  `onboarding-tour.tsx`.
+- Production and test TypeScript checks passed.
+- The pre-change suite passed 282 tests in 39 files. The completed milestone passes 284 tests in 40
+  files after adding two characterization cases.
+- Existing tests already covered current/future projections, recurrence expiration, edited series,
+  and daily, weekly, monthly, and yearly recurrence across month boundaries.
+- A new PostgreSQL integration case proves that a realized occurrence suppresses only the matching
+  projected recurrence date.
+- A new frontend hook case proves that Home restores both `household` and `month` from the initial
+  URL and a later `popstate` event.
+- The native Windows build compiled, type-checked, and generated all routes, then encountered the
+  repository's documented `EPERM` restriction while creating standalone-output symlinks. The Linux
+  Docker production builds for both API and web completed successfully.
+- The production Home route baseline is 26.5 kB route JS, 178 kB first-load JS, and 87.3 kB
+  shared first-load JS, as reported by the Next.js Linux production build.
 
 ---
 
@@ -452,6 +511,11 @@ Serve one authorized, bounded collection containing the raw transactions needed 
 
 - [ ] Add shared range query and response schemas and exported TypeScript types.
 - [ ] Enforce `from <= to`, five-year past, and one-year future limits.
+- [ ] Record whether the range implementation requires a database schema change. The expected
+      result is `no`; do not create a migration without a concrete persistence need.
+- [ ] If a database change is required, add an expand-and-migrate migration, deterministic backfill,
+      old-schema-to-new-schema integration fixture, data-preservation assertions, rollback-compatible
+      API behavior, and deployment/restore notes before merging dependent range code.
 - [ ] Extend the transaction repository interface with a range operation.
 - [ ] Implement realized income and expense range queries.
 - [ ] Generalize projection generation across multiple months without duplicating occurrences.
@@ -477,6 +541,8 @@ Serve one authorized, bounded collection containing the raw transactions needed 
 - Unauthorized and out-of-bounds requests fail through the standard API error model.
 - Projection results match existing single-month semantics for equivalent months.
 - No stored chart output or server-side graph aggregation is introduced.
+- The milestone either records that no database migration is required or contains a successfully
+  rehearsed, backward-compatible migration that preserves all existing production data.
 
 ---
 
@@ -652,6 +718,11 @@ Bring the complete feature to the repository's production quality bar.
 - [ ] Measure Home and Graphs bundles against the Milestone 0 baseline.
 - [ ] Memoize range resolution and aggregation only where profiling shows meaningful work.
 - [ ] Update architecture and user documentation with the route and range endpoint.
+- [ ] For every migration added by an earlier milestone, rehearse the complete production deployment
+      sequence: verified backup, migration from the previously released schema with existing data,
+      post-migration integrity checks, application health checks, and application-image rollback.
+- [ ] Record the production migration result or explicitly record that the graph feature introduces
+      no database schema changes.
 - [ ] Run all workspace validation and production builds.
 
 ### Definition of done
@@ -661,6 +732,9 @@ Bring the complete feature to the repository's production quality bar.
 - Every chart can be understood through text/table output without seeing the SVG.
 - The feature is fully keyboard operable and meets the application's contrast and focus standards.
 - Adding Recharts does not increase the Home route's initial client bundle materially.
+- Any required migration has a verified backup/restore path, preserves existing rows and finance
+  totals, and remains compatible with the previously deployed API image. If no migration is needed,
+  that decision is recorded.
 - Lint, type checks, unit tests, integration tests, OpenAPI checks, and production builds pass.
 - Manual smoke tests cover all graph/variant combinations with realized-only, projected-only, mixed,
   and empty datasets.
@@ -682,12 +756,19 @@ API contract and recurrence work should merge before chart implementation depend
 requests may use committed test fixtures while the API work is under review, but production code
 must use the range query before release.
 
+Any database migration must merge with the first milestone that requires the new persisted shape,
+never as an untracked deployment follow-up. The migration and its compatibility tests must merge
+before or atomically with code that depends on it. Destructive cleanup, if ever justified, ships in
+a later release only after the expanded schema has been live and verified.
+
 Every pull request should state:
 
 - Which milestone tasks it completes.
 - Whether it changes visible behavior or only structure.
 - Which automated and manual checks were run.
 - Any bundle-size change.
+- Whether persistent schemas changed; if so, the migration, backfill, rehearsal evidence, integrity
+  checks, locking/runtime assessment, backup/restore procedure, and rollback compatibility.
 - Screenshots for desktop/mobile and light/dark mode when UI changes are included.
 
 ## Full feature definition of done
@@ -711,4 +792,8 @@ The Graphs feature is complete when:
   understandable, reduced-motion aware, and theme compatible.
 - The existing Home view, recurrence behavior, API authorization, and transaction workflows remain
   regression-free.
+- Existing production rows survive every required migration with household membership, sources,
+  transaction amounts, dates, recurrence relationships, and realized/projected behavior intact.
+- Every database change is represented by a new tested migration from the previously released
+  schema, is backward-compatible with the prior API image, and has a rehearsed backup/restore path.
 - All repository quality gates and production builds pass.

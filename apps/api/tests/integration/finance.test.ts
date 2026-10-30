@@ -126,6 +126,65 @@ describe('finance HTTP + PostgreSQL', () => {
     }
   });
 
+  it('uses a realized occurrence instead of projecting the same recurrence date', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-01-15T12:00:00Z'));
+    try {
+      const { agent, base, transaction } = await fixture();
+      const recurring = await agent
+        .post(`${base}/transactions`)
+        .send({
+          ...transaction,
+          date: '2026-01-01',
+          recurring: true,
+          recurrenceInterval: 1,
+          recurrenceUnit: 'month',
+        })
+        .expect(201);
+      await agent
+        .patch(`${base}/transactions/${recurring.body.transaction.id}`)
+        .send({
+          transaction: {
+            ...transaction,
+            date: '2026-01-01',
+            recurring: true,
+            recurrenceInterval: 1,
+            recurrenceUnit: 'week',
+          },
+          selection: { past: false, current: true, future: true },
+        })
+        .expect(200);
+      const realized = await agent
+        .post(`${base}/transactions`)
+        .send({ ...transaction, date: '2026-01-22' })
+        .expect(201);
+
+      await pool.query(
+        `UPDATE expenses
+         SET recurrence_id = (SELECT recurrence_id FROM expenses WHERE id = $1),
+             recurring = true,
+             recurrence_interval = 1,
+             recurrence_unit = 'week'
+         WHERE id = $2`,
+        [recurring.body.transaction.id, realized.body.transaction.id],
+      );
+
+      const january = await agent.get(`${base}/month?month=2026-01`).expect(200);
+      expect(
+        january.body.transactions.map(
+          ({ date, projected }: { date: string; projected: boolean }) => ({ date, projected }),
+        ),
+      ).toEqual([
+        { date: '2026-01-01', projected: false },
+        { date: '2026-01-15', projected: true },
+        { date: '2026-01-22', projected: false },
+        { date: '2026-01-29', projected: true },
+      ]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('backfills each month when a recurring transaction starts before the current month', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-04-15T12:00:00Z'));
