@@ -225,6 +225,7 @@
   "Pwa": {
     "installApp": "Instaloni aplikacionin",
     "pinTaskbar": "Gozhdoni në shiritin e detyrave",
+    "pinTaskbarMenu": "Gozhdo Monthloom",
     "install": "Instaloni",
     "showHow": "Më trego si",
     "desktopTitle": "Mbajeni Monthloom afër",
@@ -601,14 +602,28 @@
     "INTERNAL_ERROR": "Diçka shkoi keq. Ju lutemi provoni përsëri."
   },
   "Labels": {
+    "months": {
+      "january": "Janar",
+      "february": "Shkurt",
+      "march": "Mars",
+      "april": "Prill",
+      "may": "Maj",
+      "june": "Qershor",
+      "july": "Korrik",
+      "august": "Gusht",
+      "september": "Shtator",
+      "october": "Tetor",
+      "november": "Nëntor",
+      "december": "Dhjetor"
+    },
     "themes": {
       "linen-sage": "Liri & Sage",
       "sea-glass": "Xham deti",
       "lavender-mist": "Mjegull livando",
       "apricot-cotton": "Pambuk kajsi",
-      "blue-hour": "Ora Blu",
+      "blue-hour": "Ora blu",
       "rosewood-ember": "Prush palisandër",
-      "golden-hour": "Ora e Artë",
+      "golden-hour": "Ora e artë",
       "terracotta-grove": "Terrakota Grove",
       "high-contrast": "Kontrast i lartë",
       "monochrome": "Njëngjyrëshe"
@@ -623,14 +638,14 @@
       "wave-stripe": "Shirit valësh",
       "star-rosette": "Ylli rozetë",
       "hourglass-thread": "Thread Orë Orë",
-      "mosaic-grid": "Rrjeti i Mozaikut",
+      "mosaic-grid": "Rrjeti i mozaikut",
       "braided-border": "Kufiri i gërshetuar",
       "concentric-lozenge": "Lozele koncentrike"
     },
     "colors": {
       "slate": "Slate",
       "red": "E kuqe",
-      "orange": "portokalli",
+      "orange": "Portokalli",
       "amber": "Qelibar",
       "yellow": "E verdha",
       "lime": "Gëlqere",
@@ -682,7 +697,7 @@
     },
     "financialIcons": {
       "banknote": "Kartëmonedhë",
-      "briefcase": "çantë",
+      "briefcase": "Çantë",
       "building": "Ndërtesa",
       "coins": "Monedha",
       "landmark": "Pikë referimi",
@@ -723,13 +738,13 @@
       "scale": "Shkalla",
       "trophy": "Trofe",
       "laptop": "Laptop",
-      "baby": "bebe",
+      "baby": "Bebe",
       "paw-print": "Shtypja e putrave",
       "scissors": "Gërshërë",
       "wrench": "Pikëllim",
       "receipt": "Fatura",
-      "credit-card": "Kartë Krediti",
-      "circle-ellipsis": "Rrethi Elipsis"
+      "credit-card": "Kartë krediti",
+      "circle-ellipsis": "Rrethi elipsis"
     },
     "householdIcons": {
       "small-house": "Personale",

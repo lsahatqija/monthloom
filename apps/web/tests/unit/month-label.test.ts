@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  formatTranslatedMonthYear,
   selectMonthLabelVariant,
   shouldCollapseCurrentMonthButton,
 } from '../../src/features/finance/household-dashboard';
+
+it('uses the translated month even when the date formatter falls back to English', () => {
+  const formatter = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' });
+
+  expect(formatTranslatedMonthYear(formatter, new Date(2026, 2, 1), 'Mars')).toBe('Mars 2026');
+});
 
 describe('month label contraction', () => {
   it.each([

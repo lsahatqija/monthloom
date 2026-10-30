@@ -40,6 +40,21 @@ import { useTransactionView } from './dashboard/use-transaction-view';
 import { FinancialIcon } from './financial-icon';
 import { TransactionForm } from './transaction-form';
 
+const MONTH_KEYS = [
+  'january',
+  'february',
+  'march',
+  'april',
+  'may',
+  'june',
+  'july',
+  'august',
+  'september',
+  'october',
+  'november',
+  'december',
+] as const;
+
 function monthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
@@ -73,6 +88,17 @@ export function shouldCollapseCurrentMonthButton(
   abbreviatedLabelWidth: number,
 ): boolean {
   return controlsWidth + abbreviatedLabelWidth > availableWidth;
+}
+
+export function formatTranslatedMonthYear(
+  formatter: Intl.DateTimeFormat,
+  date: Date,
+  translatedMonth: string,
+): string {
+  return formatter
+    .formatToParts(date)
+    .map((part) => (part.type === 'month' ? translatedMonth : part.value))
+    .join('');
 }
 
 function EntryIcon({ entry }: { entry: HouseholdTransaction }) {
@@ -189,13 +215,10 @@ function SortableHeader({
 export function HouseholdDashboard() {
   const t = useTranslations('Finance');
   const typeLabels = useTranslations('Labels.expenseTypes');
+  const monthLabels = useTranslations('Labels.months');
   const locale = useLocale();
   const monthYearFormatter = useMemo(
     () => new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }),
-    [locale],
-  );
-  const monthFormatter = useMemo(
-    () => new Intl.DateTimeFormat(locale, { month: 'long' }),
     [locale],
   );
   const abbreviatedMonthFormatter = useMemo(
@@ -206,8 +229,8 @@ export function HouseholdDashboard() {
   const [selectedYear, selectedMonthNumber] = month.split('-').map(Number);
   const currentMonthKey = monthKey(new Date());
   const selectedMonthDate = new Date(selectedYear!, selectedMonthNumber! - 1, 1);
-  const monthLabel = monthYearFormatter.format(selectedMonthDate);
-  const monthName = monthFormatter.format(selectedMonthDate);
+  const monthName = monthLabels(MONTH_KEYS[selectedMonthNumber! - 1]!);
+  const monthLabel = formatTranslatedMonthYear(monthYearFormatter, selectedMonthDate, monthName);
   const abbreviatedMonthName = abbreviatedMonthFormatter.format(selectedMonthDate);
   const shortYear = `'${String(selectedYear).slice(-2)}`;
   const monthNameWithShortYear = `${monthName} ${shortYear}`;
@@ -216,10 +239,10 @@ export function HouseholdDashboard() {
     () =>
       Array.from({ length: 12 }, (_, index) => ({
         value: index + 1,
-        label: monthFormatter.format(new Date(2024, index, 1)),
+        label: monthLabels(MONTH_KEYS[index]!),
         abbreviatedLabel: abbreviatedMonthFormatter.format(new Date(2024, index, 1)),
       })),
-    [abbreviatedMonthFormatter, monthFormatter],
+    [abbreviatedMonthFormatter, monthLabels],
   );
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -809,7 +832,12 @@ export function HouseholdDashboard() {
         <div className="transactionSavedNotice" role="status">
           <span>
             {t('transactionSavedTo')}{' '}
-            {monthYearFormatter.format(new Date(`${savedDestinationMonth}-01T12:00:00`))}.
+            {formatTranslatedMonthYear(
+              monthYearFormatter,
+              new Date(`${savedDestinationMonth}-01T12:00:00`),
+              monthLabels(MONTH_KEYS[Number(savedDestinationMonth.slice(5, 7)) - 1]!),
+            )}
+            .
           </span>
           {savedDestinationMonth !== month ? (
             <button
@@ -820,7 +848,7 @@ export function HouseholdDashboard() {
               }}
             >
               {t('viewMonth')}{' '}
-              {monthFormatter.format(new Date(`${savedDestinationMonth}-01T12:00:00`))}
+              {monthLabels(MONTH_KEYS[Number(savedDestinationMonth.slice(5, 7)) - 1]!)}
             </button>
           ) : null}
         </div>

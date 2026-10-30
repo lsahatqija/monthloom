@@ -8,6 +8,7 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   sq: 'Shqip',
   fr: 'Français',
   tr: 'Türkçe',
+  de: 'Deutsch',
 };
 
 export function resolveLocale(profileLocale: unknown, cookieLocale: unknown): Locale {

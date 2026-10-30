@@ -8,6 +8,6 @@ describe('user contracts', () => {
   });
 
   it('rejects unsupported locales', () => {
-    expect(localeSchema.safeParse('de').success).toBe(false);
+    expect(localeSchema.safeParse('es').success).toBe(false);
   });
 });

@@ -224,7 +224,7 @@ export function PwaRegistration({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       canOfferInstall: eligibleSession && !installed,
-      installActionLabel: mobileBrowser ? t('installApp') : t('pinTaskbar'),
+      installActionLabel: mobileBrowser ? t('installApp') : t('pinTaskbarMenu'),
       openInstallPrompt,
     }),
     [eligibleSession, installed, mobileBrowser, openInstallPrompt, t],

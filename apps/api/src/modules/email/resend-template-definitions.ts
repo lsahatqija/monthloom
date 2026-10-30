@@ -184,6 +184,49 @@ const copy: Record<Locale, Copy> = {
       'Tam raporu görüntüle',
     ],
   },
+  de: {
+    footer: 'Dies ist eine automatisierte Nachricht von Monthloom.',
+    welcome: [
+      'Willkommen bei Monthloom',
+      'Ihr Monthloom-Konto ist bereit.',
+      'Willkommen bei Monthloom',
+      'Ihr Konto ist bereit. Bestätigen Sie Ihre E-Mail-Adresse, um die E-Mail-Funktionen von Monthloom zu aktivieren.',
+      'Monthloom öffnen',
+      'Dieser Bestätigungslink läuft am {{{EXPIRES_AT}}} ab.',
+    ],
+    verification: [
+      'Bestätigen Sie Ihre Monthloom-E-Mail-Adresse',
+      'Bestätigen Sie Ihre E-Mail-Adresse, um die E-Mail-Funktionen von Monthloom zu nutzen.',
+      'E-Mail-Adresse bestätigen',
+      'Bestätigen Sie, dass diese E-Mail-Adresse Ihnen gehört.',
+      'E-Mail bestätigen',
+      'Dieser Bestätigungslink läuft am {{{EXPIRES_AT}}} ab.',
+    ],
+    reset: [
+      'Setzen Sie Ihr Monthloom-Passwort zurück',
+      'Verwenden Sie Ihren sicheren Link, um Ihr Monthloom-Passwort zurückzusetzen.',
+      'Passwort zurücksetzen',
+      'Wir haben eine Anfrage zum Zurücksetzen Ihres Passworts erhalten. Verwenden Sie den sicheren Link vor {{{EXPIRES_AT}}}. Falls Sie diese Anfrage nicht gestellt haben, können Sie diese E-Mail ignorieren.',
+      'Passwort zurücksetzen',
+    ],
+    invitation: [
+      'Sie wurden zu einem Monthloom-Haushalt eingeladen',
+      'Sie haben eine neue Haushaltseinladung.',
+      '{{{HOUSEHOLD_NAME}}} beitreten',
+      '{{{INVITER_NAME}}} hat Sie eingeladen, dem Haushalt <strong>{{{HOUSEHOLD_NAME}}}</strong> auf Monthloom beizutreten.',
+      'Einladung annehmen',
+      'Diese einmalig verwendbare Einladung läuft am {{{EXPIRES_AT}}} ab.',
+    ],
+    monthly: [
+      'Ihr monatlicher Monthloom-Saldobericht',
+      'Der monatliche Saldo Ihres Haushalts ist bereit.',
+      '{{{MONTH_LABEL}}} im Überblick',
+      'Einnahmen',
+      'Ausgaben',
+      'Übrig',
+      'Vollständigen Bericht anzeigen',
+    ],
+  },
 };
 
 function layout(locale: Locale, preview: string, heading: string, body: string, footer: string) {

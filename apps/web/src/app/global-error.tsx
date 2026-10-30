@@ -24,6 +24,11 @@ const messages: Record<Locale, { title: string; description: string; retry: stri
     description: 'Uygulama yüklenirken beklenmeyen bir hata oluştu.',
     retry: 'Tekrar dene',
   },
+  de: {
+    title: 'Etwas ist schiefgelaufen',
+    description: 'Beim Laden der Anwendung ist ein unerwarteter Fehler aufgetreten.',
+    retry: 'Erneut versuchen',
+  },
 };
 
 export default function GlobalError({

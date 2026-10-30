@@ -8,10 +8,10 @@ describe('locale resolution', () => {
   });
 
   it('uses a supported cookie locale for a signed-out user', () => {
-    expect(resolveLocale(undefined, 'sq')).toBe('sq');
+    expect(resolveLocale(undefined, 'de')).toBe('de');
   });
 
-  it.each([undefined, '', 'de', 'en_US'])('falls back to English for cookie %j', (cookie) => {
+  it.each([undefined, '', 'es', 'en_US'])('falls back to English for cookie %j', (cookie) => {
     expect(resolveLocale(undefined, cookie)).toBe('en');
   });
 });

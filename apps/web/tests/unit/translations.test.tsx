@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { NextIntlClientProvider, useTranslations } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 
+import de from '../../messages/de.json';
 import en from '../../messages/en.json';
 import fr from '../../messages/fr.json';
 import sq from '../../messages/sq.json';
@@ -41,6 +42,7 @@ describe('translations', () => {
       );
     const englishKeys = keys(en).sort();
 
+    expect(keys(de).sort()).toEqual(englishKeys);
     expect(keys(sq).sort()).toEqual(englishKeys);
     expect(keys(fr).sort()).toEqual(englishKeys);
     expect(keys(tr).sort()).toEqual(englishKeys);
