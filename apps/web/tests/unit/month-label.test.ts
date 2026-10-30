@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import { formatTranslatedMonthYear } from '../../src/features/finance/selectors/month';
 import {
-  formatTranslatedMonthYear,
   selectMonthLabelVariant,
   shouldCollapseCurrentMonthButton,
-} from '../../src/features/finance/household-dashboard';
+} from '../../src/features/finance/selectors/month-picker';
 
 it('uses the translated month even when the date formatter falls back to English', () => {
   const formatter = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' });

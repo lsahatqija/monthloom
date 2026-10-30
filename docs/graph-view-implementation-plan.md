@@ -481,15 +481,15 @@ Make the Graphs view reuse Home behavior without duplicating the large dashboard
 
 ### Tasks
 
-- [ ] Extract the Home month picker into a reusable month/year component.
-- [ ] Preserve its translated month labels, year handling, keyboard dismissal, focus restoration,
+- [x] Extract the Home month picker into a reusable month/year component.
+- [x] Preserve its translated month labels, year handling, keyboard dismissal, focus restoration,
       responsive label variants, and current-month action.
-- [ ] Extract or introduce a reusable household picker with primary-household fallback.
-- [ ] Add a range-aware period resolver and pure preset functions.
-- [ ] Add validation for custom month bounds and start/end ordering.
-- [ ] Add `useGraphSelection` with validated URL parsing and history behavior.
-- [ ] Add Home-to-Graphs and Graphs-to-Home link-state helpers.
-- [ ] Add unit and component tests before changing Home to consume the extracted controls.
+- [x] Extract or introduce a reusable household picker with primary-household fallback.
+- [x] Add a range-aware period resolver and pure preset functions.
+- [x] Add validation for custom month bounds and start/end ordering.
+- [x] Add `useGraphSelection` with validated URL parsing and history behavior.
+- [x] Add Home-to-Graphs and Graphs-to-Home link-state helpers.
+- [x] Add unit and component tests before changing Home to consume the extracted controls.
 
 ### Definition of done
 
@@ -498,6 +498,27 @@ Make the Graphs view reuse Home behavior without duplicating the large dashboard
 - Every preset resolves to the agreed inclusive month bounds, including leap years and year
   boundaries.
 - Invalid URL values recover predictably without an error loop or inaccessible household request.
+
+### Milestone 1 result (2026-10-30)
+
+- Home now consumes reusable household and month/year picker components. Existing localized labels,
+  responsive contraction, previous/next navigation, current-month action, Escape dismissal, and
+  focus restoration remain intact.
+- Household selection resolves an unavailable ID to the primary household, then the first available
+  household. Home waits for that resolution before enabling its month query, so an inaccessible URL
+  ID never produces a household-data request.
+- Pure period helpers resolve every preset to inclusive whole months, handle leap years and year
+  boundaries, and enforce the five-years-past/one-year-future bounds plus start/end ordering.
+- `useGraphSelection` validates URL state, writes canonical parameters, pushes user changes, and
+  restores state on `popstate`. Link helpers preserve compatible household/month state between Home
+  and Graphs.
+- The full suite passes 304 tests in 43 files. Lint passes with the one pre-existing onboarding hook
+  warning, and production/test TypeScript checks pass.
+- The Linux web production build passes. Home is 27.1 kB route JS and 179 kB first-load JS, a 0.6 kB
+  route and 1 kB first-load increase from the Milestone 0 baseline; shared first-load JS remains
+  87.3 kB.
+- No persistent schema, database data, shared transport contract, or migration changed in this
+  milestone.
 
 ---
 

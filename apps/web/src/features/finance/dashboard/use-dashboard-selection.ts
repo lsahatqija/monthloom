@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 
-function currentMonth(): string {
-  const today = new Date();
-  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-}
+import { calendarMonth } from '../selectors/month';
 
 function initialParameter(name: string, fallback: string): string {
   if (typeof window === 'undefined') return fallback;
@@ -11,7 +8,7 @@ function initialParameter(name: string, fallback: string): string {
 }
 
 export function useDashboardSelection() {
-  const [month, setMonthState] = useState(() => initialParameter('month', currentMonth()));
+  const [month, setMonthState] = useState(() => initialParameter('month', calendarMonth()));
   const [householdId, setHouseholdId] = useState(() => initialParameter('household', ''));
 
   useEffect(() => {
@@ -24,7 +21,7 @@ export function useDashboardSelection() {
 
   useEffect(() => {
     const restoreSelection = () => {
-      setMonthState(initialParameter('month', currentMonth()));
+      setMonthState(initialParameter('month', calendarMonth()));
       setHouseholdId(initialParameter('household', ''));
     };
     window.addEventListener('popstate', restoreSelection);
