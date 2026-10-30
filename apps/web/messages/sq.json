@@ -13,7 +13,8 @@
     "appearance": "Pamja e jashtme",
     "profile": "Profili",
     "households": "Familjet",
-    "sources": "Burimet"
+    "sources": "Burimet",
+    "graphs": "Grafikët"
   },
   "Common": {
     "loading": "Po ngarkohet...",
@@ -98,6 +99,7 @@
     "mainNavigation": "Lundrimi kryesor",
     "menu": "Menyja",
     "settings": "Cilësimet",
+    "graphs": "Grafikët",
     "info": {
       "open": "Hapni informacionin",
       "eyebrow": "Rreth këtij aplikacioni",
@@ -110,6 +112,69 @@
       "betaTitle": "Njoftimi beta",
       "beta": "Muaji është ende duke u përmirësuar. Komentet tuaja ndihmojnë në formësimin e tij."
     }
+  },
+  "Graph": {
+    "title": "Grafikët",
+    "description": "Shikoni të ardhurat, shpenzimet dhe parashikimet e familjes me kalimin e kohës.",
+    "backHome": "Kthehu te Kreu",
+    "controls": "Kontrollet e grafikut",
+    "household": "Familja",
+    "period": "Periudha",
+    "graph": "Grafiku",
+    "month": "Muaji",
+    "from": "Nga",
+    "to": "Deri",
+    "chartType": "Lloji i grafikut",
+    "calculation": "Llogaritja",
+    "groupBy": "Grupo sipas",
+    "transactionKind": "Lloji i transaksionit",
+    "userPresentation": "Paraqitja e përdoruesve",
+    "users": "Përdoruesit",
+    "combined": "Të kombinuara",
+    "loading": "Po ngarkohen të dhënat...",
+    "updating": "Po përditësohet...",
+    "retry": "Provo përsëri",
+    "loadHouseholdsError": "Familjet tuaja nuk u ngarkuan.",
+    "loadErrorTitle": "Të dhënat e grafikut nuk janë të disponueshme",
+    "loadErrorDescription": "Kjo periudhë nuk u ngarkua. Përzgjedhja juaj u ruajt.",
+    "noHouseholds": "Ende nuk ka familje",
+    "noHouseholdsDescription": "Krijoni fillimisht një familje te cilësimet.",
+    "openSettings": "Hap cilësimet e familjes",
+    "emptyPeriodTitle": "Nuk ka aktivitet në këtë periudhë",
+    "emptyPeriodDescription": "Zgjidhni një periudhë tjetër ose shtoni transaksione nga Kreu.",
+    "emptyGraphTitle": "Asgjë për të shfaqur me këto opsione",
+    "emptyGraphDescription": "Grafiku {graph} nuk ka vlera përkatëse. Provoni një opsion tjetër.",
+    "periodSummary": "{from} deri {to}",
+    "chartPlaceholderLabel": "Sipërfaqja e grafikut {graph} me {count} grupe të dhënash",
+    "legend": "Legjenda",
+    "legendPlaceholder": "Vlerat e sakta të realizuara dhe të parashikuara do të shfaqen këtu me grafikun.",
+    "dataTable": "Tabela e të dhënave",
+    "tablePlaceholder": "Tabela e aksesueshme me vlera të sakta do të shfaqet këtu me grafikun.",
+    "graphs": { "balance": "Bilanci", "category": "Kategoria", "overview": "Përmbledhja" },
+    "periods": {
+      "current-month": "Muaji aktual",
+      "last-month": "Muaji i kaluar",
+      "current-year": "Viti aktual",
+      "last-year": "Viti i kaluar",
+      "last-12-months": "12 muajt e fundit",
+      "custom-month": "Muaj i personalizuar",
+      "custom-period": "Periudhë e personalizuar"
+    },
+    "periodErrors": {
+      "invalid-month": "Zgjidhni një muaj të vlefshëm.",
+      "out-of-bounds": "Zgjidhni një muaj brenda intervalit të lejuar.",
+      "inverted-range": "Muaji i fillimit nuk mund të jetë pas muajit të përfundimit."
+    },
+    "balanceCharts": { "line": "Vijë", "area": "Zonë" },
+    "balanceModes": { "daily": "Ditore", "cumulative": "Kumulative" },
+    "groupings": {
+      "user": "Përdoruesi",
+      "source": "Burimi",
+      "transaction-type": "Lloji i transaksionit"
+    },
+    "categoryCharts": { "pie": "Rrethor", "bar": "Shtyllë", "radial": "Shtyllë radiale" },
+    "overviewKinds": { "expense": "Shpenzimet", "income": "Të ardhurat" },
+    "overviewModes": { "combine": "Kombino", "compare": "Krahaso" }
   },
   "Auth": {
     "logout": "Dilni",

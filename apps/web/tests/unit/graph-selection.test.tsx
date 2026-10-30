@@ -6,6 +6,7 @@ import {
   graphHrefFromDashboard,
 } from '../../src/features/finance/graph/selection-links';
 import {
+  graphSelectionSearch,
   readGraphSelection,
   useGraphSelection,
 } from '../../src/features/finance/graph/use-graph-selection';
@@ -20,7 +21,7 @@ describe('graph URL selection', () => {
     expect(
       readGraphSelection(
         new URL(
-          'https://monthloom.test/graph?household=home&period=custom-period&from=2026-01&to=2026-03',
+          'https://monthloom.test/graph?household=home&period=custom-period&from=2026-01&to=2026-03&graph=overview&kind=income&usersMode=compare&users=ada,ben',
         ),
         '2026-10',
       ),
@@ -29,6 +30,10 @@ describe('graph URL selection', () => {
       period: 'custom-period',
       from: '2026-01',
       to: '2026-03',
+      graph: 'overview',
+      overviewKind: 'income',
+      overviewMode: 'compare',
+      userIds: ['ada', 'ben'],
     });
     expect(
       readGraphSelection(
@@ -63,6 +68,16 @@ describe('graph URL selection', () => {
       from: '2025-12',
       to: '2025-12',
     });
+  });
+
+  it('keeps only the active graph options in the canonical URL', () => {
+    const selection = readGraphSelection(
+      new URL('https://monthloom.test/graph?graph=category&group=source&categoryChart=bar'),
+      '2026-10',
+    );
+    expect(graphSelectionSearch(selection)).toBe(
+      'period=current-month&graph=category&group=source&categoryChart=bar',
+    );
   });
 });
 

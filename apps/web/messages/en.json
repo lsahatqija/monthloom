@@ -13,7 +13,8 @@
     "appearance": "Appearance",
     "profile": "Profile",
     "households": "Households",
-    "sources": "Sources"
+    "sources": "Sources",
+    "graphs": "Graphs"
   },
   "Common": {
     "loading": "Loading...",
@@ -98,6 +99,7 @@
     "mainNavigation": "Main navigation",
     "menu": "Menu",
     "settings": "Settings",
+    "graphs": "Graphs",
     "info": {
       "open": "Open information",
       "eyebrow": "About this app",
@@ -110,6 +112,65 @@
       "betaTitle": "Beta notice",
       "beta": "Monthloom is still being improved. Your feedback helps shape it."
     }
+  },
+  "Graph": {
+    "title": "Graphs",
+    "description": "Explore household income, expenses and projections across time.",
+    "backHome": "Back to Home",
+    "controls": "Graph controls",
+    "household": "Household",
+    "period": "Period",
+    "graph": "Graph",
+    "month": "Month",
+    "from": "From",
+    "to": "To",
+    "chartType": "Chart type",
+    "calculation": "Calculation",
+    "groupBy": "Group by",
+    "transactionKind": "Transaction kind",
+    "userPresentation": "User presentation",
+    "users": "Users",
+    "combined": "Combined",
+    "loading": "Loading graph data...",
+    "updating": "Updating...",
+    "retry": "Try again",
+    "loadHouseholdsError": "We could not load your households.",
+    "loadErrorTitle": "Graph data unavailable",
+    "loadErrorDescription": "We could not load this period. Your current selection has been kept.",
+    "noHouseholds": "No households yet",
+    "noHouseholdsDescription": "Create a household in settings before opening graphs.",
+    "openSettings": "Open household settings",
+    "emptyPeriodTitle": "No activity in this period",
+    "emptyPeriodDescription": "Choose another period or add transactions from Home.",
+    "emptyGraphTitle": "Nothing to show for these options",
+    "emptyGraphDescription": "The {graph} graph has no matching values. Try another option.",
+    "periodSummary": "{from} to {to}",
+    "chartPlaceholderLabel": "{graph} chart surface with {count} data groups",
+    "legend": "Legend",
+    "legendPlaceholder": "Exact realized and projected values will appear here with the chart.",
+    "dataTable": "Data table",
+    "tablePlaceholder": "The accessible exact-value table will appear here with the chart.",
+    "graphs": { "balance": "Balance", "category": "Category", "overview": "Overview" },
+    "periods": {
+      "current-month": "Current month",
+      "last-month": "Last month",
+      "current-year": "Current year",
+      "last-year": "Last year",
+      "last-12-months": "Last 12 months",
+      "custom-month": "Custom month",
+      "custom-period": "Custom period"
+    },
+    "periodErrors": {
+      "invalid-month": "Choose a valid month.",
+      "out-of-bounds": "Choose a month within the available range.",
+      "inverted-range": "The start month must not be after the end month."
+    },
+    "balanceCharts": { "line": "Line", "area": "Area" },
+    "balanceModes": { "daily": "Daily", "cumulative": "Cumulative" },
+    "groupings": { "user": "User", "source": "Source", "transaction-type": "Transaction type" },
+    "categoryCharts": { "pie": "Pie", "bar": "Bar", "radial": "Radial bar" },
+    "overviewKinds": { "expense": "Expenses", "income": "Income" },
+    "overviewModes": { "combine": "Combine", "compare": "Compare" }
   },
   "Auth": {
     "logout": "Log out",

@@ -1,15 +1,27 @@
 'use client';
 
 import type { PublicUser } from '@monthloom/contracts';
-import { CircleUserRound, Database, Download, House, Palette } from 'lucide-react';
+import {
+  ChartNoAxesCombined,
+  CircleUserRound,
+  Database,
+  Download,
+  House,
+  Palette,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
 import { LogoutButton } from '../../features/auth/logout-button';
 import { FeedbackModal } from '../../features/feedback/feedback-modal';
+import {
+  dashboardHrefFromGraph,
+  graphHrefFromDashboard,
+} from '../../features/finance/graph/selection-links';
+import { readGraphSelection } from '../../features/finance/graph/use-graph-selection';
 import { usePwaInstall } from '../pwa-registration';
 import { useTheme } from '../theme-provider';
 
@@ -59,9 +71,20 @@ export function Header({ user }: { user: PublicUser | null }) {
   const { mode, toggleMode } = useTheme();
   const { canOfferInstall, installActionLabel, openInstallPrompt } = usePwaInstall();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const isMobile = useMobileHeader();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const homeHref =
+    pathname === '/graph'
+      ? dashboardHrefFromGraph(
+          readGraphSelection(new URL(`/graph?${searchParams}`, 'http://localhost')),
+        )
+      : '/';
+  const graphHref =
+    pathname === '/'
+      ? graphHrefFromDashboard(searchParams.get('household') ?? '', searchParams.get('month') ?? '')
+      : '/graph';
 
   useEffect(() => setIsOpen(false), [pathname]);
 
@@ -106,7 +129,7 @@ export function Header({ user }: { user: PublicUser | null }) {
 
         <div className="headerActions">
           <Link
-            href="/"
+            href={homeHref}
             className="iconButton"
             data-onboarding="home-button"
             aria-label={t('home')}
@@ -116,6 +139,18 @@ export function Header({ user }: { user: PublicUser | null }) {
           >
             <House aria-hidden="true" />
           </Link>
+          {user ? (
+            <Link
+              href={graphHref}
+              className="iconButton"
+              aria-label={t('graphs')}
+              title={t('graphs')}
+              aria-current={pathname === '/graph' ? 'page' : undefined}
+              onClick={() => setIsOpen(false)}
+            >
+              <ChartNoAxesCombined aria-hidden="true" />
+            </Link>
+          ) : null}
           {!isMobile && pathname === '/' ? <InfoModal /> : null}
           {!isMobile ? (
             <button
@@ -150,13 +185,22 @@ export function Header({ user }: { user: PublicUser | null }) {
                 >
                   <p className="accountMenuName">{user.displayName}</p>
                   <Link
-                    href="/"
+                    href={homeHref}
                     className="accountMenuItem"
                     aria-current={pathname === '/' ? 'page' : undefined}
                     onClick={() => setIsOpen(false)}
                   >
                     <House aria-hidden="true" />
                     {t('home')}
+                  </Link>
+                  <Link
+                    href={graphHref}
+                    className="accountMenuItem"
+                    aria-current={pathname === '/graph' ? 'page' : undefined}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <ChartNoAxesCombined aria-hidden="true" />
+                    {t('graphs')}
                   </Link>
                   <Link
                     href="/settings/profile"

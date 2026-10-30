@@ -9,7 +9,7 @@ export function graphHrefFromDashboard(
 ): string {
   const search = new URLSearchParams();
   if (householdId) search.set('household', householdId);
-  if (month === current) {
+  if (!month || month === current) {
     search.set('period', 'current-month');
   } else {
     search.set('period', 'custom-month');

@@ -13,7 +13,8 @@
     "appearance": "Darstellung",
     "profile": "Profil",
     "households": "Haushalte",
-    "sources": "Quellen"
+    "sources": "Quellen",
+    "graphs": "Diagramme"
   },
   "Common": {
     "loading": "Wird geladen...",
@@ -98,6 +99,7 @@
     "mainNavigation": "Hauptnavigation",
     "menu": "Menü",
     "settings": "Einstellungen",
+    "graphs": "Diagramme",
     "info": {
       "open": "Informationen öffnen",
       "eyebrow": "Über diese App",
@@ -110,6 +112,65 @@
       "betaTitle": "Beta-Hinweis",
       "beta": "Monthloom wird laufend verbessert. Ihr Feedback hilft dabei, die App weiterzuentwickeln."
     }
+  },
+  "Graph": {
+    "title": "Diagramme",
+    "description": "Einnahmen, Ausgaben und Prognosen des Haushalts im Zeitverlauf erkunden.",
+    "backHome": "Zurück zur Startseite",
+    "controls": "Diagrammsteuerung",
+    "household": "Haushalt",
+    "period": "Zeitraum",
+    "graph": "Diagramm",
+    "month": "Monat",
+    "from": "Von",
+    "to": "Bis",
+    "chartType": "Diagrammtyp",
+    "calculation": "Berechnung",
+    "groupBy": "Gruppieren nach",
+    "transactionKind": "Transaktionsart",
+    "userPresentation": "Benutzerdarstellung",
+    "users": "Benutzer",
+    "combined": "Kombiniert",
+    "loading": "Diagrammdaten werden geladen...",
+    "updating": "Wird aktualisiert...",
+    "retry": "Erneut versuchen",
+    "loadHouseholdsError": "Ihre Haushalte konnten nicht geladen werden.",
+    "loadErrorTitle": "Diagrammdaten nicht verfügbar",
+    "loadErrorDescription": "Dieser Zeitraum konnte nicht geladen werden. Ihre Auswahl wurde beibehalten.",
+    "noHouseholds": "Noch keine Haushalte",
+    "noHouseholdsDescription": "Erstellen Sie zuerst einen Haushalt in den Einstellungen.",
+    "openSettings": "Haushaltseinstellungen öffnen",
+    "emptyPeriodTitle": "Keine Aktivität in diesem Zeitraum",
+    "emptyPeriodDescription": "Wählen Sie einen anderen Zeitraum oder fügen Sie auf der Startseite Transaktionen hinzu.",
+    "emptyGraphTitle": "Für diese Optionen gibt es nichts anzuzeigen",
+    "emptyGraphDescription": "Das Diagramm {graph} enthält keine passenden Werte. Wählen Sie eine andere Option.",
+    "periodSummary": "{from} bis {to}",
+    "chartPlaceholderLabel": "Diagrammfläche {graph} mit {count} Datengruppen",
+    "legend": "Legende",
+    "legendPlaceholder": "Exakte tatsächliche und prognostizierte Werte erscheinen hier mit dem Diagramm.",
+    "dataTable": "Datentabelle",
+    "tablePlaceholder": "Die barrierefreie Tabelle mit exakten Werten erscheint hier mit dem Diagramm.",
+    "graphs": { "balance": "Bilanz", "category": "Kategorie", "overview": "Übersicht" },
+    "periods": {
+      "current-month": "Aktueller Monat",
+      "last-month": "Letzter Monat",
+      "current-year": "Aktuelles Jahr",
+      "last-year": "Letztes Jahr",
+      "last-12-months": "Letzte 12 Monate",
+      "custom-month": "Benutzerdefinierter Monat",
+      "custom-period": "Benutzerdefinierter Zeitraum"
+    },
+    "periodErrors": {
+      "invalid-month": "Wählen Sie einen gültigen Monat.",
+      "out-of-bounds": "Wählen Sie einen Monat im verfügbaren Bereich.",
+      "inverted-range": "Der Startmonat darf nicht nach dem Endmonat liegen."
+    },
+    "balanceCharts": { "line": "Linie", "area": "Fläche" },
+    "balanceModes": { "daily": "Täglich", "cumulative": "Kumulativ" },
+    "groupings": { "user": "Benutzer", "source": "Quelle", "transaction-type": "Transaktionsart" },
+    "categoryCharts": { "pie": "Kreis", "bar": "Balken", "radial": "Radialbalken" },
+    "overviewKinds": { "expense": "Ausgaben", "income": "Einnahmen" },
+    "overviewModes": { "combine": "Kombinieren", "compare": "Vergleichen" }
   },
   "Auth": {
     "logout": "Abmelden",

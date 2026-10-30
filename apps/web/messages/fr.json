@@ -13,7 +13,8 @@
     "appearance": "Apparence",
     "profile": "Profil",
     "households": "Foyers",
-    "sources": "Sources"
+    "sources": "Sources",
+    "graphs": "Graphiques"
   },
   "Common": {
     "loading": "Chargement...",
@@ -98,6 +99,7 @@
     "mainNavigation": "Navigation principale",
     "menu": "Menu",
     "settings": "Paramètres",
+    "graphs": "Graphiques",
     "info": {
       "open": "Ouvrir les informations",
       "eyebrow": "À propos de cette application",
@@ -110,6 +112,69 @@
       "betaTitle": "Version bêta",
       "beta": "Monthloom continue d’évoluer. Vos commentaires contribuent à son amélioration."
     }
+  },
+  "Graph": {
+    "title": "Graphiques",
+    "description": "Explorez les revenus, dépenses et projections du foyer dans le temps.",
+    "backHome": "Retour à l’accueil",
+    "controls": "Contrôles du graphique",
+    "household": "Foyer",
+    "period": "Période",
+    "graph": "Graphique",
+    "month": "Mois",
+    "from": "De",
+    "to": "À",
+    "chartType": "Type de graphique",
+    "calculation": "Calcul",
+    "groupBy": "Regrouper par",
+    "transactionKind": "Type de transaction",
+    "userPresentation": "Présentation des utilisateurs",
+    "users": "Utilisateurs",
+    "combined": "Combiné",
+    "loading": "Chargement des données...",
+    "updating": "Mise à jour...",
+    "retry": "Réessayer",
+    "loadHouseholdsError": "Impossible de charger vos foyers.",
+    "loadErrorTitle": "Données indisponibles",
+    "loadErrorDescription": "Impossible de charger cette période. Votre sélection a été conservée.",
+    "noHouseholds": "Aucun foyer",
+    "noHouseholdsDescription": "Créez d’abord un foyer dans les paramètres.",
+    "openSettings": "Ouvrir les paramètres du foyer",
+    "emptyPeriodTitle": "Aucune activité sur cette période",
+    "emptyPeriodDescription": "Choisissez une autre période ou ajoutez des transactions depuis l’accueil.",
+    "emptyGraphTitle": "Rien à afficher pour ces options",
+    "emptyGraphDescription": "Le graphique {graph} ne contient aucune valeur correspondante. Essayez une autre option.",
+    "periodSummary": "{from} à {to}",
+    "chartPlaceholderLabel": "Zone du graphique {graph} avec {count} groupes de données",
+    "legend": "Légende",
+    "legendPlaceholder": "Les valeurs réalisées et projetées exactes apparaîtront ici avec le graphique.",
+    "dataTable": "Tableau de données",
+    "tablePlaceholder": "Le tableau accessible des valeurs exactes apparaîtra ici avec le graphique.",
+    "graphs": { "balance": "Solde", "category": "Catégorie", "overview": "Vue d’ensemble" },
+    "periods": {
+      "current-month": "Mois en cours",
+      "last-month": "Mois dernier",
+      "current-year": "Année en cours",
+      "last-year": "Année dernière",
+      "last-12-months": "12 derniers mois",
+      "custom-month": "Mois personnalisé",
+      "custom-period": "Période personnalisée"
+    },
+    "periodErrors": {
+      "invalid-month": "Choisissez un mois valide.",
+      "out-of-bounds": "Choisissez un mois dans la plage disponible.",
+      "inverted-range": "Le mois de début ne doit pas être après le mois de fin."
+    },
+    "balanceCharts": { "line": "Courbe", "area": "Aire" },
+    "balanceModes": { "daily": "Quotidien", "cumulative": "Cumulé" },
+    "groupings": {
+      "user": "Utilisateur",
+      "source": "Source",
+      "transaction-type": "Type de transaction"
+    },
+    "categoryCharts": { "pie": "Secteurs", "bar": "Barres", "radial": "Barres radiales" },
+    "overviewKinds": { "expense": "Dépenses", "income": "Revenus" },
+    "overviewModes": { "combine": "Combiner", "compare": "Comparer" }
   },
   "Auth": {
     "logout": "Se déconnecter",

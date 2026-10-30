@@ -648,16 +648,16 @@ Create a complete, responsive Graphs screen shell before adding the final chart 
 
 ### Tasks
 
-- [ ] Add the authenticated `/graph` server route and client Graph view.
-- [ ] Add the Graphs header action and account/mobile menu item with current-page state.
-- [ ] Add translated page metadata and navigation labels.
-- [ ] Build the household, period, graph, and contextual option controls.
-- [ ] Show one picker for custom month and inclusive start/end pickers for custom period.
-- [ ] Connect URL state, browser history, household fallback, and Home/Graphs state transfer.
-- [ ] Connect the range query and graph aggregation selection.
-- [ ] Implement loading, retryable error, no-household, and empty-period states.
-- [ ] Reserve a responsive chart surface and legend/data-table regions.
-- [ ] Add Recharts and verify it is isolated from unrelated route bundles.
+- [x] Add the authenticated `/graph` server route and client Graph view.
+- [x] Add the Graphs header action and account/mobile menu item with current-page state.
+- [x] Add translated page metadata and navigation labels.
+- [x] Build the household, period, graph, and contextual option controls.
+- [x] Show one picker for custom month and inclusive start/end pickers for custom period.
+- [x] Connect URL state, browser history, household fallback, and Home/Graphs state transfer.
+- [x] Connect the range query and graph aggregation selection.
+- [x] Implement loading, retryable error, no-household, and empty-period states.
+- [x] Reserve a responsive chart surface and legend/data-table regions.
+- [x] Add Recharts and verify it is isolated from unrelated route bundles.
 
 ### Definition of done
 
@@ -666,6 +666,20 @@ Create a complete, responsive Graphs screen shell before adding the final chart 
 - Custom period validation is visible and keyboard accessible.
 - Home and Graphs carry compatible household/month state in both directions.
 - Loading and error transitions do not erase the user's current selection.
+
+### Result (2026-10-30)
+
+- Added the protected `/graph` route, translated navigation/metadata, responsive controls, URL and
+  history restoration, household fallback, Home/Graphs state transfer, and range-backed aggregation
+  selection.
+- Added persistent loading, retry, no-household, validation, and empty-period states while reserving
+  the chart, legend, and exact-value table regions for Milestones 5–7.
+- Added Recharts behind a graph-only dynamic client boundary; the generated Recharts chunk is not a
+  dependency of the Home route.
+- All 210 web unit/integration tests and production TypeScript checks pass. ESLint has no errors (one
+  pre-existing onboarding hook warning), and the responsive browser inspection passes at 1440, 768,
+  and 390 pixels. The production build compiles and statically generates every route before Windows
+  blocks standalone-output symlinks with `EPERM`.
 
 ---
 

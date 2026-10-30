@@ -13,7 +13,8 @@
     "appearance": "Görünüm",
     "profile": "Profil",
     "households": "Haneler",
-    "sources": "Kaynaklar"
+    "sources": "Kaynaklar",
+    "graphs": "Grafikler"
   },
   "Common": {
     "loading": "Yükleniyor...",
@@ -98,6 +99,7 @@
     "mainNavigation": "Ana gezinme",
     "menu": "Menü",
     "settings": "Ayarlar",
+    "graphs": "Grafikler",
     "info": {
       "open": "Bilgileri aç",
       "eyebrow": "Bu uygulama hakkında",
@@ -110,6 +112,65 @@
       "betaTitle": "Beta sürümü bildirimi",
       "beta": "Monthloom geliştirilmeye devam ediyor. Geri bildirimleriniz uygulamanın gelişimine katkı sağlar."
     }
+  },
+  "Graph": {
+    "title": "Grafikler",
+    "description": "Hane gelirlerini, giderlerini ve tahminlerini zaman içinde inceleyin.",
+    "backHome": "Ana sayfaya dön",
+    "controls": "Grafik kontrolleri",
+    "household": "Hane",
+    "period": "Dönem",
+    "graph": "Grafik",
+    "month": "Ay",
+    "from": "Başlangıç",
+    "to": "Bitiş",
+    "chartType": "Grafik türü",
+    "calculation": "Hesaplama",
+    "groupBy": "Gruplama",
+    "transactionKind": "İşlem türü",
+    "userPresentation": "Kullanıcı görünümü",
+    "users": "Kullanıcılar",
+    "combined": "Birleşik",
+    "loading": "Grafik verileri yükleniyor...",
+    "updating": "Güncelleniyor...",
+    "retry": "Tekrar dene",
+    "loadHouseholdsError": "Haneleriniz yüklenemedi.",
+    "loadErrorTitle": "Grafik verileri kullanılamıyor",
+    "loadErrorDescription": "Bu dönem yüklenemedi. Mevcut seçiminiz korundu.",
+    "noHouseholds": "Henüz hane yok",
+    "noHouseholdsDescription": "Grafikleri açmadan önce ayarlarda bir hane oluşturun.",
+    "openSettings": "Hane ayarlarını aç",
+    "emptyPeriodTitle": "Bu dönemde etkinlik yok",
+    "emptyPeriodDescription": "Başka bir dönem seçin veya Ana Sayfa’dan işlem ekleyin.",
+    "emptyGraphTitle": "Bu seçenekler için gösterilecek veri yok",
+    "emptyGraphDescription": "{graph} grafiğinde eşleşen değer yok. Başka bir seçenek deneyin.",
+    "periodSummary": "{from} - {to}",
+    "chartPlaceholderLabel": "{count} veri grubuyla {graph} grafik alanı",
+    "legend": "Gösterge",
+    "legendPlaceholder": "Kesinleşen ve tahmini değerler grafikle birlikte burada görünecek.",
+    "dataTable": "Veri tablosu",
+    "tablePlaceholder": "Erişilebilir kesin değer tablosu grafikle birlikte burada görünecek.",
+    "graphs": { "balance": "Bakiye", "category": "Kategori", "overview": "Genel bakış" },
+    "periods": {
+      "current-month": "Bu ay",
+      "last-month": "Geçen ay",
+      "current-year": "Bu yıl",
+      "last-year": "Geçen yıl",
+      "last-12-months": "Son 12 ay",
+      "custom-month": "Özel ay",
+      "custom-period": "Özel dönem"
+    },
+    "periodErrors": {
+      "invalid-month": "Geçerli bir ay seçin.",
+      "out-of-bounds": "Kullanılabilir aralıkta bir ay seçin.",
+      "inverted-range": "Başlangıç ayı bitiş ayından sonra olamaz."
+    },
+    "balanceCharts": { "line": "Çizgi", "area": "Alan" },
+    "balanceModes": { "daily": "Günlük", "cumulative": "Birikimli" },
+    "groupings": { "user": "Kullanıcı", "source": "Kaynak", "transaction-type": "İşlem türü" },
+    "categoryCharts": { "pie": "Pasta", "bar": "Çubuk", "radial": "Radyal çubuk" },
+    "overviewKinds": { "expense": "Giderler", "income": "Gelir" },
+    "overviewModes": { "combine": "Birleştir", "compare": "Karşılaştır" }
   },
   "Auth": {
     "logout": "Çıkış yap",

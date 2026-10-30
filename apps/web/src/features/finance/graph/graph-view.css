@@ -1,0 +1,350 @@
+.graphPage {
+  width: min(100%, 75rem);
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 2.5rem) var(--space-4) var(--space-8);
+}
+
+.graphPageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+.graphPageHeader h1,
+.graphPageHeader p,
+.graphSurfaceHeader h2,
+.graphSurfaceHeader p,
+.graphSupplement h3,
+.graphSupplement p,
+.graphStatePanel h2,
+.graphStatePanel p {
+  margin: 0;
+}
+
+.graphPageHeader h1 {
+  margin-bottom: var(--space-1);
+  font-size: clamp(1.5rem, 4vw, 1.9rem);
+}
+
+.graphPageHeader p,
+.graphSurfaceHeader p,
+.graphSupplement p,
+.graphStatePanel p {
+  color: var(--ml-text-muted);
+}
+
+.graphHomeLink,
+.graphTextButton {
+  color: var(--ml-primary);
+  font: inherit;
+  font-weight: 700;
+}
+
+.graphHomeLink {
+  flex: 0 0 auto;
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--ml-border);
+  border-radius: 8px;
+  background: var(--ml-surface);
+  text-decoration: none;
+}
+
+.graphTextButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.graphControls {
+  display: grid;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--ml-border);
+  border-radius: 8px;
+  background: var(--ml-surface);
+}
+
+.graphControlRow,
+.graphDateRange,
+.graphContextControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.graphControlRowPrimary .graphField {
+  flex: 1 1 12rem;
+}
+
+.graphField {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+  color: var(--ml-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.graphField select,
+.graphField input {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--ml-border);
+  border-radius: 6px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  font: inherit;
+  font-size: 0.92rem;
+}
+
+.graphDateField {
+  width: min(100%, 15rem);
+}
+
+.graphSegmented,
+.graphUsers {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.graphSegmented legend,
+.graphUsers legend {
+  margin-bottom: var(--space-1);
+  padding: 0;
+  color: var(--ml-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.graphSegmentedTrack,
+.graphUsers > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.graphSegmented label,
+.graphUsers label {
+  position: relative;
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  cursor: pointer;
+}
+
+.graphSegmented input,
+.graphUsers input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.graphSegmented span,
+.graphUsers span {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--ml-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ml-text-muted);
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.graphSegmented input:checked + span,
+.graphUsers input:checked + span {
+  border-color: var(--ml-text-muted);
+  background: var(--ml-surface-hover);
+  color: var(--ml-text);
+}
+
+.graphSegmented input:focus-visible + span,
+.graphUsers input:focus-visible + span {
+  outline: 2px solid var(--ml-focus-ring);
+  outline-offset: 2px;
+}
+
+.graphValidation {
+  margin: calc(var(--space-2) * -1) 0 0;
+  color: var(--color-danger);
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+.graphWorkspace,
+.graphStatePanel,
+.graphLoadingFrame {
+  min-height: 24rem;
+  border: 1px solid var(--ml-border);
+  border-radius: 8px;
+  background: var(--ml-surface);
+}
+
+.graphWorkspace {
+  padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+.graphSurfaceHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.graphSurfaceHeader h2 {
+  font-size: 1.1rem;
+}
+
+.graphSurfaceHeader p,
+.graphSurfaceHeader [role='status'] {
+  margin-top: var(--space-1);
+  font-size: 0.82rem;
+}
+
+.graphSurfaceHeader [role='status'] {
+  color: var(--ml-text-muted);
+}
+
+.graphChartCanvas {
+  position: relative;
+  min-height: 20rem;
+  border-block: 1px solid var(--ml-divider);
+}
+
+.graphZeroLine {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--ml-divider);
+}
+
+.graphSupplement {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.graphSupplement section {
+  padding: var(--space-3) 0;
+}
+
+.graphSupplement h3 {
+  margin-bottom: var(--space-1);
+  font-size: 0.92rem;
+}
+
+.graphSupplement p {
+  font-size: 0.82rem;
+}
+
+.graphStatePanel,
+.graphLoadingContent {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.graphStatePanel h2 {
+  font-size: 1.1rem;
+}
+
+.graphStatePanel p {
+  max-width: 34rem;
+}
+
+.graphLoadingContent {
+  min-height: 24rem;
+  color: var(--ml-text-muted);
+}
+
+.graphLoadingContent::before {
+  width: min(28rem, 72vw);
+  height: 7rem;
+  border-radius: 6px;
+  background: var(--ml-surface-hover);
+  content: '';
+}
+
+@media (max-width: 700px) {
+  .graphPage {
+    padding-inline: var(--space-4);
+  }
+
+  .graphPageHeader {
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .graphHomeLink {
+    align-self: flex-start;
+  }
+
+  .graphControlRowPrimary,
+  .graphDateRange {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .graphDateField {
+    width: 100%;
+  }
+
+  .graphContextControls {
+    display: grid;
+  }
+
+  .graphSegmentedTrack,
+  .graphUsers > div {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 2px;
+  }
+
+  .graphSegmented label,
+  .graphUsers label {
+    flex: 0 0 auto;
+    min-height: 2.75rem;
+  }
+
+  .graphSegmented span,
+  .graphUsers span {
+    min-height: 2.75rem;
+  }
+
+  .graphWorkspace,
+  .graphStatePanel,
+  .graphLoadingFrame {
+    min-height: 20rem;
+  }
+
+  .graphChartCanvas {
+    min-height: 12rem;
+  }
+
+  .graphSupplement {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
