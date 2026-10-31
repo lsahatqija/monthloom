@@ -237,6 +237,42 @@ describe('overview aggregation', () => {
       true,
     );
     expect(result.series[1]!.values[1]!.totalCents).toBe(0);
+
+    const combined = aggregateOverview({
+      transactions,
+      members: Object.values(USERS),
+      selectedUserIds: [USERS.ada.id, USERS.ben.id],
+      kind: 'expense',
+      mode: 'combine',
+    });
+    expect(
+      result.series.reduce(
+        (sum, series) => sum + series.values[0]!.totalCents,
+        0,
+      ),
+    ).toBe(combined.series[0]!.values[0]!.totalCents);
+  });
+
+  it('keeps user colors and patterns stable when comparison order changes', () => {
+    const original = aggregateOverview({
+      transactions,
+      members: Object.values(USERS),
+      selectedUserIds: [USERS.ada.id, USERS.ben.id],
+      kind: 'expense',
+      mode: 'compare',
+    });
+    const reversed = aggregateOverview({
+      transactions,
+      members: Object.values(USERS),
+      selectedUserIds: [USERS.ben.id, USERS.ada.id],
+      kind: 'expense',
+      mode: 'compare',
+    });
+    const style = ({ color, pattern }: (typeof original.series)[number]) => ({ color, pattern });
+
+    expect(style(reversed.series.find(({ key }) => key === USERS.ada.id)!)).toEqual(
+      style(original.series.find(({ key }) => key === USERS.ada.id)!),
+    );
   });
 
   it('uses sources for income dimensions and omits zero dimensions', () => {

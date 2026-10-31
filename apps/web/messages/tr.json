@@ -187,6 +187,28 @@
       "dataTableCaption": "Kesin bakiye değerleri",
       "column": "{series} — {state}"
     },
+    "category": {
+      "pieChartLabel": "Kategori pasta grafiği",
+      "pieChartDescription": "Sıfır olmayan tüm gider grupları. Tahmini bölümler daha açık renkte ve kesikli sınırlıdır.",
+      "barChartLabel": "Kategori çubuk grafiği",
+      "barChartDescription": "Toplama göre sıralanmış, sıfır olmayan tüm gider grupları. Her çubuk gerçekleşen ve tahmini giderleri üst üste gösterir.",
+      "radialChartLabel": "Kategori radyal çubuk grafiği",
+      "radialChartDescription": "Sıfır olmayan tüm gider grupları, gerçekleşen ve tahmini bölümleriyle radyal çubuklar olarak gösterilir.",
+      "legendLabel": "Kategori göstergesi",
+      "dataTableCaption": "Kesin kategori değerleri",
+      "category": "Kategori",
+      "percentage": "Yüzde",
+      "summary": "{count, plural, one {# kategoride} other {# kategoride}} {total}. En büyük: {label}, {amount} ({percentage}). Tahmini giderler: {projected}."
+    },
+    "overview": {
+      "chartLabel": "Hane genel görünüm radar grafiği",
+      "chartDescription": "Sıfır olmayan tüm boyutlarda logaritmik ölçekli hane değerleri. Düz desenli çokgenler gerçekleşen değerleri, kesikli dış çizgiler tahminleri içeren toplamları gösterir.",
+      "legendLabel": "Genel görünüm göstergesi",
+      "dataTableCaption": "Kesin genel görünüm değerleri",
+      "dimension": "Boyut",
+      "column": "{series} — {state}",
+      "summary": "{userCount, plural, one {# kullanıcı} other {# kullanıcı}} için {dimensionCount, plural, one {# boyutta} other {# boyutta}} {total}. Gösterilen en yüksek değer: {maximum}. Radar tek bir ortak logaritmik ölçek kullanır."
+    },
     "groupings": { "user": "Kullanıcı", "source": "Kaynak", "transaction-type": "İşlem türü" },
     "categoryCharts": { "pie": "Pasta", "bar": "Çubuk", "radial": "Radyal çubuk" },
     "overviewKinds": { "expense": "Giderler", "income": "Gelir" },

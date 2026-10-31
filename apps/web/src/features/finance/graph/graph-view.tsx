@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 
+import { useTheme } from '../../../components/theme-provider';
 import { Alert } from '../../../components/ui';
 import { useHouseholds, useHouseholdTransactionRange } from '../api/queries';
 import { resolveHouseholdId } from '../selectors/household-picker';
@@ -39,6 +40,7 @@ function LoadingSurface({ label }: { label: string }) {
 
 export function GraphView() {
   const t = useTranslations('Graph');
+  const { mode: theme } = useTheme();
   const typeLabels = useTranslations('Labels.expenseTypes');
   const selection = useGraphSelection();
   const { householdId, setHouseholdId } = selection;
@@ -64,12 +66,15 @@ export function GraphView() {
       const result = aggregateCategories({
         transactions,
         grouping: selection.categoryGrouping,
+        theme,
         typeLabel: (type) => typeLabels(type),
       });
       return {
         itemCount: result.groups.length,
         empty: result.groups.length === 0,
         balance: undefined,
+        category: result,
+        overview: undefined,
       };
     }
     if (selection.graph === 'overview') {
@@ -79,6 +84,7 @@ export function GraphView() {
         selectedUserIds: selection.userIds,
         kind: selection.overviewKind,
         mode: selection.overviewMode,
+        theme,
         typeLabel: (type) => typeLabels(type),
         combinedLabel: t('combined'),
       });
@@ -86,6 +92,8 @@ export function GraphView() {
         itemCount: result.dimensions.length,
         empty: result.dimensions.length === 0,
         balance: undefined,
+        category: undefined,
+        overview: result,
       };
     }
     const result = aggregateBalance({
@@ -98,8 +106,10 @@ export function GraphView() {
       itemCount: result.points.length,
       empty: transactions.length === 0,
       balance: result,
+      category: undefined,
+      overview: undefined,
     };
-  }, [members, selection, t, transactions, typeLabels]);
+  }, [members, selection, t, theme, transactions, typeLabels]);
 
   const pageHeader = (
     <header className="graphPageHeader">
@@ -205,8 +215,25 @@ export function GraphView() {
                   }
                 : undefined
             }
+            category={
+              aggregation.category
+                ? {
+                    model: aggregation.category,
+                    variant: selection.categoryChart,
+                    currency: rangeQuery.data.household.currency,
+                  }
+                : undefined
+            }
+            overview={
+              aggregation.overview
+                ? {
+                    model: aggregation.overview,
+                    currency: rangeQuery.data.household.currency,
+                  }
+                : undefined
+            }
           />
-          {!aggregation.balance ? (
+          {!aggregation.balance && !aggregation.category && !aggregation.overview ? (
             <div className="graphSupplement">
               <section aria-labelledby="graph-legend-title">
                 <h3 id="graph-legend-title">{t('legend')}</h3>

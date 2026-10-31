@@ -187,6 +187,28 @@
       "dataTableCaption": "Exact balance values",
       "column": "{series} — {state}"
     },
+    "category": {
+      "pieChartLabel": "Category pie chart",
+      "pieChartDescription": "Every non-zero expense group. Projected portions are lighter with a dashed boundary.",
+      "barChartLabel": "Category bar chart",
+      "barChartDescription": "Every non-zero expense group, sorted by total. Each bar stacks realized and projected expenses.",
+      "radialChartLabel": "Category radial bar chart",
+      "radialChartDescription": "Every non-zero expense group as a radial bar with realized and projected portions.",
+      "legendLabel": "Category legend",
+      "dataTableCaption": "Exact category values",
+      "category": "Category",
+      "percentage": "Percentage",
+      "summary": "{total} across {count, plural, one {# category} other {# categories}}. Largest: {label}, {amount} ({percentage}). Projected expenses: {projected}."
+    },
+    "overview": {
+      "chartLabel": "Household overview radar chart",
+      "chartDescription": "Logarithmically scaled household values across every non-zero dimension. Solid patterned polygons are realized values; dashed outlines include projections.",
+      "legendLabel": "Overview legend",
+      "dataTableCaption": "Exact overview values",
+      "dimension": "Dimension",
+      "column": "{series} — {state}",
+      "summary": "{total} across {dimensionCount, plural, one {# dimension} other {# dimensions}} for {userCount, plural, one {# user} other {# users}}. Highest plotted value: {maximum}. The radar uses one shared logarithmic scale."
+    },
     "groupings": { "user": "User", "source": "Source", "transaction-type": "Transaction type" },
     "categoryCharts": { "pie": "Pie", "bar": "Bar", "radial": "Radial bar" },
     "overviewKinds": { "expense": "Expenses", "income": "Income" },

@@ -187,6 +187,28 @@
       "dataTableCaption": "Exakte Bilanzwerte",
       "column": "{series} — {state}"
     },
+    "category": {
+      "pieChartLabel": "Kreisdiagramm nach Kategorie",
+      "pieChartDescription": "Alle Ausgabengruppen ungleich null. Prognostizierte Anteile sind heller und gestrichelt umrandet.",
+      "barChartLabel": "Balkendiagramm nach Kategorie",
+      "barChartDescription": "Alle Ausgabengruppen ungleich null, nach Summe sortiert. Jeder Balken stapelt tatsächliche und prognostizierte Ausgaben.",
+      "radialChartLabel": "Radiales Balkendiagramm nach Kategorie",
+      "radialChartDescription": "Alle Ausgabengruppen ungleich null als radiale Balken mit tatsächlichen und prognostizierten Anteilen.",
+      "legendLabel": "Kategorienlegende",
+      "dataTableCaption": "Genaue Kategoriewerte",
+      "category": "Kategorie",
+      "percentage": "Prozentsatz",
+      "summary": "{total} in {count, plural, one {# Kategorie} other {# Kategorien}}. Größte: {label}, {amount} ({percentage}). Prognostizierte Ausgaben: {projected}."
+    },
+    "overview": {
+      "chartLabel": "Radar-Diagramm der Haushaltsübersicht",
+      "chartDescription": "Logarithmisch skalierte Haushaltswerte über alle Dimensionen ungleich null. Durchgezogene gemusterte Flächen zeigen tatsächliche Werte; gestrichelte Umrisse enthalten Prognosen.",
+      "legendLabel": "Legende der Übersicht",
+      "dataTableCaption": "Genaue Übersichtswerte",
+      "dimension": "Dimension",
+      "column": "{series} — {state}",
+      "summary": "{total} über {dimensionCount, plural, one {# Dimension} other {# Dimensionen}} für {userCount, plural, one {# Benutzer} other {# Benutzer}}. Höchster dargestellter Wert: {maximum}. Das Radar verwendet eine gemeinsame logarithmische Skala."
+    },
     "groupings": { "user": "Benutzer", "source": "Quelle", "transaction-type": "Transaktionsart" },
     "categoryCharts": { "pie": "Kreis", "bar": "Balken", "radial": "Radialbalken" },
     "overviewKinds": { "expense": "Ausgaben", "income": "Einnahmen" },

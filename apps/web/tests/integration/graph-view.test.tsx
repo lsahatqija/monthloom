@@ -2,7 +2,12 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { BalanceViewModel } from '../../src/features/finance/graph/aggregation/types';
+import { ThemeProvider } from '../../src/components/theme-provider';
+import type {
+  BalanceViewModel,
+  CategoryViewModel,
+  OverviewViewModel,
+} from '../../src/features/finance/graph/aggregation/types';
 import { GraphView } from '../../src/features/finance/graph/graph-view';
 import { renderWithQuery } from '../render';
 
@@ -10,9 +15,13 @@ vi.mock('../../src/features/finance/graph/chart-surface', () => ({
   default: ({
     label,
     balance,
+    category,
+    overview,
   }: {
     label: string;
     balance?: { model: BalanceViewModel; variant: string; currency: string };
+    category?: { model: CategoryViewModel; variant: string; currency: string };
+    overview?: { model: OverviewViewModel; currency: string };
   }) => (
     <div
       role="img"
@@ -20,6 +29,11 @@ vi.mock('../../src/features/finance/graph/chart-surface', () => ({
       data-variant={balance?.variant}
       data-mode={balance?.model.mode}
       data-currency={balance?.currency}
+      data-category-variant={category?.variant}
+      data-category-total={category?.model.totalCents}
+      data-overview-dimensions={overview?.model.dimensions.length}
+      data-overview-series={overview?.model.series.length}
+      data-overview-currency={overview?.currency}
     />
   ),
 }));
@@ -91,13 +105,21 @@ function mockGraph({
   return fetch;
 }
 
+function renderGraph() {
+  return renderWithQuery(
+    <ThemeProvider>
+      <GraphView />
+    </ThemeProvider>,
+  );
+}
+
 describe('Graph view', () => {
   afterEach(() => window.history.replaceState({}, '', '/'));
 
   it('falls back before querying an inaccessible household and writes controls to the URL', async () => {
     window.history.replaceState({}, '', '/graph?household=missing&period=current-month');
     const fetch = mockGraph();
-    renderWithQuery(<GraphView />);
+    renderGraph();
 
     expect(await screen.findByRole('heading', { name: 'Balance' })).toBeVisible();
     const paths = vi.mocked(fetch).mock.calls.map(([input]) => new URL(String(input)).pathname);
@@ -119,17 +141,41 @@ describe('Graph view', () => {
 
     await userEvent.selectOptions(screen.getByLabelText('Graph'), 'category');
     expect(new URL(window.location.href).searchParams.get('graph')).toBe('category');
+    expect(
+      screen.queryByText('Exact realized and projected values will appear here with the chart.'),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Group by' })).toBeVisible();
     await userEvent.click(
       within(screen.getByRole('group', { name: 'Group by' })).getByText('Source'),
     );
     expect(new URL(window.location.href).searchParams.get('group')).toBe('source');
+    expect(screen.getByRole('img')).toHaveAttribute('data-category-variant', 'pie');
+    expect(screen.getByRole('img')).toHaveAttribute('data-category-total', '2000');
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Chart type' })).getByText('Radial bar'),
+    );
+    expect(screen.getByRole('img')).toHaveAttribute('data-category-variant', 'radial');
+
+    await userEvent.selectOptions(screen.getByLabelText('Graph'), 'overview');
+    expect(screen.getByRole('group', { name: 'Transaction kind' })).toBeVisible();
+    expect(screen.getByRole('group', { name: 'User presentation' })).toBeVisible();
+    const ada = screen.getByRole('checkbox', { name: 'Ada' });
+    expect(ada).toBeChecked();
+    await userEvent.click(ada);
+    expect(ada).toBeChecked();
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'User presentation' })).getByText('Compare'),
+    );
+    expect(new URL(window.location.href).searchParams.get('usersMode')).toBe('compare');
+    expect(screen.getByRole('img')).toHaveAttribute('data-overview-dimensions', '1');
+    expect(screen.getByRole('img')).toHaveAttribute('data-overview-series', '1');
+    expect(screen.getByRole('img')).toHaveAttribute('data-overview-currency', 'EUR');
   });
 
   it('shows accessible validation for an inverted custom period', async () => {
     window.history.replaceState({}, '', '/graph?period=current-month');
     mockGraph();
-    renderWithQuery(<GraphView />);
+    renderGraph();
     await screen.findByRole('heading', { name: 'Balance' });
 
     await userEvent.selectOptions(screen.getByLabelText('Period'), 'custom-period');
@@ -142,7 +188,7 @@ describe('Graph view', () => {
 
   it('keeps the control surface for empty periods and retryable errors', async () => {
     mockGraph({ transactions: [] });
-    const { unmount } = renderWithQuery(<GraphView />);
+    const { unmount } = renderGraph();
     expect(
       await screen.findByRole('heading', { name: 'No activity in this period' }),
     ).toBeVisible();
@@ -150,7 +196,7 @@ describe('Graph view', () => {
     unmount();
 
     mockGraph({ failRange: true });
-    renderWithQuery(<GraphView />);
+    renderGraph();
     expect(await screen.findByRole('heading', { name: 'Graph data unavailable' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeVisible();
     expect(screen.getByLabelText('Graph')).toBeVisible();
@@ -158,7 +204,7 @@ describe('Graph view', () => {
 
   it('links first-run users to household settings', async () => {
     mockGraph({ households: [] });
-    renderWithQuery(<GraphView />);
+    renderGraph();
     expect(await screen.findByRole('heading', { name: 'No households yet' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'Open household settings' })).toHaveAttribute(
       'href',

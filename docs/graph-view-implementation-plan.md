@@ -762,16 +762,16 @@ Deliver logarithmically scaled household and per-user comparisons across non-zer
 
 ### Tasks
 
-- [ ] Implement the Expense / Income segmented control.
-- [ ] Implement the member checklist with all users selected by default.
-- [ ] Restore all users automatically when the final selected user is deselected.
-- [ ] Implement Combine / Compare segmented control.
-- [ ] Render combined and overlapping per-user radar series.
-- [ ] Use transparent compare fills, stable user colors, and explicit user labels.
-- [ ] Render realized polygons and total-with-projection dashed outlines.
-- [ ] Apply one logarithmic maximum and dimension set to all visible series.
-- [ ] Add raw-value tooltips, legend, exact-value table, and text summary.
-- [ ] Verify label layout with the maximum realistic non-zero dimension count.
+- [x] Implement the Expense / Income segmented control.
+- [x] Implement the member checklist with all users selected by default.
+- [x] Restore all users automatically when the final selected user is deselected.
+- [x] Implement Combine / Compare segmented control.
+- [x] Render combined and overlapping per-user radar series.
+- [x] Use transparent compare fills, stable user colors, and explicit user labels.
+- [x] Render realized polygons and total-with-projection dashed outlines.
+- [x] Apply one logarithmic maximum and dimension set to all visible series.
+- [x] Add raw-value tooltips, legend, exact-value table, and text summary.
+- [x] Verify label layout with the maximum realistic non-zero dimension count.
 
 ### Definition of done
 
@@ -781,6 +781,26 @@ Deliver logarithmically scaled household and per-user comparisons across non-zer
 - Raw amounts remain discoverable even though geometry uses normalized values.
 - Realized and projected values and overlapping users are distinguishable without relying solely on
   hue.
+
+### Result (2026-10-31)
+
+- Added the Overview radar presentation for combined household totals and overlapping per-user
+  comparisons, using one shared logarithmic maximum and identical non-zero dimensions.
+- Realized values use transparent, stable user-colored pattern fills; total-with-projection values
+  use same-color dashed outlines. Explicit user labels, line-state labels, and exact values avoid
+  relying on hue alone.
+- Added localized raw-value tooltips, a scroll-contained per-user legend, a concise scale summary,
+  and an exact-value table for English, German, French, Albanian, and Turkish.
+- Kept every one of the 30 realistic expense dimensions in the geometry and exact table while
+  sampling crowded visual axis labels to keep the responsive chart inside the viewport.
+- Added regression coverage for combined-versus-compare equality, stable user styles, projection
+  outlines, shared-scale data, dense dimensions, route wiring, URL state, and last-user restoration.
+- All 225 web unit and integration tests pass. Web TypeScript passes, and lint reports only the
+  pre-existing onboarding hook warning. The production build compiles, type-checks, and generates
+  every route before the known Windows standalone-output symlink `EPERM` failure.
+- Browser automation was unavailable because the browser access host could not be reached; no
+  personal browser profile was attached, and component plus route coverage provides the milestone
+  verification. This milestone introduces no dependency, API, or database schema changes.
 
 ---
 

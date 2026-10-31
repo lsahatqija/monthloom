@@ -187,6 +187,28 @@
       "dataTableCaption": "Vlerat e sakta të bilancit",
       "column": "{series} — {state}"
     },
+    "category": {
+      "pieChartLabel": "Grafik rrethor sipas kategorisë",
+      "pieChartDescription": "Çdo grup shpenzimesh me vlerë jo zero. Pjesët e parashikuara janë më të çelëta me kufi të ndërprerë.",
+      "barChartLabel": "Grafik me shtylla sipas kategorisë",
+      "barChartDescription": "Çdo grup shpenzimesh me vlerë jo zero, i renditur sipas totalit. Çdo shtyllë grumbullon shpenzimet e realizuara dhe të parashikuara.",
+      "radialChartLabel": "Grafik radial sipas kategorisë",
+      "radialChartDescription": "Çdo grup shpenzimesh me vlerë jo zero si shtyllë radiale me pjesët e realizuara dhe të parashikuara.",
+      "legendLabel": "Legjenda e kategorive",
+      "dataTableCaption": "Vlerat e sakta të kategorive",
+      "category": "Kategoria",
+      "percentage": "Përqindja",
+      "summary": "{total} në {count, plural, one {# kategori} other {# kategori}}. Më e madhja: {label}, {amount} ({percentage}). Shpenzime të parashikuara: {projected}."
+    },
+    "overview": {
+      "chartLabel": "Grafiku radar i përmbledhjes së familjes",
+      "chartDescription": "Vlerat e familjes me shkallë logaritmike në çdo dimension me vlerë jo zero. Shumëkëndëshat e plotë me model tregojnë vlerat e realizuara; konturet e ndërprera përfshijnë parashikimet.",
+      "legendLabel": "Legjenda e përmbledhjes",
+      "dataTableCaption": "Vlerat e sakta të përmbledhjes",
+      "dimension": "Dimensioni",
+      "column": "{series} — {state}",
+      "summary": "{total} në {dimensionCount, plural, one {# dimension} other {# dimensione}} për {userCount, plural, one {# përdorues} other {# përdorues}}. Vlera më e lartë e paraqitur: {maximum}. Radari përdor një shkallë të përbashkët logaritmike."
+    },
     "groupings": {
       "user": "Përdoruesi",
       "source": "Burimi",

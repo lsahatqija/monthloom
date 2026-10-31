@@ -187,6 +187,28 @@
       "dataTableCaption": "Valeurs exactes du solde",
       "column": "{series} — {state}"
     },
+    "category": {
+      "pieChartLabel": "Diagramme circulaire par catégorie",
+      "pieChartDescription": "Tous les groupes de dépenses non nuls. Les parts prévisionnelles sont plus claires avec un contour en pointillés.",
+      "barChartLabel": "Diagramme en barres par catégorie",
+      "barChartDescription": "Tous les groupes de dépenses non nuls, triés par total. Chaque barre empile les dépenses réalisées et prévisionnelles.",
+      "radialChartLabel": "Diagramme radial par catégorie",
+      "radialChartDescription": "Tous les groupes de dépenses non nuls sous forme de barres radiales avec leurs parts réalisées et prévisionnelles.",
+      "legendLabel": "Légende des catégories",
+      "dataTableCaption": "Valeurs exactes par catégorie",
+      "category": "Catégorie",
+      "percentage": "Pourcentage",
+      "summary": "{total} sur {count, plural, one {# catégorie} other {# catégories}}. Plus importante : {label}, {amount} ({percentage}). Dépenses prévisionnelles : {projected}."
+    },
+    "overview": {
+      "chartLabel": "Graphique radar de la vue d’ensemble du foyer",
+      "chartDescription": "Valeurs du foyer à échelle logarithmique pour chaque dimension non nulle. Les polygones pleins à motif représentent les valeurs réalisées ; les contours en pointillés incluent les prévisions.",
+      "legendLabel": "Légende de la vue d’ensemble",
+      "dataTableCaption": "Valeurs exactes de la vue d’ensemble",
+      "dimension": "Dimension",
+      "column": "{series} — {state}",
+      "summary": "{total} sur {dimensionCount, plural, one {# dimension} other {# dimensions}} pour {userCount, plural, one {# utilisateur} other {# utilisateurs}}. Valeur maximale représentée : {maximum}. Le radar utilise une échelle logarithmique commune."
+    },
     "groupings": {
       "user": "Utilisateur",
       "source": "Source",

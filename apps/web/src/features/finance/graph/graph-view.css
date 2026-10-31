@@ -282,6 +282,26 @@
   text-align: right;
 }
 
+.graphCategoryTooltip > div {
+  grid-template-columns: minmax(6rem, 1fr) auto;
+}
+
+.graphOverviewTooltip > div {
+  grid-template-columns: minmax(5rem, 1fr) repeat(3, auto);
+}
+
+.graphPatternMark {
+  fill: none;
+  stroke: var(--ml-surface);
+  stroke-width: 1.4;
+  opacity: 0.72;
+}
+
+.graphPatternDot {
+  fill: var(--ml-surface);
+  opacity: 0.78;
+}
+
 .graphBalanceLegend {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -300,6 +320,126 @@
   border-radius: 6px;
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
+}
+
+.graphCategoryLegend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  max-height: 26rem;
+  margin: var(--space-4) 0 0;
+  padding: 0 var(--space-1) 0 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.graphCategoryLegend li {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(8rem, 1fr) auto;
+  gap: var(--space-1) var(--space-2);
+  align-items: center;
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--ml-divider);
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.graphCategoryLegend li > :not(.graphCategorySwatch) {
+  grid-column: 2 / 4;
+}
+
+.graphCategorySwatch {
+  grid-row: 1 / span 4;
+  width: 1.25rem;
+  height: 100%;
+  min-height: 3rem;
+  border: 1px solid color-mix(in srgb, var(--ml-text) 24%, transparent);
+  border-radius: 3px;
+}
+
+.graphCategoryPattern-diagonal,
+.graphCategoryPattern-crosshatch {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 4px,
+    color-mix(in srgb, var(--ml-surface) 78%, transparent) 4px 6px
+  );
+}
+
+.graphCategoryPattern-crosshatch {
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      transparent 0 5px,
+      color-mix(in srgb, var(--ml-surface) 72%, transparent) 5px 6px
+    ),
+    repeating-linear-gradient(
+      135deg,
+      transparent 0 5px,
+      color-mix(in srgb, var(--ml-surface) 72%, transparent) 5px 6px
+    );
+}
+
+.graphCategoryPattern-dots {
+  background-image: radial-gradient(
+    circle at 3px 3px,
+    color-mix(in srgb, var(--ml-surface) 82%, transparent) 0 1.4px,
+    transparent 1.5px
+  );
+  background-size: 7px 7px;
+}
+
+.graphCategoryLegendName {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.graphCategoryLegendName strong {
+  overflow-wrap: anywhere;
+}
+
+.graphOverviewCanvas {
+  height: clamp(24rem, 52vw, 34rem);
+}
+
+.graphOverviewLegend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--space-2);
+  max-height: 24rem;
+  margin: var(--space-4) 0 0;
+  padding: 0 var(--space-1) 0 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.graphOverviewLegend li {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr);
+  gap: var(--space-1) var(--space-2);
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--ml-divider);
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.graphOverviewLegend li > :not(.graphOverviewSwatch) {
+  grid-column: 2;
+}
+
+.graphOverviewSwatch {
+  grid-row: 1 / span 4;
+  width: 1.25rem;
+  height: 100%;
+  min-height: 3rem;
+  border: 1px solid color-mix(in srgb, var(--ml-text) 24%, transparent);
+  border-radius: 3px;
 }
 
 .graphLegendName,
@@ -347,6 +487,14 @@
   border-collapse: collapse;
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
+}
+
+.graphCategoryTable table {
+  min-width: 42rem;
+}
+
+.graphOverviewTable table {
+  min-width: 52rem;
 }
 
 .graphTableScroll caption {
@@ -486,6 +634,15 @@
 
   .graphBalanceLegend {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .graphCategoryLegend {
+    grid-template-columns: minmax(0, 1fr);
+    max-height: 32rem;
+  }
+
+  .graphOverviewCanvas {
+    height: 22rem;
   }
 
   .graphSupplement {
