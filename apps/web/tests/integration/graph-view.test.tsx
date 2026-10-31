@@ -2,11 +2,26 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import type { BalanceViewModel } from '../../src/features/finance/graph/aggregation/types';
 import { GraphView } from '../../src/features/finance/graph/graph-view';
 import { renderWithQuery } from '../render';
 
 vi.mock('../../src/features/finance/graph/chart-surface', () => ({
-  default: ({ label }: { label: string }) => <div role="img" aria-label={label} />,
+  default: ({
+    label,
+    balance,
+  }: {
+    label: string;
+    balance?: { model: BalanceViewModel; variant: string; currency: string };
+  }) => (
+    <div
+      role="img"
+      aria-label={label}
+      data-variant={balance?.variant}
+      data-mode={balance?.model.mode}
+      data-currency={balance?.currency}
+    />
+  ),
 }));
 
 const household = {
@@ -88,6 +103,19 @@ describe('Graph view', () => {
     const paths = vi.mocked(fetch).mock.calls.map(([input]) => new URL(String(input)).pathname);
     expect(paths).toContain(`/api/v1/households/${household.id}/transactions`);
     expect(paths).not.toContain('/api/v1/households/missing/transactions');
+    const chart = screen.getByRole('img');
+    expect(chart).toHaveAttribute('data-variant', 'line');
+    expect(chart).toHaveAttribute('data-mode', 'daily');
+    expect(chart).toHaveAttribute('data-currency', 'EUR');
+
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Chart type' })).getByText('Area'),
+    );
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Calculation' })).getByText('Cumulative'),
+    );
+    expect(chart).toHaveAttribute('data-variant', 'area');
+    expect(chart).toHaveAttribute('data-mode', 'cumulative');
 
     await userEvent.selectOptions(screen.getByLabelText('Graph'), 'category');
     expect(new URL(window.location.href).searchParams.get('graph')).toBe('category');

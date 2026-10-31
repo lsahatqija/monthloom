@@ -691,14 +691,14 @@ Deliver the daily/cumulative line and area views with exact tooltips and project
 
 ### Tasks
 
-- [ ] Implement the centered-zero line chart with income, negative expense, and balance series.
-- [ ] Implement daily and cumulative segmented controls.
-- [ ] Implement the balance area chart with positive green and negative red fill.
-- [ ] Add realized/projected stroke, point, fill, pattern, and legend treatments.
-- [ ] Add symmetric Y-axis calculation and a labeled zero reference line.
-- [ ] Add responsive X-axis tick sampling without reducing the data.
-- [ ] Add localized currency/date tooltips and exact-value table.
-- [ ] Add a concise screen-reader and visible text summary.
+- [x] Implement the centered-zero line chart with income, negative expense, and balance series.
+- [x] Implement daily and cumulative segmented controls.
+- [x] Implement the balance area chart with positive green and negative red fill.
+- [x] Add realized/projected stroke, point, fill, pattern, and legend treatments.
+- [x] Add symmetric Y-axis calculation and a labeled zero reference line.
+- [x] Add responsive X-axis tick sampling without reducing the data.
+- [x] Add localized currency/date tooltips and exact-value table.
+- [x] Add a concise screen-reader and visible text summary.
 
 ### Definition of done
 
@@ -708,6 +708,21 @@ Deliver the daily/cumulative line and area views with exact tooltips and project
 - Positive and negative areas render correctly when a line crosses zero.
 - Realized and projected values remain distinguishable in light/dark mode, grayscale, keyboard
   interaction, and the data table.
+
+### Result (2026-10-31)
+
+- Added daily and cumulative Balance line charts with solid realized series, dashed totals,
+  projection-only hollow markers, negative expenses, a labeled zero reference, symmetric domains,
+  and responsive time-axis tick sampling.
+- Added a positive/negative Balance area chart with zero-aware green/red gradients, patterned
+  projected totals, and dashed projection outlines that remain distinguishable without hue.
+- Added keyboard-aware Recharts tooltips, localized dates and currency, period totals, explicit
+  realized/projected/combined legends, a visible text summary, and a disclosed exact-value table.
+- Added Balance presentation strings for every supported locale and regression coverage for chart
+  variants, cumulative projection markers, accessible output, and route-to-chart wiring.
+- All 214 web unit and integration tests pass. Web TypeScript and lint pass with one pre-existing
+  onboarding hook warning. The production build compiles, type-checks, and generates every route
+  before the known Windows standalone-output symlink `EPERM` failure.
 
 ---
 

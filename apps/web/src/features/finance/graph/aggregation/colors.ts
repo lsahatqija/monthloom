@@ -100,11 +100,12 @@ export function chartStyleForKey(
 
 export const SEMANTIC_CHART_COLORS: Record<
   ChartTheme,
-  Record<'income' | 'expense' | 'positiveBalance' | 'negativeBalance' | 'projected', string>
+  Record<'income' | 'expense' | 'balance' | 'positiveBalance' | 'negativeBalance' | 'projected', string>
 > = {
   light: {
     income: '#047857',
     expense: '#dc2626',
+    balance: '#245a9b',
     positiveBalance: '#15803d',
     negativeBalance: '#b91c1c',
     projected: '#64748b',
@@ -112,6 +113,7 @@ export const SEMANTIC_CHART_COLORS: Record<
   dark: {
     income: '#34d399',
     expense: '#f87171',
+    balance: '#75b6c8',
     positiveBalance: '#4ade80',
     negativeBalance: '#fca5a5',
     projected: '#94a3b8',

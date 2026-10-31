@@ -66,7 +66,11 @@ export function GraphView() {
         grouping: selection.categoryGrouping,
         typeLabel: (type) => typeLabels(type),
       });
-      return { itemCount: result.groups.length, empty: result.groups.length === 0 };
+      return {
+        itemCount: result.groups.length,
+        empty: result.groups.length === 0,
+        balance: undefined,
+      };
     }
     if (selection.graph === 'overview') {
       const result = aggregateOverview({
@@ -78,7 +82,11 @@ export function GraphView() {
         typeLabel: (type) => typeLabels(type),
         combinedLabel: t('combined'),
       });
-      return { itemCount: result.dimensions.length, empty: result.dimensions.length === 0 };
+      return {
+        itemCount: result.dimensions.length,
+        empty: result.dimensions.length === 0,
+        balance: undefined,
+      };
     }
     const result = aggregateBalance({
       transactions,
@@ -86,7 +94,11 @@ export function GraphView() {
       to: selection.toDate,
       mode: selection.balanceMode,
     });
-    return { itemCount: result.points.length, empty: transactions.length === 0 };
+    return {
+      itemCount: result.points.length,
+      empty: transactions.length === 0,
+      balance: result,
+    };
   }, [members, selection, t, transactions, typeLabels]);
 
   const pageHeader = (
@@ -184,17 +196,28 @@ export function GraphView() {
               graph: t(`graphs.${selection.graph}`),
               count: aggregation.itemCount,
             })}
+            balance={
+              aggregation.balance
+                ? {
+                    model: aggregation.balance,
+                    variant: selection.balanceChart,
+                    currency: rangeQuery.data.household.currency,
+                  }
+                : undefined
+            }
           />
-          <div className="graphSupplement">
-            <section aria-labelledby="graph-legend-title">
-              <h3 id="graph-legend-title">{t('legend')}</h3>
-              <p>{t('legendPlaceholder')}</p>
-            </section>
-            <section aria-labelledby="graph-table-title">
-              <h3 id="graph-table-title">{t('dataTable')}</h3>
-              <p>{t('tablePlaceholder')}</p>
-            </section>
-          </div>
+          {!aggregation.balance ? (
+            <div className="graphSupplement">
+              <section aria-labelledby="graph-legend-title">
+                <h3 id="graph-legend-title">{t('legend')}</h3>
+                <p>{t('legendPlaceholder')}</p>
+              </section>
+              <section aria-labelledby="graph-table-title">
+                <h3 id="graph-table-title">{t('dataTable')}</h3>
+                <p>{t('tablePlaceholder')}</p>
+              </section>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </section>

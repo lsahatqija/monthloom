@@ -223,7 +223,8 @@
 
 .graphChartCanvas {
   position: relative;
-  min-height: 20rem;
+  height: clamp(20rem, 42vw, 27rem);
+  min-width: 0;
   border-block: 1px solid var(--ml-divider);
 }
 
@@ -234,6 +235,145 @@
   left: 0;
   height: 1px;
   background: var(--ml-divider);
+}
+
+.graphChartSummary {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3);
+  border-left: 3px solid var(--ml-primary);
+  background: var(--ml-surface-hover);
+  color: var(--ml-text);
+  font-size: 0.9rem;
+}
+
+.graphTooltip {
+  min-width: 15rem;
+  padding: var(--space-3);
+  border: 1px solid var(--ml-border);
+  border-radius: 8px;
+  background: var(--ml-surface);
+  box-shadow: 0 8px 24px var(--ml-shadow);
+  color: var(--ml-text);
+  font-size: 0.78rem;
+}
+
+.graphTooltip > strong {
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.graphTooltip > div {
+  display: grid;
+  grid-template-columns: minmax(5rem, 1fr) repeat(3, auto);
+  gap: var(--space-2);
+  align-items: baseline;
+  padding-block: var(--space-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.graphTooltip > div > span:first-child {
+  color: var(--ml-text-muted);
+}
+
+.graphTooltip small {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--ml-text-muted);
+  text-align: right;
+}
+
+.graphBalanceLegend {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.graphBalanceLegend li {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--ml-divider);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.graphLegendName,
+.graphLegendProjected {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.graphLegendSolid,
+.graphLegendDash {
+  width: 1.5rem;
+  flex: 0 0 auto;
+  border-top: 3px solid;
+}
+
+.graphLegendDash {
+  border-top-style: dashed;
+}
+
+.graphDataDisclosure {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--ml-divider);
+}
+
+.graphDataDisclosure summary {
+  min-height: 2.75rem;
+  width: fit-content;
+  padding: var(--space-3) var(--space-1);
+  color: var(--ml-primary);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.graphTableScroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.graphTableScroll table {
+  width: 100%;
+  min-width: 58rem;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.graphTableScroll caption {
+  padding: var(--space-2) 0;
+  color: var(--ml-text-muted);
+  text-align: left;
+}
+
+.graphTableScroll th,
+.graphTableScroll td {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--ml-divider);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.graphTableScroll th:first-child,
+.graphTableScroll td:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--ml-surface);
+  text-align: left;
+}
+
+.graphTableScroll thead th {
+  color: var(--ml-text-muted);
+  font-weight: 700;
 }
 
 .graphSupplement {
@@ -341,7 +481,11 @@
   }
 
   .graphChartCanvas {
-    min-height: 12rem;
+    height: 18rem;
+  }
+
+  .graphBalanceLegend {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .graphSupplement {

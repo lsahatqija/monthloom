@@ -20,6 +20,15 @@ export function formatDayLabel(date: string, locale: string): string {
   }).format(utcDate(date));
 }
 
+export function formatDateLabel(date: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(utcDate(date));
+}
+
 export function formatMonthLabel(month: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, {
     month: 'short',
