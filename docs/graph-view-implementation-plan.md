@@ -103,10 +103,10 @@ branch deployable.
   transparent fills.
 - In compare mode, all user series use the same dimensions and scale. A dimension is included when
   at least one selected user has a non-zero value for it.
-- Amounts use logarithmic normalization against the highest amount visible in the current radar:
+- Amounts use a gentle power normalization against the highest amount visible in the current radar:
 
   ```ts
-  normalized = highestAmount === 0 ? 0 : Math.log1p(amount) / Math.log1p(highestAmount);
+  normalized = highestAmount === 0 ? 0 : (amount / highestAmount) ** 0.65;
   ```
 
 - Axis labels, tooltips, legends, summaries, and the data table show actual currency values rather
@@ -413,7 +413,8 @@ summing and format only at the presentation boundary.
    outline.
 4. In compare mode, produce realized and total-with-projection series for each selected user.
 5. Find the maximum combined value across all visible dimensions and series.
-6. Apply `log1p` normalization while retaining raw cents alongside normalized values.
+6. Apply power normalization with exponent `0.65` while retaining raw cents alongside normalized
+   values.
 7. Use the same ordered dimensions and maximum for every series.
 
 ### Stable colors
@@ -596,7 +597,7 @@ Turn raw range transactions into stable, chart-independent view models.
 - [x] Implement daily and cumulative Balance aggregators.
 - [x] Implement Category aggregators for user, source, and transaction type.
 - [x] Implement Overview combine and compare aggregators.
-- [x] Implement logarithmic radar normalization and raw-value retention.
+- [x] Implement gentle power radar normalization and raw-value retention.
 - [x] Implement deterministic color and pattern assignment.
 - [x] Define reusable formatter helpers for currency, percentage, day, and month labels.
 - [x] Define projection-aware chart view-model types.
@@ -632,7 +633,7 @@ Turn raw range transactions into stable, chart-independent view models.
 - Category results retain every non-zero group, split realized/projected totals, calculate combined
   percentages, and sort deterministically. Overview results support combine and compare modes,
   automatically restore all users after an empty selection, retain raw cents, and share one
-  logarithmic scale across visible radar series.
+  power scale across visible radar series.
 - Stable light/dark chart colors, overflow patterns, semantic series colors, and locale-aware
   currency, percentage, day, and month formatters are available to later chart milestones.
 - All 151 web unit tests pass, including 15 focused aggregation cases. Web production TypeScript
@@ -758,7 +759,7 @@ Deliver all grouping and chart variants without dropping low-value categories.
 
 ### Goal
 
-Deliver logarithmically scaled household and per-user comparisons across non-zero dimensions.
+Deliver gently scaled household and per-user comparisons across non-zero dimensions.
 
 ### Tasks
 
@@ -769,7 +770,7 @@ Deliver logarithmically scaled household and per-user comparisons across non-zer
 - [x] Render combined and overlapping per-user radar series.
 - [x] Use transparent compare fills, stable user colors, and explicit user labels.
 - [x] Render realized polygons and total-with-projection dashed outlines.
-- [x] Apply one logarithmic maximum and dimension set to all visible series.
+- [x] Apply one power-scaled maximum and dimension set to all visible series.
 - [x] Add raw-value tooltips, legend, exact-value table, and text summary.
 - [x] Verify label layout with the maximum realistic non-zero dimension count.
 
@@ -785,7 +786,7 @@ Deliver logarithmically scaled household and per-user comparisons across non-zer
 ### Result (2026-10-31)
 
 - Added the Overview radar presentation for combined household totals and overlapping per-user
-  comparisons, using one shared logarithmic maximum and identical non-zero dimensions.
+  comparisons, using one shared power-scaled maximum and identical non-zero dimensions.
 - Realized values use transparent, stable user-colored pattern fills; total-with-projection values
   use same-color dashed outlines. Explicit user labels, line-state labels, and exact values avoid
   relying on hue alone.
@@ -886,7 +887,7 @@ The Graphs feature is complete when:
 - Balance supports line/area and daily/cumulative combinations.
 - Category supports all three groupings and all three chart variants without hiding non-zero groups.
 - Overview supports expense/income, user selection, combine/compare, non-zero dimensions, and
-  logarithmic normalization.
+  power normalization.
 - Realized and projected values are visibly and textually distinct in every graph.
 - All calculations use exact cent aggregation and reconcile with their accessible data tables.
 - URL state survives refresh and browser navigation.

@@ -202,12 +202,12 @@
     },
     "overview": {
       "chartLabel": "Graphique radar de la vue d’ensemble du foyer",
-      "chartDescription": "Valeurs du foyer à échelle logarithmique pour chaque dimension non nulle. Les polygones pleins à motif représentent les valeurs réalisées ; les contours en pointillés incluent les prévisions.",
+      "chartDescription": "Valeurs du foyer modérément compressées pour chaque dimension non nulle. Les polygones pleins à motif représentent les valeurs réalisées ; les contours en pointillés incluent les prévisions.",
       "legendLabel": "Légende de la vue d’ensemble",
       "dataTableCaption": "Valeurs exactes de la vue d’ensemble",
       "dimension": "Dimension",
       "column": "{series} — {state}",
-      "summary": "{total} sur {dimensionCount, plural, one {# dimension} other {# dimensions}} pour {userCount, plural, one {# utilisateur} other {# utilisateurs}}. Valeur maximale représentée : {maximum}. Le radar utilise une échelle logarithmique commune."
+      "summary": "{total} sur {dimensionCount, plural, one {# dimension} other {# dimensions}} pour {userCount, plural, one {# utilisateur} other {# utilisateurs}}. Valeur maximale représentée : {maximum}. Le radar utilise une échelle commune modérément compressée."
     },
     "groupings": {
       "user": "Utilisateur",

@@ -202,12 +202,12 @@
     },
     "overview": {
       "chartLabel": "Hane genel görünüm radar grafiği",
-      "chartDescription": "Sıfır olmayan tüm boyutlarda logaritmik ölçekli hane değerleri. Düz desenli çokgenler gerçekleşen değerleri, kesikli dış çizgiler tahminleri içeren toplamları gösterir.",
+      "chartDescription": "Sıfır olmayan tüm boyutlarda hafifçe sıkıştırılmış hane değerleri. Düz desenli çokgenler gerçekleşen değerleri, kesikli dış çizgiler tahminleri içeren toplamları gösterir.",
       "legendLabel": "Genel görünüm göstergesi",
       "dataTableCaption": "Kesin genel görünüm değerleri",
       "dimension": "Boyut",
       "column": "{series} — {state}",
-      "summary": "{userCount, plural, one {# kullanıcı} other {# kullanıcı}} için {dimensionCount, plural, one {# boyutta} other {# boyutta}} {total}. Gösterilen en yüksek değer: {maximum}. Radar tek bir ortak logaritmik ölçek kullanır."
+      "summary": "{userCount, plural, one {# kullanıcı} other {# kullanıcı}} için {dimensionCount, plural, one {# boyutta} other {# boyutta}} {total}. Gösterilen en yüksek değer: {maximum}. Radar hafifçe sıkıştırılmış tek bir ortak ölçek kullanır."
     },
     "groupings": { "user": "Kullanıcı", "source": "Kaynak", "transaction-type": "İşlem türü" },
     "categoryCharts": { "pie": "Pasta", "bar": "Çubuk", "radial": "Radyal çubuk" },

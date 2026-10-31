@@ -204,7 +204,7 @@ describe('overview aggregation', () => {
     }),
   ];
 
-  it('combines users, retains raw values, and logarithmically normalizes orders of magnitude', () => {
+  it('combines users, retains raw values, and applies the gentler power scale', () => {
     const result = aggregateOverview({
       transactions,
       members: Object.values(USERS),
@@ -220,8 +220,7 @@ describe('overview aggregation', () => {
       projectedCents: 0,
       totalNormalized: 1,
     });
-    expect(result.series[0]!.values[1]!.totalNormalized).toBeGreaterThan(0);
-    expect(result.series[0]!.values[1]!.totalNormalized).toBeLessThan(1);
+    expect(result.series[0]!.values[1]!.totalNormalized).toBeCloseTo((1000 / 100100) ** 0.65, 8);
   });
 
   it('compares users on the same dimensions and scale', () => {
@@ -245,12 +244,9 @@ describe('overview aggregation', () => {
       kind: 'expense',
       mode: 'combine',
     });
-    expect(
-      result.series.reduce(
-        (sum, series) => sum + series.values[0]!.totalCents,
-        0,
-      ),
-    ).toBe(combined.series[0]!.values[0]!.totalCents);
+    expect(result.series.reduce((sum, series) => sum + series.values[0]!.totalCents, 0)).toBe(
+      combined.series[0]!.values[0]!.totalCents,
+    );
   });
 
   it('keeps user colors and patterns stable when comparison order changes', () => {

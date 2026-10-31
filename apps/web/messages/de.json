@@ -202,12 +202,12 @@
     },
     "overview": {
       "chartLabel": "Radar-Diagramm der Haushaltsübersicht",
-      "chartDescription": "Logarithmisch skalierte Haushaltswerte über alle Dimensionen ungleich null. Durchgezogene gemusterte Flächen zeigen tatsächliche Werte; gestrichelte Umrisse enthalten Prognosen.",
+      "chartDescription": "Sanft komprimierte Haushaltswerte über alle Dimensionen ungleich null. Durchgezogene gemusterte Flächen zeigen tatsächliche Werte; gestrichelte Umrisse enthalten Prognosen.",
       "legendLabel": "Legende der Übersicht",
       "dataTableCaption": "Genaue Übersichtswerte",
       "dimension": "Dimension",
       "column": "{series} — {state}",
-      "summary": "{total} über {dimensionCount, plural, one {# Dimension} other {# Dimensionen}} für {userCount, plural, one {# Benutzer} other {# Benutzer}}. Höchster dargestellter Wert: {maximum}. Das Radar verwendet eine gemeinsame logarithmische Skala."
+      "summary": "{total} über {dimensionCount, plural, one {# Dimension} other {# Dimensionen}} für {userCount, plural, one {# Benutzer} other {# Benutzer}}. Höchster dargestellter Wert: {maximum}. Das Radar verwendet eine gemeinsame, sanft komprimierte Skala."
     },
     "groupings": { "user": "Benutzer", "source": "Quelle", "transaction-type": "Transaktionsart" },
     "categoryCharts": { "pie": "Kreis", "bar": "Balken", "radial": "Radialbalken" },

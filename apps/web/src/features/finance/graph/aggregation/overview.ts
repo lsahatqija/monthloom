@@ -7,6 +7,7 @@ import { amountToCents, checkedAdd } from './helpers';
 import type { OverviewKind, OverviewMode, OverviewViewModel } from './types';
 
 type HouseholdMember = HouseholdTransactionRangeResponse['members'][number];
+const OVERVIEW_POWER_EXPONENT = 0.65;
 
 export function normalizeSelectedUserIds(
   members: Pick<HouseholdMember, 'id'>[],
@@ -103,7 +104,7 @@ export function aggregateOverview({
     0,
   );
   const normalize = (amount: number) =>
-    highestAmountCents === 0 ? 0 : Math.log1p(amount) / Math.log1p(highestAmountCents);
+    highestAmountCents === 0 ? 0 : (amount / highestAmountCents) ** OVERVIEW_POWER_EXPONENT;
 
   return {
     dimensions: dimensionKeys.map((key) => ({ key, label: labels.get(key)! })),
