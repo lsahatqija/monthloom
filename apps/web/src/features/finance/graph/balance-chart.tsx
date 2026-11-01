@@ -206,17 +206,21 @@ function ChartFrame({
   children,
   label,
   description,
+  keyboardHelp,
 }: {
   children: ReactNode;
   label: string;
   description: string;
+  keyboardHelp: string;
 }) {
   return (
     <div className="graphChartCanvas" aria-label={label} aria-describedby="balance-chart-summary">
       <ResponsiveContainer width="100%" height="100%">
         {children}
       </ResponsiveContainer>
-      <span className="srOnly">{description}</span>
+      <span className="srOnly">
+        {description} {keyboardHelp}
+      </span>
     </div>
   );
 }
@@ -277,6 +281,7 @@ function BalanceLineChart({
   animationActive: boolean;
 }) {
   const t = useTranslations('Graph.balance');
+  const graphT = useTranslations('Graph');
   const colors = SEMANTIC_CHART_COLORS[theme];
   const series = [
     ['income', colors.income],
@@ -285,13 +290,17 @@ function BalanceLineChart({
   ] as const;
 
   return (
-    <ChartFrame label={t('lineChartLabel')} description={t('lineChartDescription')}>
+    <ChartFrame
+      label={t('lineChartLabel')}
+      description={t('lineChartDescription')}
+      keyboardHelp={graphT('keyboardHelp')}
+    >
       <LineChart
         data={data}
         margin={{ top: 24, right: 16, bottom: 8, left: 8 }}
         accessibilityLayer
         title={t('lineChartLabel')}
-        desc={t('lineChartDescription')}
+        desc={`${t('lineChartDescription')} ${graphT('keyboardHelp')}`}
       >
         <Axes domain={model.domain} currency={currency} locale={locale} />
         <Tooltip
@@ -352,17 +361,22 @@ function BalanceAreaChart({
   animationActive: boolean;
 }) {
   const t = useTranslations('Graph.balance');
+  const graphT = useTranslations('Graph');
   const colors = SEMANTIC_CHART_COLORS[theme];
   const realizedZero = zeroOffset(data, 'balanceRealized');
   const totalZero = zeroOffset(data, 'balanceTotal');
   return (
-    <ChartFrame label={t('areaChartLabel')} description={t('areaChartDescription')}>
+    <ChartFrame
+      label={t('areaChartLabel')}
+      description={t('areaChartDescription')}
+      keyboardHelp={graphT('keyboardHelp')}
+    >
       <AreaChart
         data={data}
         margin={{ top: 24, right: 16, bottom: 8, left: 8 }}
         accessibilityLayer
         title={t('areaChartLabel')}
-        desc={t('areaChartDescription')}
+        desc={`${t('areaChartDescription')} ${graphT('keyboardHelp')}`}
       >
         <defs>
           <linearGradient id="balance-area-fill" x1="0" y1="0" x2="0" y2="1">
@@ -546,7 +560,12 @@ export function BalanceChart({
 
   return (
     <>
-      <p id="balance-chart-summary" className="graphChartSummary">
+      <p
+        id="balance-chart-summary"
+        className="graphChartSummary"
+        aria-live="polite"
+        aria-atomic="true"
+      >
         {t('summary', {
           income: formatCurrency(totals.income.totalCents, currency, locale),
           expenses: formatCurrency(totals.expenses.totalCents, currency, locale),

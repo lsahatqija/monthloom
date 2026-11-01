@@ -129,10 +129,13 @@ describe('Graph view', () => {
     expect(chart).toHaveAttribute('data-variant', 'line');
     expect(chart).toHaveAttribute('data-mode', 'daily');
     expect(chart).toHaveAttribute('data-currency', 'EUR');
+    expect(screen.getByRole('status')).toHaveAttribute('aria-live', 'polite');
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
 
     await userEvent.click(
       within(screen.getByRole('group', { name: 'Chart type' })).getByText('Area'),
     );
+    expect(screen.getByRole('radio', { name: 'Area' })).toHaveFocus();
     await userEvent.click(
       within(screen.getByRole('group', { name: 'Calculation' })).getByText('Cumulative'),
     );
@@ -140,6 +143,7 @@ describe('Graph view', () => {
     expect(chart).toHaveAttribute('data-mode', 'cumulative');
 
     await userEvent.selectOptions(screen.getByLabelText('Graph'), 'category');
+    expect(screen.getByLabelText('Graph')).toHaveFocus();
     expect(new URL(window.location.href).searchParams.get('graph')).toBe('category');
     expect(
       screen.queryByText('Exact realized and projected values will appear here with the chart.'),

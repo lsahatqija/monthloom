@@ -158,6 +158,7 @@ function CategoryPie({
   animationActive: boolean;
 }) {
   const t = useTranslations('Graph.category');
+  const graphT = useTranslations('Graph');
   const slices = model.groups.flatMap<CategorySlice>((group, groupIndex) => [
     ...(group.realizedCents
       ? [
@@ -190,7 +191,11 @@ function CategoryPie({
       aria-describedby="category-chart-summary"
     >
       <ResponsiveContainer width="100%" height="100%">
-        <PieChart accessibilityLayer title={t('pieChartLabel')} desc={t('pieChartDescription')}>
+        <PieChart
+          accessibilityLayer
+          title={t('pieChartLabel')}
+          desc={`${t('pieChartDescription')} ${graphT('keyboardHelp')}`}
+        >
           <CategoryPatterns groups={model.groups} prefix={patternPrefix} />
           <Tooltip
             content={(props) => (
@@ -247,6 +252,7 @@ function CategoryBars({
   animationActive: boolean;
 }) {
   const t = useTranslations('Graph.category');
+  const graphT = useTranslations('Graph');
   const height = narrow ? `${Math.max(20, model.groups.length * 2.75)}rem` : undefined;
   const cells = (projected: boolean) =>
     model.groups.map((group, index) => (
@@ -277,7 +283,7 @@ function CategoryBars({
           }
           accessibilityLayer
           title={t('barChartLabel')}
-          desc={t('barChartDescription')}
+          desc={`${t('barChartDescription')} ${graphT('keyboardHelp')}`}
         >
           <CategoryPatterns groups={model.groups} prefix={patternPrefix} />
           <CartesianGrid stroke="var(--ml-divider)" vertical={narrow} horizontal={!narrow} />
@@ -371,6 +377,7 @@ function CategoryRadial({
   animationActive: boolean;
 }) {
   const t = useTranslations('Graph.category');
+  const graphT = useTranslations('Graph');
   const cells = (projected: boolean) =>
     model.groups.map((group, index) => (
       <Cell
@@ -397,7 +404,7 @@ function CategoryRadial({
           endAngle={-270}
           accessibilityLayer
           title={t('radialChartLabel')}
-          desc={t('radialChartDescription')}
+          desc={`${t('radialChartDescription')} ${graphT('keyboardHelp')}`}
         >
           <CategoryPatterns groups={model.groups} prefix={patternPrefix} />
           <Tooltip
@@ -530,6 +537,7 @@ export function CategoryChart({
 }) {
   const locale = useLocale();
   const t = useTranslations('Graph.category');
+  const graphT = useTranslations('Graph');
   const narrow = useNarrowChart();
   const patternPrefix = `category-pattern-${useId().replace(/:/g, '')}`;
   const animationActive = useChartAnimation();
@@ -540,7 +548,12 @@ export function CategoryChart({
 
   return (
     <>
-      <p id="category-chart-summary" className="graphChartSummary">
+      <p
+        id="category-chart-summary"
+        className="graphChartSummary"
+        aria-live="polite"
+        aria-atomic="true"
+      >
         {t('summary', {
           total: formatCurrency(model.totalCents, currency, locale),
           count: model.groups.length,
@@ -550,6 +563,7 @@ export function CategoryChart({
           projected: formatCurrency(projectedCents, currency, locale),
         })}
       </p>
+      <p className="srOnly">{graphT('keyboardHelp')}</p>
       {variant === 'pie' ? (
         <CategoryPie
           model={displayModel}

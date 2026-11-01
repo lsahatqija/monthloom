@@ -161,6 +161,11 @@ describe('OverviewChart', () => {
   it('shows explicit users, raw totals, projection values, and the exact-value table', () => {
     renderChart();
 
+    expect(screen.getByText(/Focus the chart/)).toHaveClass('srOnly');
+    expect(screen.getByText(/€180\.00 across 2 dimensions for 2 users/)).toHaveAttribute(
+      'aria-live',
+      'polite',
+    );
     expect(screen.getByText(/€180\.00 across 2 dimensions for 2 users/)).toBeVisible();
     const legend = screen.getByRole('list', { name: 'Overview legend' });
     expect(within(legend).getByText('Ada')).toBeVisible();

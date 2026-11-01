@@ -169,6 +169,9 @@ export function GraphView() {
     <section className="graphPage" aria-busy={rangeQuery.isFetching}>
       {pageHeader}
       <GraphControls households={householdsQuery.data} members={members} selection={selection} />
+      <span className="srOnly" role="status" aria-live="polite" aria-atomic="true">
+        {rangeQuery.isFetching && !rangeQuery.isPending ? t('updating') : ''}
+      </span>
 
       {rangeQuery.isPending ? <LoadingSurface label={t('loading')} /> : null}
       {rangeQuery.isError ? (
@@ -199,7 +202,7 @@ export function GraphView() {
               <h2>{t(`graphs.${selection.graph}`)}</h2>
               <p>{t('periodSummary', { from: selection.from, to: selection.to })}</p>
             </div>
-            {rangeQuery.isFetching ? <span role="status">{t('updating')}</span> : null}
+            {rangeQuery.isFetching ? <span aria-hidden="true">{t('updating')}</span> : null}
           </div>
           <ChartSurface
             label={t('chartPlaceholderLabel', {

@@ -118,6 +118,7 @@
     "description": "Explorez les revenus, dépenses et projections du foyer dans le temps.",
     "backHome": "Retour à l’accueil",
     "controls": "Contrôles du graphique",
+    "keyboardHelp": "Placez le focus sur le graphique, puis utilisez les flèches gauche et droite pour parcourir les valeurs.",
     "household": "Foyer",
     "period": "Période",
     "graph": "Graphique",

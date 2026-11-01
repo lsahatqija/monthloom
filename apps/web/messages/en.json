@@ -118,6 +118,7 @@
     "description": "Explore household income, expenses and projections across time.",
     "backHome": "Back to Home",
     "controls": "Graph controls",
+    "keyboardHelp": "Focus the chart, then use the Left and Right Arrow keys to inspect values.",
     "household": "Household",
     "period": "Period",
     "graph": "Graph",

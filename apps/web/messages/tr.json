@@ -118,6 +118,7 @@
     "description": "Hane gelirlerini, giderlerini ve tahminlerini zaman içinde inceleyin.",
     "backHome": "Ana sayfaya dön",
     "controls": "Grafik kontrolleri",
+    "keyboardHelp": "Grafiğe odaklanın, ardından değerleri incelemek için Sol ve Sağ Ok tuşlarını kullanın.",
     "household": "Hane",
     "period": "Dönem",
     "graph": "Grafik",

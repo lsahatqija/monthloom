@@ -228,6 +228,11 @@
   border-block: 1px solid var(--ml-divider);
 }
 
+.recharts-wrapper:focus-visible {
+  outline: 2px solid var(--ml-focus-ring);
+  outline-offset: 2px;
+}
+
 .graphZeroLine {
   position: absolute;
   top: 50%;

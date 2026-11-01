@@ -222,6 +222,7 @@ Principal routes are:
 | `/login`, `/register`  | Authentication forms with validated safe redirects                                  |
 | `/invite/[token]`      | Invitation inspection and acceptance flow                                           |
 | `/files`               | Owned-file upload and management                                                    |
+| `/graph`               | URL-addressable balance, category, and overview charts for household month ranges   |
 | `/settings/profile`    | Public profile appearance fields                                                    |
 | `/settings/households` | Household creation, membership, ownership, invitations, and deletion                |
 | `/settings/sources`    | Source editing, deletion, and cross-household copy                                  |
@@ -256,6 +257,19 @@ requests a month aggregate. It can switch household/month, make the selected hou
 create or edit transactions, and remove transactions with recurrence scope. Sorting and filters
 are applied client-side to the returned monthly transaction list; summary cards retain the totals
 for the full month, independent of UI filters.
+
+### Graphs behavior
+
+The authenticated `/graph` route keeps the App Router page server-gated while a client leaf owns
+validated URL selection, range querying, cent-exact aggregation, and graph controls. One request to
+`GET /api/v1/households/:id/transactions?from=YYYY-MM&to=YYYY-MM` returns authorized raw realized
+and projected transactions for inclusive whole-month bounds. The browser derives balance,
+expense-category, and radar-overview models without storing chart output on the server.
+
+Recharts is loaded behind a graph-only dynamic boundary so it does not enter Home's route bundle.
+Every chart supplies a localized summary, keyboard-accessible tooltip navigation, explicit
+realized/projected styling, and a semantic exact-value table. Period and graph changes retain URL
+history, while TanStack Query caches data by household and month range.
 
 ### Appearance
 
@@ -416,7 +430,7 @@ The major route groups are:
 | -------------------- | -------------------------------------------------------------------------------------------- |
 | `/api/v1/auth`       | Register, login, logout, password reset, current session user                                |
 | `/api/v1/users`      | Read and update the current profile                                                          |
-| `/api/v1/households` | Household CRUD, primary selection, members, invitations, monthly view, transactions, sources |
+| `/api/v1/households` | Household CRUD, primary selection, members, invitations, monthly/range transactions, sources |
 | `/api/v1/files`      | Upload, list, metadata, content, delete                                                      |
 | `/health`            | Liveness and readiness                                                                       |
 

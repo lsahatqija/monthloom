@@ -192,6 +192,11 @@ describe('CategoryChart', () => {
     (variant) => {
       renderChart(variant);
 
+      expect(screen.getByText(/Focus the chart/)).toHaveClass('srOnly');
+      expect(screen.getByText(/€200\.00 across 2 categories/)).toHaveAttribute(
+        'aria-live',
+        'polite',
+      );
       expect(screen.getByText(/€200\.00 across 2 categories/)).toBeVisible();
       const legend = screen.getByRole('list', { name: 'Category legend' });
       expect(within(legend).getByText('Groceries and household supplies')).toBeVisible();

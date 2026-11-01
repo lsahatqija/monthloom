@@ -813,21 +813,21 @@ Bring the complete feature to the repository's production quality bar.
 
 ### Tasks
 
-- [ ] Add graph strings to English, German, French, Albanian, and Turkish message files.
-- [ ] Add accessible names, summaries, live status behavior, and table disclosures.
-- [ ] Audit keyboard order, tooltip access, segmented controls, checklists, and focus stability.
-- [ ] Audit contrast and projection patterns across every theme in light and dark modes.
-- [ ] Respect reduced motion and verify charts remain readable with animation disabled.
+- [x] Add graph strings to English, German, French, Albanian, and Turkish message files.
+- [x] Add accessible names, summaries, live status behavior, and table disclosures.
+- [x] Audit keyboard order, tooltip access, segmented controls, checklists, and focus stability.
+- [x] Audit contrast and projection patterns across every theme in light and dark modes.
+- [x] Respect reduced motion and verify charts remain readable with animation disabled.
 - [ ] Verify layouts at 390px, 620px, 768px, 1024px, and 1440px plus 200% browser zoom.
-- [ ] Measure Home and Graphs bundles against the Milestone 0 baseline.
-- [ ] Memoize range resolution and aggregation only where profiling shows meaningful work.
-- [ ] Update architecture and user documentation with the route and range endpoint.
-- [ ] For every migration added by an earlier milestone, rehearse the complete production deployment
+- [x] Measure Home and Graphs bundles against the Milestone 0 baseline.
+- [x] Memoize range resolution and aggregation only where profiling shows meaningful work.
+- [x] Update architecture and user documentation with the route and range endpoint.
+- [x] For every migration added by an earlier milestone, rehearse the complete production deployment
       sequence: verified backup, migration from the previously released schema with existing data,
       post-migration integrity checks, application health checks, and application-image rollback.
-- [ ] Record the production migration result or explicitly record that the graph feature introduces
+- [x] Record the production migration result or explicitly record that the graph feature introduces
       no database schema changes.
-- [ ] Run all workspace validation and production builds.
+- [x] Run all workspace validation and production builds.
 
 ### Definition of done
 
@@ -842,6 +842,43 @@ Bring the complete feature to the repository's production quality bar.
 - Lint, type checks, unit tests, integration tests, OpenAPI checks, and production builds pass.
 - Manual smoke tests cover all graph/variant combinations with realized-only, projected-only, mixed,
   and empty datasets.
+
+### Milestone 8 result (2026-11-01)
+
+- English, German, French, Albanian, and Turkish contain the same complete 100-key Graph catalog
+  with matching ICU signatures. Keyboard chart instructions were added in every locale.
+- Chart summaries are polite atomic live regions, range refreshes use a persistent live status
+  region, and every chart retains a localized exact-value table disclosure. Recharts accessibility
+  layers provide focusable Left/Right Arrow tooltip navigation; visible focus styling, native radio
+  and checkbox semantics, last-user restoration, and focus stability are covered by component and
+  integration tests.
+- Realized and projected states remain differentiated by labels, solid/dashed strokes, opacity,
+  hollow points, and deterministic patterns. The light and dark chart palettes were checked against
+  the theme surfaces, including high-contrast and monochrome themes. Reduced-motion coverage proves
+  chart entrance animation is disabled while summaries, legends, and tables remain immediately
+  available.
+- Range resolution and all three pure aggregations were already memoized at the Graph view boundary.
+  The hardening pass found no measured reason for another cache or abstraction, so none was added.
+- The Linux production build reports Home at 27.6 kB route JS and 180 kB first-load JS, versus the
+  Milestone 0 baseline of 26.5 kB and 178 kB. Shared first-load JS is 87.6 kB versus 87.3 kB.
+  Graphs is 11.4 kB route JS and 148 kB first-load JS. Recharts remains behind the graph-only dynamic
+  boundary and does not materially increase Home's initial bundle.
+- The architecture guide now documents `/graph`, its browser aggregation boundary, accessibility
+  output, and `GET /api/v1/households/:id/transactions?from=YYYY-MM&to=YYYY-MM`. The README documents
+  the user-facing Graphs workflow.
+- The complete graph feature is database-schema-neutral. No graph milestone added or changed a
+  Drizzle migration, persisted column, table, index, or production row, so there was no graph
+  migration to rehearse, back up, restore, or roll back. The range endpoint reads the existing
+  transaction and recurrence representation.
+- Lint passes with no errors and one pre-existing onboarding hook warning. Application and test
+  TypeScript checks, environment validation, all 351 unit/integration/OpenAPI tests, and the API and
+  web Linux production builds pass. The native Windows build still reaches compiled, typed, and
+  generated output before the documented standalone symlink `EPERM`; Docker verifies the complete
+  production artifact.
+- Automated browser access was unavailable (`The browser access host is unavailable`). Attaching to
+  the user's existing personal Chrome profile was intentionally avoided. Exact viewport/200% zoom
+  screenshots and the all-variant manual smoke matrix therefore remain open and are not marked
+  complete above.
 
 ## Delivery and pull request strategy
 

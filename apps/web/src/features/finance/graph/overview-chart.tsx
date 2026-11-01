@@ -233,7 +233,12 @@ export function OverviewChart({ model, currency }: { model: OverviewViewModel; c
 
   return (
     <>
-      <p id="overview-chart-summary" className="graphChartSummary">
+      <p
+        id="overview-chart-summary"
+        className="graphChartSummary"
+        aria-live="polite"
+        aria-atomic="true"
+      >
         {t('summary', {
           total: formatCurrency(totalCents, currency, locale),
           dimensionCount: model.dimensions.length,
@@ -241,6 +246,7 @@ export function OverviewChart({ model, currency }: { model: OverviewViewModel; c
           maximum: formatCurrency(model.highestAmountCents, currency, locale),
         })}
       </p>
+      <p className="srOnly">{graphT('keyboardHelp')}</p>
       <div
         className="graphChartCanvas graphOverviewCanvas"
         aria-label={t('chartLabel')}
@@ -252,7 +258,7 @@ export function OverviewChart({ model, currency }: { model: OverviewViewModel; c
             outerRadius="76%"
             accessibilityLayer
             title={t('chartLabel')}
-            desc={t('chartDescription')}
+            desc={`${t('chartDescription')} ${graphT('keyboardHelp')}`}
           >
             <OverviewPatterns series={model.series} prefix={patternPrefix} />
             <PolarGrid

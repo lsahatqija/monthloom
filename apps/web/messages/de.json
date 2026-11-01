@@ -118,6 +118,7 @@
     "description": "Einnahmen, Ausgaben und Prognosen des Haushalts im Zeitverlauf erkunden.",
     "backHome": "Zurück zur Startseite",
     "controls": "Diagrammsteuerung",
+    "keyboardHelp": "Fokussieren Sie das Diagramm und verwenden Sie dann die Pfeiltasten nach links und rechts, um Werte zu prüfen.",
     "household": "Haushalt",
     "period": "Zeitraum",
     "graph": "Diagramm",

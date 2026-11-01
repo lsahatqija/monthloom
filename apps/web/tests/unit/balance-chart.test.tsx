@@ -169,6 +169,8 @@ describe('BalanceChart', () => {
   it('provides localized totals and an exact realized/projected data table', () => {
     renderChart();
 
+    expect(screen.getByText(/Focus the chart/)).toHaveClass('srOnly');
+    expect(screen.getByText(/Income €125\.00/)).toHaveAttribute('aria-live', 'polite');
     expect(screen.getByText(/Income €125\.00/)).toBeVisible();
     expect(screen.getByText(/expenses -€50\.00/)).toBeVisible();
     expect(screen.getByText(/net balance €75\.00/)).toBeVisible();

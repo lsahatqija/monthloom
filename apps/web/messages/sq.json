@@ -118,6 +118,7 @@
     "description": "Shikoni të ardhurat, shpenzimet dhe parashikimet e familjes me kalimin e kohës.",
     "backHome": "Kthehu te Kreu",
     "controls": "Kontrollet e grafikut",
+    "keyboardHelp": "Fokusoni grafikun, pastaj përdorni tastet me shigjetë majtas dhe djathtas për të shqyrtuar vlerat.",
     "household": "Familja",
     "period": "Periudha",
     "graph": "Grafiku",
