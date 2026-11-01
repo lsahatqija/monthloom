@@ -98,9 +98,46 @@ export function chartStyleForKey(
   };
 }
 
+function colorDistance(left: string, right: string): number {
+  const channels = (color: string) =>
+    [1, 3, 5].map((index) => Number.parseInt(color.slice(index, index + 2), 16));
+  const leftChannels = channels(left);
+  const rightChannels = channels(right);
+  return Math.hypot(...leftChannels.map((channel, index) => channel - rightChannels[index]!));
+}
+
+export function distinctChartStyles(
+  items: ReadonlyArray<{ key: string; desiredColor?: DesiredColor }>,
+  theme: ChartTheme = 'light',
+): Map<string, ChartStyle> {
+  const styles = new Map<string, ChartStyle>();
+  const usedColors: string[] = [];
+
+  for (const item of [...items].sort((left, right) => left.key.localeCompare(right.key))) {
+    const style = chartStyleForKey(item.key, theme, item.desiredColor);
+    const candidates = [style.color, ...PALETTES[theme]];
+    const color =
+      candidates.find((candidate) =>
+        usedColors.every((used) => colorDistance(candidate, used) >= 72),
+      ) ??
+      candidates.reduce((best, candidate) => {
+        const separation = Math.min(...usedColors.map((used) => colorDistance(candidate, used)));
+        const bestSeparation = Math.min(...usedColors.map((used) => colorDistance(best, used)));
+        return separation > bestSeparation ? candidate : best;
+      });
+    styles.set(item.key, { ...style, color });
+    usedColors.push(color);
+  }
+
+  return styles;
+}
+
 export const SEMANTIC_CHART_COLORS: Record<
   ChartTheme,
-  Record<'income' | 'expense' | 'balance' | 'positiveBalance' | 'negativeBalance' | 'projected', string>
+  Record<
+    'income' | 'expense' | 'balance' | 'positiveBalance' | 'negativeBalance' | 'projected',
+    string
+  >
 > = {
   light: {
     income: '#047857',

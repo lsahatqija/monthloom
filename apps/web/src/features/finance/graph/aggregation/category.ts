@@ -2,7 +2,7 @@ import type { HouseholdTransaction } from '@monthloom/contracts';
 
 import { transactionTypeLabel } from '../../transaction-type';
 
-import { chartStyleForKey, type ChartTheme } from './colors';
+import { chartStyleForKey, distinctChartStyles, type ChartTheme } from './colors';
 import { amountToCents, checkedAdd } from './helpers';
 import type { CategoryGrouping, CategoryViewModel } from './types';
 
@@ -45,6 +45,16 @@ export function aggregateCategories({
     (sum, group) => checkedAdd(sum, checkedAdd(group.realizedCents, group.projectedCents)),
     0,
   );
+  const userStyles =
+    grouping === 'user'
+      ? distinctChartStyles(
+          [...totals].map(([key, group]) => ({
+            key: `category:${grouping}:${key}`,
+            desiredColor: group.desiredColor,
+          })),
+          theme,
+        )
+      : undefined;
   const groups = [...totals.entries()]
     .map(([key, group]) => {
       const groupTotal = checkedAdd(group.realizedCents, group.projectedCents);
@@ -55,7 +65,8 @@ export function aggregateCategories({
         projectedCents: group.projectedCents,
         totalCents: groupTotal,
         percentage: totalCents === 0 ? 0 : groupTotal / totalCents,
-        ...chartStyleForKey(`category:${grouping}:${key}`, theme, group.desiredColor),
+        ...(userStyles?.get(`category:${grouping}:${key}`) ??
+          chartStyleForKey(`category:${grouping}:${key}`, theme, group.desiredColor)),
       };
     })
     .filter((group) => group.totalCents !== 0)

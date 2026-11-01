@@ -24,11 +24,13 @@ vi.mock('recharts', () => {
     children,
     data,
     dataKey,
+    isAnimationActive,
     stackId,
   }: {
     children?: ReactNode;
     data?: unknown[];
     dataKey: string;
+    isAnimationActive?: boolean;
     stackId?: string;
   }) {
     return (
@@ -37,6 +39,7 @@ vi.mock('recharts', () => {
         data-key={dataKey}
         data-stack={stackId}
         data-count={data?.length}
+        data-animated={String(isAnimationActive)}
       >
         {children}
       </g>
@@ -92,10 +95,10 @@ const model: CategoryViewModel = {
   ],
 };
 
-function renderChart(variant: 'pie' | 'bar' | 'radial' = 'pie') {
+function renderChart(variant: 'pie' | 'bar' | 'radial' = 'pie', value: CategoryViewModel = model) {
   return render(
     <NextIntlClientProvider locale="en" messages={messages}>
-      <CategoryChart model={model} variant={variant} currency="EUR" />
+      <CategoryChart model={value} variant={variant} currency="EUR" />
     </NextIntlClientProvider>,
   );
 }
@@ -121,6 +124,12 @@ describe('CategoryChart', () => {
       screen.getAllByTestId('category-cell').filter((cell) => cell.dataset.dash !== 'solid'),
     ).toHaveLength(2);
     expect(screen.getByLabelText('Category pie chart')).toBeVisible();
+    expect(screen.getByTestId('category-series')).toHaveAttribute('data-animated', 'true');
+    expect(document.querySelector('pattern')).toHaveAttribute('width', '16');
+    expect(document.querySelector('pattern path')).toHaveAttribute(
+      'transform',
+      'translate(3 3) scale(0.65)',
+    );
   });
 
   it.each(['bar', 'radial'] as const)(
@@ -135,6 +144,37 @@ describe('CategoryChart', () => {
       expect(screen.getAllByTestId('category-cell')).toHaveLength(4);
     },
   );
+
+  it('disables entrance motion when reduced motion is requested', () => {
+    vi.mocked(window.matchMedia).mockImplementation(
+      (query) =>
+        ({
+          matches: query === '(prefers-reduced-motion: reduce)',
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        }) as unknown as MediaQueryList,
+    );
+
+    renderChart('radial');
+    expect(screen.getAllByTestId('category-series')[0]).toHaveAttribute('data-animated', 'false');
+  });
+
+  it('keeps colors primary while separating clashing patterns on adjacent categories', () => {
+    renderChart('pie', {
+      ...model,
+      groups: model.groups.map((group) => ({ ...group, pattern: 'diagonal' })),
+    });
+
+    const swatches = document.querySelectorAll<HTMLElement>('.graphCategorySwatch');
+    expect([...swatches].map(({ style }) => style.backgroundColor)).toEqual([
+      'rgb(36, 95, 115)',
+      'rgb(220, 38, 38)',
+    ]);
+    expect([...swatches].map(({ className }) => className)).toEqual([
+      expect.stringContaining('graphCategoryPattern-diagonal'),
+      expect.stringContaining('graphCategoryPattern-solid'),
+    ]);
+  });
 
   it('uses horizontal bars on narrow screens', () => {
     vi.mocked(window.matchMedia).mockReturnValue({

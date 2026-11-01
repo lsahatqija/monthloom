@@ -14,8 +14,14 @@ import {
 } from 'recharts';
 
 import { checkedAdd } from './aggregation/helpers';
+import {
+  overviewGraduations,
+  overviewNormalizedAmount,
+  overviewRawAmount,
+} from './aggregation/overview';
 import type { ChartStyle, OverviewSeries, OverviewViewModel } from './aggregation/types';
 import { formatCurrency } from './formatters';
+import { useChartAnimation } from './use-chart-animation';
 
 type RadarDatum = Record<string, number | string> & {
   dimensionKey: string;
@@ -45,12 +51,12 @@ function OverviewPatterns({ series, prefix }: { series: OverviewSeries[]; prefix
         <pattern
           id={`${prefix}-${index}`}
           key={item.key}
-          width="8"
-          height="8"
+          width="16"
+          height="16"
           patternUnits="userSpaceOnUse"
         >
-          <rect width="8" height="8" fill={item.color} />
-          <g fill="none" strokeWidth="1.4" opacity="0.72">
+          <rect width="16" height="16" fill={item.color} />
+          <g fill="none" strokeWidth="1" opacity="0.38" transform="translate(3 3) scale(0.65)">
             <PatternMark color="var(--ml-surface)" pattern={item.pattern} />
           </g>
         </pattern>
@@ -206,6 +212,10 @@ export function OverviewChart({ model, currency }: { model: OverviewViewModel; c
   const t = useTranslations('Graph.overview');
   const graphT = useTranslations('Graph');
   const patternPrefix = `overview-pattern-${useId().replace(/:/g, '')}`;
+  const animationActive = useChartAnimation();
+  const scaleTicks = overviewGraduations(model.highestAmountCents).map((amount) =>
+    overviewNormalizedAmount(amount, model.highestAmountCents),
+  );
   const labelStride = Math.max(1, Math.ceil(model.dimensions.length / 12));
   const data: RadarDatum[] = model.dimensions.map((dimension, dimensionIndex) => {
     const datum: RadarDatum = { dimensionKey: dimension.key, label: dimension.label };
@@ -245,7 +255,11 @@ export function OverviewChart({ model, currency }: { model: OverviewViewModel; c
             desc={t('chartDescription')}
           >
             <OverviewPatterns series={model.series} prefix={patternPrefix} />
-            <PolarGrid stroke="var(--ml-divider)" />
+            <PolarGrid
+              gridType="polygon"
+              stroke="color-mix(in srgb, var(--ml-divider) 72%, transparent)"
+              strokeDasharray="2 4"
+            />
             <PolarAngleAxis
               dataKey="label"
               tickFormatter={(value: string, index: number) =>
@@ -256,7 +270,17 @@ export function OverviewChart({ model, currency }: { model: OverviewViewModel; c
                 fontSize: model.dimensions.length > 12 ? 9 : 11,
               }}
             />
-            <PolarRadiusAxis domain={[0, 1]} tick={false} axisLine={false} />
+            <PolarRadiusAxis
+              domain={[0, 1]}
+              ticks={scaleTicks}
+              angle={90}
+              tickFormatter={(value: number) =>
+                formatCurrency(overviewRawAmount(value, model.highestAmountCents), currency, locale)
+              }
+              tick={{ fill: 'var(--ml-text-muted)', fontSize: 10 }}
+              tickLine={false}
+              axisLine={false}
+            />
             <Tooltip
               content={(props) => (
                 <OverviewTooltip {...props} model={model} currency={currency} locale={locale} />
@@ -272,7 +296,9 @@ export function OverviewChart({ model, currency }: { model: OverviewViewModel; c
                 strokeWidth={2}
                 fill={`url(#${patternPrefix}-${index})`}
                 fillOpacity={model.series.length > 1 ? 0.13 : 0.22}
-                isAnimationActive={false}
+                isAnimationActive={animationActive}
+                animationDuration={750}
+                animationEasing="ease-out"
               />,
               <Radar
                 key={`${series.key}-total`}
@@ -282,7 +308,9 @@ export function OverviewChart({ model, currency }: { model: OverviewViewModel; c
                 strokeWidth={2}
                 strokeDasharray="6 4"
                 fill="none"
-                isAnimationActive={false}
+                isAnimationActive={animationActive}
+                animationDuration={750}
+                animationEasing="ease-out"
               />,
             ])}
           </RadarChart>

@@ -15,15 +15,38 @@ vi.mock('recharts', () => ({
   }) => (
     <g data-testid="overview-axis" data-samples-labels={tickFormatter('Dimension', 13) === ''} />
   ),
-  PolarGrid: () => null,
-  PolarRadiusAxis: () => null,
-  Radar: ({ dataKey, fill, fillOpacity, strokeDasharray }: Record<string, string | number>) => (
+  PolarGrid: ({ gridType, strokeDasharray }: { gridType?: string; strokeDasharray?: string }) => (
+    <g
+      data-testid="overview-grid"
+      data-dash={strokeDasharray ?? 'solid'}
+      data-grid-type={gridType}
+    />
+  ),
+  PolarRadiusAxis: ({ ticks, tickFormatter }: Record<string, unknown>) => {
+    const values = ticks as number[];
+    const formatter = tickFormatter as (value: number) => string;
+    return (
+      <g
+        data-testid="overview-scale"
+        data-ticks={JSON.stringify(values)}
+        data-labels={values.map(formatter).join('|')}
+      />
+    );
+  },
+  Radar: ({
+    dataKey,
+    fill,
+    fillOpacity,
+    isAnimationActive,
+    strokeDasharray,
+  }: Record<string, string | number | boolean>) => (
     <path
       data-testid="overview-series"
       data-key={dataKey}
       data-fill={fill}
       data-opacity={fillOpacity}
       data-dash={strokeDasharray ?? 'solid'}
+      data-animated={String(isAnimationActive)}
     />
   ),
   RadarChart: ({ children, data }: { children: ReactNode; data: unknown[] }) => (
@@ -115,7 +138,24 @@ describe('OverviewChart', () => {
     ]);
     expect(series.filter((item) => item.dataset.dash !== 'solid')).toHaveLength(2);
     expect(series.filter((item) => item.dataset.fill?.startsWith('url('))).toHaveLength(2);
+    expect(series.every((item) => item.dataset.animated === 'true')).toBe(true);
     expect(screen.getByLabelText('Household overview radar chart')).toBeVisible();
+  });
+
+  it('shows dotted polygon graduations at whole currency values', () => {
+    renderChart();
+
+    expect(screen.getByTestId('overview-grid')).toBeVisible();
+    expect(screen.getByTestId('overview-grid')).toHaveAttribute('data-dash', '2 4');
+    expect(screen.getByTestId('overview-grid')).toHaveAttribute('data-grid-type', 'polygon');
+    expect(screen.getByTestId('overview-scale')).toHaveAttribute(
+      'data-labels',
+      '€10.00|€50.00|€100.00|€120.00',
+    );
+    const ticks = JSON.parse(screen.getByTestId('overview-scale').dataset.ticks ?? '[]');
+    expect(ticks).toHaveLength(4);
+    expect(ticks[0]).toBeCloseTo(Math.sqrt(1 / 12), 8);
+    expect(ticks[3]).toBe(1);
   });
 
   it('shows explicit users, raw totals, projection values, and the exact-value table', () => {

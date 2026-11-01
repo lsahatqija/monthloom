@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ComponentProps, ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import messages from '../../messages/en.json';
 import type { BalanceViewModel } from '../../src/features/finance/graph/aggregation/types';
@@ -23,10 +23,12 @@ vi.mock('recharts', () => {
 
   function Series({
     dataKey,
+    isAnimationActive,
     strokeDasharray,
     dot,
   }: {
     dataKey: string;
+    isAnimationActive?: boolean;
     strokeDasharray?: string;
     dot?:
       | false
@@ -37,7 +39,12 @@ vi.mock('recharts', () => {
         }) => ReactNode);
   }) {
     return (
-      <g data-testid="chart-series" data-key={dataKey} data-dash={strokeDasharray ?? 'solid'}>
+      <g
+        data-testid="chart-series"
+        data-key={dataKey}
+        data-dash={strokeDasharray ?? 'solid'}
+        data-animated={String(isAnimationActive)}
+      >
         {typeof dot === 'function'
           ? dot({
               cx: 10,
@@ -79,15 +86,53 @@ const model: BalanceViewModel = {
   ],
 };
 
-function renderChart(props: Partial<ComponentProps<typeof BalanceChart>> = {}) {
-  return render(
+let runAnimationFrame: FrameRequestCallback | undefined;
+
+function renderChart(
+  props: Partial<ComponentProps<typeof BalanceChart>> = {},
+  finishAnimation = true,
+) {
+  const result = render(
     <NextIntlClientProvider locale="en" messages={messages}>
       <BalanceChart model={model} variant="line" currency="EUR" {...props} />
     </NextIntlClientProvider>,
   );
+  if (finishAnimation && runAnimationFrame) act(() => runAnimationFrame?.(0));
+  return result;
 }
 
 describe('BalanceChart', () => {
+  beforeEach(() => {
+    runAnimationFrame = undefined;
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      runAnimationFrame = callback;
+      return 1;
+    });
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('moves balance series vertically from the zero baseline to their values', () => {
+    renderChart({}, false);
+
+    const initial = JSON.parse(screen.getByTestId('chart-data').textContent ?? '[]');
+    expect(initial[0]).toMatchObject({
+      incomeTotal: 0,
+      expensesTotal: 0,
+      balanceTotal: 0,
+    });
+    expect(screen.getAllByTestId('chart-series')[0]).toHaveAttribute('data-animated', 'false');
+
+    act(() => runAnimationFrame?.(0));
+    const final = JSON.parse(screen.getByTestId('chart-data').textContent ?? '[]');
+    expect(final[0]).toMatchObject({
+      incomeTotal: 12500,
+      expensesTotal: -5000,
+      balanceTotal: 7500,
+    });
+    expect(screen.getAllByTestId('chart-series')[0]).toHaveAttribute('data-animated', 'true');
+  });
   it('renders solid realized and dashed total line series around a labeled zero line', () => {
     renderChart();
 

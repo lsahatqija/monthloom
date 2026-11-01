@@ -21,8 +21,10 @@ import {
 import { checkedAdd } from './aggregation/helpers';
 import type { CategoryGroup, CategoryViewModel } from './aggregation/types';
 import { formatCurrency, formatPercentage } from './formatters';
+import { useChartAnimation } from './use-chart-animation';
 
 type CategoryVariant = 'pie' | 'bar' | 'radial';
+const CATEGORY_PATTERNS: CategoryGroup['pattern'][] = ['solid', 'diagonal', 'dots', 'crosshatch'];
 
 interface CategorySlice {
   groupKey: string;
@@ -30,6 +32,21 @@ interface CategorySlice {
   state: 'realized' | 'projected';
   value: number;
   groupIndex: number;
+}
+
+function separateAdjacentPatterns(groups: CategoryGroup[]): CategoryGroup[] {
+  const result: CategoryGroup[] = [];
+  for (const [index, group] of groups.entries()) {
+    const blocked = new Set([
+      result.at(-1)?.pattern,
+      index === groups.length - 1 ? result[0]?.pattern : undefined,
+    ]);
+    const pattern = blocked.has(group.pattern)
+      ? CATEGORY_PATTERNS.find((candidate) => !blocked.has(candidate))!
+      : group.pattern;
+    result.push({ ...group, pattern });
+  }
+  return result;
 }
 
 function useNarrowChart() {
@@ -49,16 +66,23 @@ function useNarrowChart() {
 
 function PatternShape({ pattern }: { pattern: CategoryGroup['pattern'] }) {
   if (pattern === 'diagonal') {
-    return <path d="M-2 2 L2 -2 M0 8 L8 0 M6 10 L10 6" className="graphPatternMark" />;
+    return (
+      <path
+        d="M-2 2 L2 -2 M0 8 L8 0 M6 10 L10 6"
+        className="graphPatternMark"
+        transform="translate(3 3) scale(0.65)"
+      />
+    );
   }
   if (pattern === 'dots') {
-    return <circle cx="3" cy="3" r="1.3" className="graphPatternDot" />;
+    return <circle cx="4" cy="4" r="0.8" className="graphPatternDot" />;
   }
   if (pattern === 'crosshatch') {
     return (
       <path
         d="M-2 2 L2 -2 M0 8 L8 0 M6 10 L10 6 M-2 6 L2 10 M0 0 L8 8 M6 -2 L10 2"
         className="graphPatternMark"
+        transform="translate(3 3) scale(0.65)"
       />
     );
   }
@@ -72,11 +96,11 @@ function CategoryPatterns({ groups, prefix }: { groups: CategoryGroup[]; prefix:
         <pattern
           id={`${prefix}-${index}`}
           key={group.key}
-          width="8"
-          height="8"
+          width="16"
+          height="16"
           patternUnits="userSpaceOnUse"
         >
-          <rect width="8" height="8" fill={group.color} />
+          <rect width="16" height="16" fill={group.color} />
           <PatternShape pattern={group.pattern} />
         </pattern>
       ))}
@@ -125,11 +149,13 @@ function CategoryPie({
   currency,
   locale,
   patternPrefix,
+  animationActive,
 }: {
   model: CategoryViewModel;
   currency: string;
   locale: string;
   patternPrefix: string;
+  animationActive: boolean;
 }) {
   const t = useTranslations('Graph.category');
   const slices = model.groups.flatMap<CategorySlice>((group, groupIndex) => [
@@ -184,7 +210,9 @@ function CategoryPie({
             startAngle={90}
             endAngle={-270}
             outerRadius="86%"
-            isAnimationActive={false}
+            isAnimationActive={animationActive}
+            animationDuration={700}
+            animationEasing="ease-out"
           >
             {slices.map((slice, index) => (
               <Cell
@@ -209,12 +237,14 @@ function CategoryBars({
   locale,
   patternPrefix,
   narrow,
+  animationActive,
 }: {
   model: CategoryViewModel;
   currency: string;
   locale: string;
   patternPrefix: string;
   narrow: boolean;
+  animationActive: boolean;
 }) {
   const t = useTranslations('Graph.category');
   const height = narrow ? `${Math.max(20, model.groups.length * 2.75)}rem` : undefined;
@@ -303,10 +333,22 @@ function CategoryBars({
             )}
             isAnimationActive="auto"
           />
-          <Bar dataKey="realizedCents" stackId="category" isAnimationActive={false}>
+          <Bar
+            dataKey="realizedCents"
+            stackId="category"
+            isAnimationActive={animationActive}
+            animationDuration={650}
+            animationEasing="ease-out"
+          >
             {cells(false)}
           </Bar>
-          <Bar dataKey="projectedCents" stackId="category" isAnimationActive={false}>
+          <Bar
+            dataKey="projectedCents"
+            stackId="category"
+            isAnimationActive={animationActive}
+            animationDuration={650}
+            animationEasing="ease-out"
+          >
             {cells(true)}
           </Bar>
         </BarChart>
@@ -320,11 +362,13 @@ function CategoryRadial({
   currency,
   locale,
   patternPrefix,
+  animationActive,
 }: {
   model: CategoryViewModel;
   currency: string;
   locale: string;
   patternPrefix: string;
+  animationActive: boolean;
 }) {
   const t = useTranslations('Graph.category');
   const cells = (projected: boolean) =>
@@ -371,11 +415,19 @@ function CategoryRadial({
             dataKey="realizedCents"
             stackId="category"
             background={{ fill: 'var(--ml-divider)' }}
-            isAnimationActive={false}
+            isAnimationActive={animationActive}
+            animationDuration={700}
+            animationEasing="ease-out"
           >
             {cells(false)}
           </RadialBar>
-          <RadialBar dataKey="projectedCents" stackId="category" isAnimationActive={false}>
+          <RadialBar
+            dataKey="projectedCents"
+            stackId="category"
+            isAnimationActive={animationActive}
+            animationDuration={700}
+            animationEasing="ease-out"
+          >
             {cells(true)}
           </RadialBar>
         </RadialBarChart>
@@ -480,11 +532,11 @@ export function CategoryChart({
   const t = useTranslations('Graph.category');
   const narrow = useNarrowChart();
   const patternPrefix = `category-pattern-${useId().replace(/:/g, '')}`;
-  const largest = model.groups[0]!;
-  const projectedCents = model.groups.reduce(
-    (sum, group) => checkedAdd(sum, group.projectedCents),
-    0,
-  );
+  const animationActive = useChartAnimation();
+  const groups = separateAdjacentPatterns(model.groups);
+  const displayModel = { ...model, groups };
+  const largest = groups[0]!;
+  const projectedCents = groups.reduce((sum, group) => checkedAdd(sum, group.projectedCents), 0);
 
   return (
     <>
@@ -500,29 +552,32 @@ export function CategoryChart({
       </p>
       {variant === 'pie' ? (
         <CategoryPie
-          model={model}
+          model={displayModel}
           currency={currency}
           locale={locale}
           patternPrefix={patternPrefix}
+          animationActive={animationActive}
         />
       ) : variant === 'bar' ? (
         <CategoryBars
-          model={model}
+          model={displayModel}
           currency={currency}
           locale={locale}
           patternPrefix={patternPrefix}
           narrow={narrow}
+          animationActive={animationActive}
         />
       ) : (
         <CategoryRadial
-          model={model}
+          model={displayModel}
           currency={currency}
           locale={locale}
           patternPrefix={patternPrefix}
+          animationActive={animationActive}
         />
       )}
-      <CategoryLegend groups={model.groups} currency={currency} locale={locale} />
-      <CategoryTable groups={model.groups} currency={currency} locale={locale} />
+      <CategoryLegend groups={groups} currency={currency} locale={locale} />
+      <CategoryTable groups={groups} currency={currency} locale={locale} />
     </>
   );
 }

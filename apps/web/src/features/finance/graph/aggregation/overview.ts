@@ -2,12 +2,31 @@ import type { HouseholdTransaction, HouseholdTransactionRangeResponse } from '@m
 
 import { transactionTypeLabel } from '../../transaction-type';
 
-import { chartStyleForKey, type ChartTheme } from './colors';
+import { chartStyleForKey, distinctChartStyles, type ChartTheme } from './colors';
 import { amountToCents, checkedAdd } from './helpers';
 import type { OverviewKind, OverviewMode, OverviewViewModel } from './types';
 
 type HouseholdMember = HouseholdTransactionRangeResponse['members'][number];
-const OVERVIEW_POWER_EXPONENT = 0.65;
+export const OVERVIEW_POWER_EXPONENT = 0.5;
+
+export function overviewNormalizedAmount(amount: number, highestAmountCents: number): number {
+  return highestAmountCents === 0 ? 0 : (amount / highestAmountCents) ** OVERVIEW_POWER_EXPONENT;
+}
+
+export function overviewRawAmount(normalized: number, highestAmountCents: number): number {
+  return Math.round(highestAmountCents * normalized ** (1 / OVERVIEW_POWER_EXPONENT));
+}
+
+export function overviewGraduations(highestAmountCents: number): number[] {
+  if (highestAmountCents <= 0) return [];
+  const graduations: number[] = [];
+  for (let amount = 1000; amount < highestAmountCents; amount *= 10) {
+    graduations.push(amount);
+    if (amount * 5 < highestAmountCents) graduations.push(amount * 5);
+  }
+  if (graduations.at(-1) !== highestAmountCents) graduations.push(highestAmountCents);
+  return graduations;
+}
 
 export function normalizeSelectedUserIds(
   members: Pick<HouseholdMember, 'id'>[],
@@ -103,20 +122,28 @@ export function aggregateOverview({
     (highest, series) => Math.max(highest, ...series.values.map(({ totalCents }) => totalCents)),
     0,
   );
-  const normalize = (amount: number) =>
-    highestAmountCents === 0 ? 0 : (amount / highestAmountCents) ** OVERVIEW_POWER_EXPONENT;
+  const comparisonStyles =
+    mode === 'compare'
+      ? distinctChartStyles(
+          seriesDefinitions.map(({ key }) => ({
+            key: `overview:${key}`,
+            desiredColor: members.find(({ id }) => id === key)?.desiredColor,
+          })),
+          theme,
+        )
+      : undefined;
 
   return {
     dimensions: dimensionKeys.map((key) => ({ key, label: labels.get(key)! })),
     series: rawSeries.map(({ userIds: _userIds, ...series }) => {
-      const member = mode === 'compare' ? members.find(({ id }) => id === series.key) : undefined;
       return {
         ...series,
-        ...chartStyleForKey(`overview:${series.key}`, theme, member?.desiredColor),
+        ...(comparisonStyles?.get(`overview:${series.key}`) ??
+          chartStyleForKey(`overview:${series.key}`, theme)),
         values: series.values.map((value) => ({
           ...value,
-          realizedNormalized: normalize(value.realizedCents),
-          totalNormalized: normalize(value.totalCents),
+          realizedNormalized: overviewNormalizedAmount(value.realizedCents, highestAmountCents),
+          totalNormalized: overviewNormalizedAmount(value.totalCents, highestAmountCents),
         })),
       };
     }),

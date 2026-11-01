@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -20,6 +21,7 @@ import { SEMANTIC_CHART_COLORS, type ChartTheme } from './aggregation/colors';
 import { checkedAdd } from './aggregation/helpers';
 import type { BalancePoint, BalanceViewModel, ProjectionSplit } from './aggregation/types';
 import { formatCurrency, formatDateLabel, formatDayLabel } from './formatters';
+import { useChartAnimation } from './use-chart-animation';
 
 type BalanceSeries = 'income' | 'expenses' | 'balance';
 
@@ -44,6 +46,52 @@ interface BalanceTotals {
   income: ProjectionSplit;
   expenses: ProjectionSplit;
   balance: ProjectionSplit;
+}
+
+const BALANCE_VALUE_KEYS = [
+  'incomeRealized',
+  'incomeProjected',
+  'incomeTotal',
+  'expensesRealized',
+  'expensesProjected',
+  'expensesTotal',
+  'balanceRealized',
+  'balanceProjected',
+  'balanceTotal',
+] as const satisfies ReadonlyArray<keyof ChartPoint>;
+
+function baselineData(data: ChartPoint[]): ChartPoint[] {
+  return data.map((point) => {
+    const baseline = { ...point };
+    for (const key of BALANCE_VALUE_KEYS) baseline[key] = 0;
+    return baseline;
+  });
+}
+
+function useBalanceEntrance(data: ChartPoint[], enabled: boolean) {
+  const [state, setState] = useState(() => ({
+    source: data,
+    data: enabled ? baselineData(data) : data,
+    animate: false,
+  }));
+
+  useEffect(() => {
+    if (!enabled) {
+      setState({ source: data, data, animate: false });
+      return;
+    }
+
+    setState({ source: data, data: baselineData(data), animate: false });
+    const frame = window.requestAnimationFrame(() => {
+      setState({ source: data, data, animate: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [data, enabled]);
+
+  if (state.source !== data) {
+    return { data: enabled ? baselineData(data) : data, animate: false };
+  }
+  return state;
 }
 
 function chartPoint(
@@ -219,12 +267,14 @@ function BalanceLineChart({
   currency,
   locale,
   theme,
+  animationActive,
 }: {
   data: ChartPoint[];
   model: BalanceViewModel;
   currency: string;
   locale: string;
   theme: ChartTheme;
+  animationActive: boolean;
 }) {
   const t = useTranslations('Graph.balance');
   const colors = SEMANTIC_CHART_COLORS[theme];
@@ -261,7 +311,9 @@ function BalanceLineChart({
               <ProjectedDot {...props} projectedKey={`${key}HasProjection`} color={color} />
             )}
             activeDot={{ r: 5, strokeWidth: 2, fill: 'var(--ml-surface)' }}
-            isAnimationActive={false}
+            isAnimationActive={animationActive}
+            animationDuration={650}
+            animationEasing="ease-out"
           />
         ))}
         {series.map(([key, color]) => (
@@ -274,7 +326,9 @@ function BalanceLineChart({
             strokeWidth={2.5}
             dot={false}
             activeDot={{ r: 4 }}
-            isAnimationActive={false}
+            isAnimationActive={animationActive}
+            animationDuration={650}
+            animationEasing="ease-out"
           />
         ))}
       </LineChart>
@@ -288,12 +342,14 @@ function BalanceAreaChart({
   currency,
   locale,
   theme,
+  animationActive,
 }: {
   data: ChartPoint[];
   model: BalanceViewModel;
   currency: string;
   locale: string;
   theme: ChartTheme;
+  animationActive: boolean;
 }) {
   const t = useTranslations('Graph.balance');
   const colors = SEMANTIC_CHART_COLORS[theme];
@@ -351,7 +407,10 @@ function BalanceAreaChart({
           strokeDasharray="7 5"
           fill="url(#balance-projected-fill)"
           fillOpacity={0.32}
-          isAnimationActive={false}
+          baseValue={0}
+          isAnimationActive={animationActive}
+          animationDuration={650}
+          animationEasing="ease-out"
         />
         <Area
           type="linear"
@@ -360,7 +419,10 @@ function BalanceAreaChart({
           stroke="url(#balance-area-stroke-realized)"
           strokeWidth={2.5}
           fill="url(#balance-area-fill)"
-          isAnimationActive={false}
+          baseValue={0}
+          isAnimationActive={animationActive}
+          animationDuration={650}
+          animationEasing="ease-out"
         />
       </AreaChart>
     </ChartFrame>
@@ -473,9 +535,13 @@ export function BalanceChart({
 }) {
   const locale = useLocale();
   const t = useTranslations('Graph.balance');
-  const data = model.points.map((point, index) =>
-    chartPoint(point, model.points[index - 1], model.mode),
+  const animationEnabled = useChartAnimation();
+  const data = useMemo(
+    () =>
+      model.points.map((point, index) => chartPoint(point, model.points[index - 1], model.mode)),
+    [model],
   );
+  const entrance = useBalanceEntrance(data, animationEnabled);
   const totals = balanceTotals(model);
 
   return (
@@ -490,19 +556,21 @@ export function BalanceChart({
       </p>
       {variant === 'line' ? (
         <BalanceLineChart
-          data={data}
+          data={entrance.data}
           model={model}
           currency={currency}
           locale={locale}
           theme={theme}
+          animationActive={entrance.animate}
         />
       ) : (
         <BalanceAreaChart
-          data={data}
+          data={entrance.data}
           model={model}
           currency={currency}
           locale={locale}
           theme={theme}
+          animationActive={entrance.animate}
         />
       )}
       <BalanceLegend totals={totals} currency={currency} locale={locale} theme={theme} />

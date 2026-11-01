@@ -7,6 +7,7 @@ import { chartStyleForKey } from '../../src/features/finance/graph/aggregation/c
 import {
   aggregateOverview,
   normalizeSelectedUserIds,
+  overviewGraduations,
 } from '../../src/features/finance/graph/aggregation/overview';
 import {
   formatCurrency,
@@ -204,7 +205,7 @@ describe('overview aggregation', () => {
     }),
   ];
 
-  it('combines users, retains raw values, and applies the gentler power scale', () => {
+  it('combines users, retains raw values, and applies the stronger power scale', () => {
     const result = aggregateOverview({
       transactions,
       members: Object.values(USERS),
@@ -220,7 +221,7 @@ describe('overview aggregation', () => {
       projectedCents: 0,
       totalNormalized: 1,
     });
-    expect(result.series[0]!.values[1]!.totalNormalized).toBeCloseTo((1000 / 100100) ** 0.65, 8);
+    expect(result.series[0]!.values[1]!.totalNormalized).toBeCloseTo((1000 / 100100) ** 0.5, 8);
   });
 
   it('compares users on the same dimensions and scale', () => {
@@ -271,6 +272,20 @@ describe('overview aggregation', () => {
     );
   });
 
+  it('separates similar user colors in comparison mode', () => {
+    const members = [USERS.ada, { ...USERS.ben, desiredColor: 'sky' as const }];
+    const result = aggregateOverview({
+      transactions,
+      members,
+      selectedUserIds: members.map(({ id }) => id),
+      kind: 'expense',
+      mode: 'compare',
+    });
+
+    expect(result.series[0]!.color).not.toBe(result.series[1]!.color);
+    expect(result.series[1]!.color).not.toBe('#0369a1');
+  });
+
   it('uses sources for income dimensions and omits zero dimensions', () => {
     const result = aggregateOverview({
       transactions,
@@ -297,6 +312,12 @@ describe('overview aggregation', () => {
     });
     expect(result).toMatchObject({ dimensions: [], highestAmountCents: 0 });
     expect(result.series[0]!.values).toEqual([]);
+  });
+
+  it('builds whole-currency overview graduations at 1/5 powers of ten', () => {
+    expect(overviewGraduations(12000)).toEqual([1000, 5000, 10000, 12000]);
+    expect(overviewGraduations(100000)).toEqual([1000, 5000, 10000, 50000, 100000]);
+    expect(overviewGraduations(875)).toEqual([875]);
   });
 });
 

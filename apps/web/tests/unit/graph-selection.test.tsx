@@ -79,6 +79,12 @@ describe('graph URL selection', () => {
       'period=current-month&graph=category&group=source&categoryChart=bar',
     );
   });
+
+  it('defaults category graphs to transaction type', () => {
+    expect(readGraphSelection(new URL('https://monthloom.test/graph'), '2026-10')).toMatchObject({
+      categoryGrouping: 'transaction-type',
+    });
+  });
 });
 
 describe('Home and Graphs selection links', () => {

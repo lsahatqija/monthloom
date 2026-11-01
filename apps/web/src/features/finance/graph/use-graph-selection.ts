@@ -83,7 +83,7 @@ export function readGraphSelection(url: URL, current = calendarMonth()): GraphSe
     graph: option(url.searchParams.get('graph'), GRAPH_KINDS, 'balance'),
     balanceChart: option(url.searchParams.get('chart'), BALANCE_CHARTS, 'line'),
     balanceMode: option(url.searchParams.get('mode'), BALANCE_MODES, 'daily'),
-    categoryGrouping: option(url.searchParams.get('group'), CATEGORY_GROUPINGS, 'user'),
+    categoryGrouping: option(url.searchParams.get('group'), CATEGORY_GROUPINGS, 'transaction-type'),
     categoryChart: option(url.searchParams.get('categoryChart'), CATEGORY_CHARTS, 'pie'),
     overviewKind: option(url.searchParams.get('kind'), OVERVIEW_KINDS, 'expense'),
     overviewMode: option(url.searchParams.get('usersMode'), OVERVIEW_MODES, 'combine'),
