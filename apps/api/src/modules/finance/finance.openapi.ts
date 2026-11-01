@@ -79,7 +79,7 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'post',
     path: '/api/v1/households',
@@ -96,7 +96,7 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'put',
     path: '/api/v1/households/{id}/primary',
@@ -106,7 +106,7 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
     request: { params: z.object({ id: z.string().uuid() }) },
     responses: { 204: { description: 'Active household changed.' } },
   });
-  
+
   registry.registerPath({
     method: 'post',
     path: '/api/v1/households/{id}/leave',
@@ -117,13 +117,15 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
       params: z.object({ id: z.string().uuid() }),
       body: {
         content: {
-          'application/json': { schema: contracts.transferHouseholdOwnershipRequestSchema.partial() },
+          'application/json': {
+            schema: contracts.transferHouseholdOwnershipRequestSchema.partial(),
+          },
         },
       },
     },
     responses: { 204: { description: 'Household left.' } },
   });
-  
+
   registry.registerPath({
     method: 'delete',
     path: '/api/v1/households/{id}/members/{memberId}',
@@ -135,7 +137,7 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
     },
     responses: { 204: { description: 'Member removed.' } },
   });
-  
+
   registry.registerPath({
     method: 'delete',
     path: '/api/v1/households/{id}',
@@ -145,7 +147,7 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
     request: { params: z.object({ id: z.string().uuid() }) },
     responses: { 204: { description: 'Household deleted.' } },
   });
-  
+
   registry.registerPath({
     method: 'get',
     path: '/api/v1/households/primary/month',
@@ -164,7 +166,7 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'get',
     path: '/api/v1/households/{id}/month',
@@ -186,7 +188,7 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'post',
     path: '/api/v1/households/{id}/transactions',
@@ -195,7 +197,11 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
     security: [{ ['sessionCookie']: [] }],
     request: {
       params: z.object({ id: z.string().uuid() }),
-      body: { content: { 'application/json': { schema: contracts.createHouseholdTransactionRequestSchema } } },
+      body: {
+        content: {
+          'application/json': { schema: contracts.createHouseholdTransactionRequestSchema },
+        },
+      },
     },
     responses: {
       201: {
@@ -208,7 +214,35 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
+  registry.registerPath({
+    method: 'get',
+    path: '/api/v1/households/{id}/transactions',
+    summary: 'Get household transactions for an inclusive month range',
+    tags: ['Households'],
+    security: [{ ['sessionCookie']: [] }],
+    request: {
+      params: z.object({ id: z.string().uuid() }),
+      query: contracts.householdTransactionRangeQuerySchema,
+    },
+    responses: {
+      200: {
+        description: 'Household details and raw realized and projected transactions.',
+        content: {
+          'application/json': { schema: contracts.householdTransactionRangeResponseSchema },
+        },
+      },
+      400: {
+        description: 'Invalid or unsupported month range.',
+        content: { 'application/json': { schema: contracts.apiErrorResponseSchema } },
+      },
+      403: {
+        description: 'Not a household member.',
+        content: { 'application/json': { schema: contracts.apiErrorResponseSchema } },
+      },
+    },
+  });
+
   registry.registerPath({
     method: 'post',
     path: '/api/v1/households/{id}/sources',
@@ -217,7 +251,9 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
     security: [{ ['sessionCookie']: [] }],
     request: {
       params: z.object({ id: z.string().uuid() }),
-      body: { content: { 'application/json': { schema: contracts.createHouseholdSourceRequestSchema } } },
+      body: {
+        content: { 'application/json': { schema: contracts.createHouseholdSourceRequestSchema } },
+      },
     },
     responses: {
       201: {
@@ -230,7 +266,7 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'get',
     path: '/api/v1/households/{id}/sources',
@@ -249,7 +285,7 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'patch',
     path: '/api/v1/households/{id}/sources/{sourceId}',
@@ -258,7 +294,9 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
     security: [{ ['sessionCookie']: [] }],
     request: {
       params: z.object({ id: z.string().uuid(), sourceId: z.string().uuid() }),
-      body: { content: { 'application/json': { schema: contracts.updateHouseholdSourceRequestSchema } } },
+      body: {
+        content: { 'application/json': { schema: contracts.updateHouseholdSourceRequestSchema } },
+      },
     },
     responses: {
       200: {
@@ -267,7 +305,7 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'delete',
     path: '/api/v1/households/{id}/sources/{sourceId}',
@@ -277,7 +315,7 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
     request: { params: z.object({ id: z.string().uuid(), sourceId: z.string().uuid() }) },
     responses: { 204: { description: 'Source deleted.' } },
   });
-  
+
   registry.registerPath({
     method: 'post',
     path: '/api/v1/households/{id}/sources/copy',
@@ -286,7 +324,9 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
     security: [{ ['sessionCookie']: [] }],
     request: {
       params: z.object({ id: z.string().uuid() }),
-      body: { content: { 'application/json': { schema: contracts.copyHouseholdSourcesRequestSchema } } },
+      body: {
+        content: { 'application/json': { schema: contracts.copyHouseholdSourcesRequestSchema } },
+      },
     },
     responses: {
       201: {
@@ -295,7 +335,7 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'patch',
     path: '/api/v1/households/{id}/transactions/{transactionId}',
@@ -304,7 +344,11 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
     security: [{ ['sessionCookie']: [] }],
     request: {
       params: z.object({ id: z.string().uuid(), transactionId: z.string().uuid() }),
-      body: { content: { 'application/json': { schema: contracts.updateHouseholdTransactionRequestSchema } } },
+      body: {
+        content: {
+          'application/json': { schema: contracts.updateHouseholdTransactionRequestSchema },
+        },
+      },
     },
     responses: {
       200: {
@@ -321,7 +365,7 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'delete',
     path: '/api/v1/households/{id}/transactions/{transactionId}',
@@ -344,7 +388,7 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'patch',
     path: '/api/v1/households/{id}',
@@ -367,4 +411,3 @@ export function registerFinanceOpenApi(registry: OpenAPIRegistry): void {
     },
   });
 }
-

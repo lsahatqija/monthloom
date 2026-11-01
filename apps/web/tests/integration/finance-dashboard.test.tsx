@@ -175,6 +175,21 @@ describe('household dashboard', () => {
     expect(screen.queryByRole('button', { name: 'Make default' })).not.toBeInTheDocument();
   });
 
+  it('falls back before requesting a household that is not available to the user', async () => {
+    window.history.replaceState({}, '', '/?household=missing&month=2026-01');
+    const fetch = mockDashboard();
+    renderWithQuery(<HouseholdDashboard />);
+
+    await screen.findByRole('heading', { name: 'Our Home' });
+    await waitFor(() =>
+      expect(new URL(window.location.href).searchParams.get('household')).toBe('home'),
+    );
+    const requestedPaths = fetch.mock.calls.map(([input]) => new URL(String(input)).pathname);
+    expect(requestedPaths).toContain('/api/v1/households/home/month');
+    expect(requestedPaths).not.toContain('/api/v1/households/missing/month');
+    window.history.replaceState({}, '', '/');
+  });
+
   it('shows the month in the heading and preserves month navigation in browser history', async () => {
     mockDashboard();
     renderWithQuery(<HouseholdDashboard />);

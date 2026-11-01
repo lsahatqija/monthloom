@@ -4,6 +4,7 @@ import type {
   CreateHouseholdTransactionRequest,
   CreateHouseholdRequest,
   HouseholdMonthResponse,
+  HouseholdTransactionRangeResponse,
   HouseholdSource,
   HouseholdTransaction,
   TransactionEditScope,
@@ -55,6 +56,11 @@ export interface SourceRepository {
 
 export interface TransactionRepository {
   getMonth(householdId: string, month: string): Promise<HouseholdMonthResponse['transactions']>;
+  getRange(
+    householdId: string,
+    from: string,
+    to: string,
+  ): Promise<HouseholdTransactionRangeResponse['transactions']>;
   createTransaction(
     householdId: string,
     input: CreateHouseholdTransactionRequest,

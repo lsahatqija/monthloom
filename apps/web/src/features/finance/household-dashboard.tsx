@@ -3,11 +3,7 @@
 import { Defaults, type HouseholdTransaction } from '@monthloom/contracts';
 import {
   Banknote,
-  CalendarCheck,
   CalendarDays,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   RefreshCw,
   SlidersHorizontal,
   Store,
@@ -38,67 +34,13 @@ import {
 import { useDashboardSelection } from './dashboard/use-dashboard-selection';
 import { useTransactionView } from './dashboard/use-transaction-view';
 import { FinancialIcon } from './financial-icon';
+import { HouseholdPicker, resolveHouseholdId } from './selectors/household-picker';
+import { MONTH_KEYS, formatTranslatedMonthYear } from './selectors/month';
+import { MonthPicker } from './selectors/month-picker';
 import { TransactionForm } from './transaction-form';
-
-const MONTH_KEYS = [
-  'january',
-  'february',
-  'march',
-  'april',
-  'may',
-  'june',
-  'july',
-  'august',
-  'september',
-  'october',
-  'november',
-  'december',
-] as const;
-
-function monthKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-}
 
 function isMobileFilterSheet(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 620px)').matches;
-}
-
-function shiftMonth(month: string, offset: number): string {
-  const [year, monthNumber] = month.split('-').map(Number);
-  return monthKey(new Date(year!, monthNumber! - 1 + offset, 1));
-}
-
-export function selectMonthLabelVariant(
-  availableWidth: number,
-  fullWidth: number,
-  shortYearWidth: number,
-  monthWidth: number,
-  abbreviatedShortYearWidth: number,
-): 'full' | 'shortYear' | 'month' | 'abbreviatedShortYear' | 'abbreviated' {
-  if (fullWidth <= availableWidth) return 'full';
-  if (shortYearWidth <= availableWidth) return 'shortYear';
-  if (monthWidth <= availableWidth) return 'month';
-  if (abbreviatedShortYearWidth <= availableWidth) return 'abbreviatedShortYear';
-  return 'abbreviated';
-}
-
-export function shouldCollapseCurrentMonthButton(
-  availableWidth: number,
-  controlsWidth: number,
-  abbreviatedLabelWidth: number,
-): boolean {
-  return controlsWidth + abbreviatedLabelWidth > availableWidth;
-}
-
-export function formatTranslatedMonthYear(
-  formatter: Intl.DateTimeFormat,
-  date: Date,
-  translatedMonth: string,
-): string {
-  return formatter
-    .formatToParts(date)
-    .map((part) => (part.type === 'month' ? translatedMonth : part.value))
-    .join('');
 }
 
 function EntryIcon({ entry }: { entry: HouseholdTransaction }) {
@@ -221,57 +163,7 @@ export function HouseholdDashboard() {
     () => new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }),
     [locale],
   );
-  const abbreviatedMonthFormatter = useMemo(
-    () => new Intl.DateTimeFormat(locale, { month: 'short' }),
-    [locale],
-  );
   const { month, setMonth, householdId, setHouseholdId } = useDashboardSelection();
-  const [selectedYear, selectedMonthNumber] = month.split('-').map(Number);
-  const currentMonthKey = monthKey(new Date());
-  const selectedMonthDate = new Date(selectedYear!, selectedMonthNumber! - 1, 1);
-  const monthName = monthLabels(MONTH_KEYS[selectedMonthNumber! - 1]!);
-  const monthLabel = formatTranslatedMonthYear(monthYearFormatter, selectedMonthDate, monthName);
-  const abbreviatedMonthName = abbreviatedMonthFormatter.format(selectedMonthDate);
-  const shortYear = `'${String(selectedYear).slice(-2)}`;
-  const monthNameWithShortYear = `${monthName} ${shortYear}`;
-  const abbreviatedMonthNameWithShortYear = `${abbreviatedMonthName} ${shortYear}`;
-  const monthNames = useMemo(
-    () =>
-      Array.from({ length: 12 }, (_, index) => ({
-        value: index + 1,
-        label: monthLabels(MONTH_KEYS[index]!),
-        abbreviatedLabel: abbreviatedMonthFormatter.format(new Date(2024, index, 1)),
-      })),
-    [abbreviatedMonthFormatter, monthLabels],
-  );
-  const yearOptions = useMemo(() => {
-    const currentYear = new Date().getFullYear();
-    const years = Array.from({ length: 21 }, (_, index) => currentYear - 10 + index);
-    if (!years.includes(selectedYear!)) years.push(selectedYear!);
-    return years.sort((a, b) => a - b);
-  }, [selectedYear]);
-  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
-  const previousMonthRef = useRef(month);
-  const monthDirection =
-    month === previousMonthRef.current
-      ? 'none'
-      : month > previousMonthRef.current
-        ? 'forward'
-        : 'backward';
-  const [monthLabelVariant, setMonthLabelVariant] = useState<
-    'full' | 'shortYear' | 'month' | 'abbreviatedShortYear' | 'abbreviated'
-  >('full');
-  const [currentMonthButtonInPicker, setCurrentMonthButtonInPicker] = useState(false);
-  const [monthLabelWidth, setMonthLabelWidth] = useState<number>();
-  const monthNavigationRef = useRef<HTMLDivElement>(null);
-  const monthLabelRef = useRef<HTMLSpanElement>(null);
-  const monthLabelMeasureRef = useRef<HTMLSpanElement>(null);
-  const monthNameWithShortYearMeasureRef = useRef<HTMLSpanElement>(null);
-  const monthNameMeasureRef = useRef<HTMLSpanElement>(null);
-  const abbreviatedMonthNameWithShortYearMeasureRef = useRef<HTMLSpanElement>(null);
-  const abbreviatedMonthNameMeasureRef = useRef<HTMLSpanElement>(null);
-  const monthPickerRef = useRef<HTMLDivElement>(null);
-  const monthPickerTriggerRef = useRef<HTMLButtonElement>(null);
   const addTransactionTriggerRef = useRef<HTMLButtonElement>(null);
   const [addingTransaction, setAddingTransaction] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<HouseholdTransaction | null>(null);
@@ -289,128 +181,14 @@ export function HouseholdDashboard() {
   if (transactionToEdit) lastTransactionToEditRef.current = transactionToEdit;
   if (transactionToRemove) lastTransactionToRemoveRef.current = transactionToRemove;
   const householdsQuery = useHouseholds();
-  useEffect(() => {
-    previousMonthRef.current = month;
-  }, [month]);
-  useLayoutEffect(() => {
-    const navigation = monthNavigationRef.current;
-    const visibleLabel = monthLabelRef.current;
-    const monthPicker = monthPickerRef.current;
-    const monthPickerTrigger = monthPickerTriggerRef.current;
-    const fullLabel = monthLabelMeasureRef.current;
-    const shortYearLabel = monthNameWithShortYearMeasureRef.current;
-    const monthOnlyLabel = monthNameMeasureRef.current;
-    const abbreviatedShortYearLabel = abbreviatedMonthNameWithShortYearMeasureRef.current;
-    const abbreviatedLabel = abbreviatedMonthNameMeasureRef.current;
-    if (
-      !navigation ||
-      !visibleLabel ||
-      !monthPicker ||
-      !monthPickerTrigger ||
-      !fullLabel ||
-      !shortYearLabel ||
-      !monthOnlyLabel ||
-      !abbreviatedShortYearLabel ||
-      !abbreviatedLabel ||
-      typeof ResizeObserver === 'undefined'
-    )
-      return;
-
-    const measure = () => {
-      const fullLabelWidth = fullLabel.getBoundingClientRect().width;
-      const shortYearLabelWidth = shortYearLabel.getBoundingClientRect().width;
-      const monthNameWidth = monthOnlyLabel.getBoundingClientRect().width;
-      const abbreviatedShortYearLabelWidth =
-        abbreviatedShortYearLabel.getBoundingClientRect().width;
-      const abbreviatedMonthNameWidth = abbreviatedLabel.getBoundingClientRect().width;
-      const visibleLabelWidth = visibleLabel.getBoundingClientRect().width;
-      const gap = Number.parseFloat(getComputedStyle(navigation).columnGap) || 0;
-      const showCurrentMonthButton = month !== currentMonthKey;
-      const navigationButtonWidth =
-        navigation.querySelector<HTMLElement>('.monthNavigationButton')?.getBoundingClientRect()
-          .width ?? 0;
-      const monthPickerChromeWidth =
-        monthPickerTrigger.getBoundingClientRect().width - visibleLabelWidth;
-      const otherControlsWidth = Array.from(navigation.children).reduce(
-        (width, child) =>
-          child === monthPicker || child.classList.contains('currentMonthButton')
-            ? width
-            : width + child.getBoundingClientRect().width,
-        0,
-      );
-      const expandedControlsWidth =
-        otherControlsWidth +
-        monthPickerChromeWidth +
-        (showCurrentMonthButton ? navigationButtonWidth : 0) +
-        gap * (showCurrentMonthButton ? 3 : 2);
-      const collapseCurrentMonthButton =
-        showCurrentMonthButton &&
-        shouldCollapseCurrentMonthButton(
-          navigation.clientWidth,
-          expandedControlsWidth,
-          abbreviatedMonthNameWidth,
-        );
-      const navigationWithoutLabelWidth = collapseCurrentMonthButton
-        ? otherControlsWidth + monthPickerChromeWidth + gap * 2
-        : expandedControlsWidth;
-      const availableLabelWidth = navigation.clientWidth - navigationWithoutLabelWidth;
-      const variant = selectMonthLabelVariant(
-        availableLabelWidth,
-        fullLabelWidth,
-        shortYearLabelWidth,
-        monthNameWidth,
-        abbreviatedShortYearLabelWidth,
-      );
-      setCurrentMonthButtonInPicker(collapseCurrentMonthButton);
-      setMonthLabelVariant(variant);
-      setMonthLabelWidth(
-        variant === 'full'
-          ? fullLabelWidth
-          : variant === 'shortYear'
-            ? shortYearLabelWidth
-            : variant === 'month'
-              ? monthNameWidth
-              : variant === 'abbreviatedShortYear'
-                ? abbreviatedShortYearLabelWidth
-                : abbreviatedMonthNameWidth,
-      );
-    };
-    const observer = new ResizeObserver(measure);
-    observer.observe(navigation);
-    measure();
-    void document.fonts?.ready.then(measure);
-    return () => observer.disconnect();
-  }, [currentMonthKey, month, monthLabel]);
-  useEffect(() => {
-    if (!monthPickerOpen) return;
-    const closePicker = (event: MouseEvent) => {
-      if (!monthPickerRef.current?.contains(event.target as Node)) setMonthPickerOpen(false);
-    };
-    const closePickerWithKeyboard = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setMonthPickerOpen(false);
-        monthPickerTriggerRef.current?.focus();
-      }
-    };
-    document.addEventListener('mousedown', closePicker);
-    document.addEventListener('keydown', closePickerWithKeyboard);
-    return () => {
-      document.removeEventListener('mousedown', closePicker);
-      document.removeEventListener('keydown', closePickerWithKeyboard);
-    };
-  }, [monthPickerOpen]);
+  const activeHouseholdId = householdsQuery.data
+    ? resolveHouseholdId(householdsQuery.data, householdId)
+    : '';
   useEffect(() => {
     if (!householdsQuery.data) return;
-    setHouseholdId((current) => {
-      if (householdsQuery.data.some((household) => household.id === current)) return current;
-      return (
-        householdsQuery.data.find((household) => household.isPrimary)?.id ??
-        householdsQuery.data[0]?.id ??
-        ''
-      );
-    });
+    setHouseholdId((current) => resolveHouseholdId(householdsQuery.data, current));
   }, [householdsQuery.data, setHouseholdId]);
-  const query = useHouseholdMonth(householdId, month);
+  const query = useHouseholdMonth(activeHouseholdId, month);
   const transactionView = useTransactionView(query.data?.transactions ?? []);
   const filteredRecapPresence = useMotionPresence(transactionView.activeFilterCount > 0);
   const filterChipsPresence = useMotionPresence(
@@ -641,191 +419,15 @@ export function HouseholdDashboard() {
     >
       <div className="dashboardHeading">
         <div className="dashboardSelectors" data-onboarding="month-overview">
-          <div className="householdControl">
-            {(householdsQuery.data?.length ?? 0) > 1 ? (
-              <>
-                <label className="householdPicker">
-                  <span className="srOnly">{t('household')}</span>
-                  <select
-                    value={householdId}
-                    onChange={(event) => {
-                      setHouseholdId(event.target.value);
-                      resetFilters();
-                    }}
-                  >
-                    {householdsQuery.data?.map((entry) => (
-                      <option key={entry.id} value={entry.id}>
-                        {entry.name}
-                        {entry.isPrimary ? t('defaultSuffix') : ''}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <h1 className="srOnly">{household.name}</h1>
-              </>
-            ) : (
-              <h1 className="householdNameText" title={household.name}>
-                {household.name}
-              </h1>
-            )}
-          </div>
-          <div
-            ref={monthNavigationRef}
-            className={`monthNavigation${currentMonthButtonInPicker ? ' isCompact' : ''}`}
-            aria-label={t('monthNavigation')}
-          >
-            <button
-              type="button"
-              className={`currentMonthButton${month === currentMonthKey ? ' isHidden' : ''}`}
-              aria-label={t('currentMonth')}
-              aria-hidden={month === currentMonthKey ? 'true' : undefined}
-              tabIndex={month === currentMonthKey ? -1 : undefined}
-              title={month === currentMonthKey ? undefined : t('currentMonth')}
-              onClick={() => setMonth(currentMonthKey)}
-            >
-              <CalendarCheck aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className="monthNavigationButton"
-              aria-label={t('previousMonth')}
-              onClick={() => setMonth(shiftMonth(month, -1))}
-            >
-              <ChevronLeft aria-hidden="true" />
-            </button>
-            <div ref={monthPickerRef} className="monthPicker">
-              <div className="monthHeading">
-                <button
-                  ref={monthPickerTriggerRef}
-                  type="button"
-                  className="monthPickerTrigger"
-                  aria-label={t('chooseMonthValue', { month: monthLabel })}
-                  aria-expanded={monthPickerOpen}
-                  aria-controls="month-picker-popover"
-                  onClick={() => setMonthPickerOpen((open) => !open)}
-                >
-                  <span
-                    key={month}
-                    ref={monthLabelRef}
-                    className="monthLabelText"
-                    data-direction={monthDirection}
-                    style={monthLabelWidth ? { width: `${monthLabelWidth}px` } : undefined}
-                  >
-                    {monthLabelVariant === 'full'
-                      ? monthLabel
-                      : monthLabelVariant === 'shortYear'
-                        ? monthNameWithShortYear
-                        : monthLabelVariant === 'month'
-                          ? monthName
-                          : monthLabelVariant === 'abbreviatedShortYear'
-                            ? abbreviatedMonthNameWithShortYear
-                            : abbreviatedMonthName}
-                  </span>
-                  <span ref={monthLabelMeasureRef} className="monthLabelMeasure" aria-hidden="true">
-                    {monthNames.map((option) => (
-                      <span key={option.value}>{`${option.label} ${selectedYear}`}</span>
-                    ))}
-                  </span>
-                  <span
-                    ref={monthNameWithShortYearMeasureRef}
-                    className="monthLabelMeasure"
-                    aria-hidden="true"
-                  >
-                    {monthNames.map((option) => (
-                      <span key={option.value}>{`${option.label} ${shortYear}`}</span>
-                    ))}
-                  </span>
-                  <span ref={monthNameMeasureRef} className="monthLabelMeasure" aria-hidden="true">
-                    {monthNames.map((option) => (
-                      <span key={option.value}>{option.label}</span>
-                    ))}
-                  </span>
-                  <span
-                    ref={abbreviatedMonthNameWithShortYearMeasureRef}
-                    className="monthLabelMeasure"
-                    aria-hidden="true"
-                  >
-                    {monthNames.map((option) => (
-                      <span key={option.value}>{`${option.abbreviatedLabel} ${shortYear}`}</span>
-                    ))}
-                  </span>
-                  <span
-                    ref={abbreviatedMonthNameMeasureRef}
-                    className="monthLabelMeasure"
-                    aria-hidden="true"
-                  >
-                    {monthNames.map((option) => (
-                      <span key={option.value}>{option.abbreviatedLabel}</span>
-                    ))}
-                  </span>
-                  <ChevronDown aria-hidden="true" />
-                </button>
-              </div>
-              {monthPickerOpen ? (
-                <div
-                  id="month-picker-popover"
-                  className="monthPickerPopover"
-                  role="group"
-                  aria-label={t('chooseMonth')}
-                >
-                  <label>
-                    <span>{t('month')}</span>
-                    <select
-                      value={selectedMonthNumber}
-                      onChange={(event) => {
-                        setMonth(`${selectedYear}-${event.target.value.padStart(2, '0')}`);
-                        setMonthPickerOpen(false);
-                      }}
-                    >
-                      {monthNames.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    <span>{t('year')}</span>
-                    <select
-                      value={selectedYear}
-                      onChange={(event) => {
-                        setMonth(
-                          `${event.target.value}-${String(selectedMonthNumber).padStart(2, '0')}`,
-                        );
-                        setMonthPickerOpen(false);
-                      }}
-                    >
-                      {yearOptions.map((year) => (
-                        <option key={year} value={year}>
-                          {year}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {currentMonthButtonInPicker ? (
-                    <button
-                      type="button"
-                      className="monthPickerCurrentMonthButton"
-                      onClick={() => {
-                        setMonth(currentMonthKey);
-                        setMonthPickerOpen(false);
-                      }}
-                    >
-                      {t('currentMonth')}
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-            <button
-              type="button"
-              className="monthNavigationButton"
-              aria-label={t('nextMonth')}
-              onClick={() => setMonth(shiftMonth(month, 1))}
-            >
-              <ChevronRight aria-hidden="true" />
-            </button>
-          </div>
+          <HouseholdPicker
+            households={householdsQuery.data ?? []}
+            value={householdId}
+            onChange={(nextHouseholdId) => {
+              setHouseholdId(nextHouseholdId);
+              resetFilters();
+            }}
+          />
+          <MonthPicker value={month} onChange={setMonth} />
         </div>
       </div>
       {savedDestinationMonth ? (

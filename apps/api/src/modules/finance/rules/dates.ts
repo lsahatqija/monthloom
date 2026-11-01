@@ -18,6 +18,12 @@ export function currentMonth(now = new Date()): string {
   return now.toISOString().slice(0, 7);
 }
 
+export function addMonths(month: string, count: number): string {
+  const [year, monthNumber] = month.split('-').map(Number);
+  const result = new Date(Date.UTC(year!, monthNumber! - 1 + count, 1));
+  return `${result.getUTCFullYear()}-${String(result.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
 function formatUtcDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }

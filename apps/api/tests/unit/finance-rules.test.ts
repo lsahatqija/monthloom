@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   alignOccurrenceDate,
+  addMonths,
   currentMonth,
   monthEnd,
   recurringOccurrenceDates,
@@ -22,6 +23,10 @@ describe('finance money rules', () => {
 });
 
 describe('finance date and recurrence rules', () => {
+  it('calculates bounded calendar months across years', () => {
+    expect(addMonths('2026-01', -60)).toBe('2021-01');
+    expect(addMonths('2026-12', 12)).toBe('2027-12');
+  });
   it('calculates exclusive month ends across year boundaries', () => {
     expect(monthEnd('2025-12')).toBe('2026-01-01');
   });

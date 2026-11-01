@@ -14,6 +14,7 @@ import '../components/layout/layout.css';
 import '../components/onboarding/onboarding.css';
 import '../features/finance/household-dashboard.css';
 import '../features/finance/household-settings.css';
+import '../features/finance/graph/graph-view.css';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('Metadata');

@@ -56,6 +56,14 @@ export const householdMonthQuerySchema = z.object({
   month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Month must use YYYY-MM format'),
 });
 
+export const calendarMonthSchema = householdMonthQuerySchema.shape.month;
+export const householdTransactionRangeQuerySchema = z
+  .object({ from: calendarMonthSchema, to: calendarMonthSchema })
+  .refine(({ from, to }) => from <= to, {
+    path: ['to'],
+    message: 'End month cannot be before start month',
+  });
+
 const sourceNameSchema = z
   .string()
   .trim()
@@ -247,6 +255,15 @@ export const householdMonthResponseSchema = z.object({
   transactions: z.array(householdTransactionSchema),
 });
 
+export const householdTransactionRangeResponseSchema = z.object({
+  household: householdSchema,
+  from: calendarMonthSchema,
+  to: calendarMonthSchema,
+  members: z.array(householdMemberSchema),
+  sources: z.array(householdSourceSchema),
+  transactions: z.array(householdTransactionSchema),
+});
+
 export const householdResponseSchema = z.object({ household: householdSchema });
 export const householdInvitationTokenSchema = z
   .string()
@@ -314,6 +331,10 @@ export type UpdateHouseholdTransactionRequest = z.infer<
   typeof updateHouseholdTransactionRequestSchema
 >;
 export type HouseholdMonthResponse = z.infer<typeof householdMonthResponseSchema>;
+export type HouseholdTransactionRangeQuery = z.infer<typeof householdTransactionRangeQuerySchema>;
+export type HouseholdTransactionRangeResponse = z.infer<
+  typeof householdTransactionRangeResponseSchema
+>;
 export type HouseholdInvitation = z.infer<typeof householdInvitationSchema>;
 export type CreateHouseholdInvitationRequest = z.infer<
   typeof createHouseholdInvitationRequestSchema

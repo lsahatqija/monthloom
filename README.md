@@ -16,6 +16,7 @@ right person, source, and category.
 - Organize transactions by source, category, date, color, and icon.
 - See monthly income, spending, and the amount left over at a glance.
 - Filter and sort a month's transactions, or move between months and households.
+- Explore balance, category, and household-overview graphs for presets or custom month ranges.
 - Create recurring transactions and project them into future months.
 - Edit or remove one occurrence, future occurrences, or an entire recurring series.
 - Maintain household-specific sources and copy selected sources between households.
@@ -37,6 +38,10 @@ projected recurring entries alongside any transactions already recorded there.
 Household settings cover invitations, membership, ownership, and visual identity. Source settings
 keep payees and income origins consistent across entries. Each person also controls their own
 display name, profile image, identifying color, and browser-local appearance preferences.
+
+The authenticated Graphs view is available from the main navigation. It carries compatible
+household and month selections from Home, keeps graph choices in the URL, distinguishes realized
+and projected amounts, and provides exact-value tables alongside every chart.
 
 ## Testing
 

@@ -23,6 +23,7 @@ import { FinanceController } from './modules/finance/finance.controller.js';
 import { HouseholdService } from './modules/finance/household.service.js';
 import { InvitationService } from './modules/finance/invitation.service.js';
 import { MonthViewService } from './modules/finance/month-view.service.js';
+import { RangeViewService } from './modules/finance/range-view.service.js';
 import { SourceService } from './modules/finance/source.service.js';
 import { TransactionService } from './modules/finance/transaction.service.js';
 import { SystemController } from './modules/system/system.controller.js';
@@ -63,6 +64,11 @@ export function buildAppDependencies() {
       logger,
     ),
     monthView: new MonthViewService(
+      financeRepositories.households,
+      financeRepositories.sources,
+      financeRepositories.transactions,
+    ),
+    rangeView: new RangeViewService(
       financeRepositories.households,
       financeRepositories.sources,
       financeRepositories.transactions,

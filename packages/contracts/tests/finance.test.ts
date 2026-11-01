@@ -8,6 +8,7 @@ import {
   createHouseholdInvitationRequestSchema,
   createHouseholdTransactionRequestSchema,
   householdMonthQuerySchema,
+  householdTransactionRangeQuerySchema,
   updateHouseholdRequestSchema,
   updateHouseholdTransactionRequestSchema,
 } from '../src/index.js';
@@ -102,6 +103,15 @@ describe('finance contracts', () => {
   );
   it.each(['2026-00', '2026-13', '26-01'])('rejects invalid month %s', (month) => {
     expect(householdMonthQuerySchema.safeParse({ month }).success).toBe(false);
+  });
+  it('validates ordered calendar-month ranges', () => {
+    expect(householdTransactionRangeQuerySchema.parse({ from: '2025-12', to: '2026-01' })).toEqual({
+      from: '2025-12',
+      to: '2026-01',
+    });
+    expect(
+      householdTransactionRangeQuerySchema.safeParse({ from: '2026-02', to: '2026-01' }).success,
+    ).toBe(false);
   });
   it('requires a recurring edit selection', () => {
     expect(

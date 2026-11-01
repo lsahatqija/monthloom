@@ -10,6 +10,7 @@ import {
   householdInvitationParamsSchema,
   householdMemberParamsSchema,
   householdMonthQuerySchema,
+  householdTransactionRangeQuerySchema,
   householdSourceParamsSchema,
   householdTransactionParamsSchema,
   removeHouseholdTransactionQuerySchema,
@@ -21,6 +22,7 @@ import {
 import type { HouseholdService } from './household.service.js';
 import type { InvitationService } from './invitation.service.js';
 import type { MonthViewService } from './month-view.service.js';
+import type { RangeViewService } from './range-view.service.js';
 import type { SourceService } from './source.service.js';
 import type { TransactionService } from './transaction.service.js';
 
@@ -30,6 +32,7 @@ export class FinanceController {
       households: HouseholdService;
       invitations: InvitationService;
       monthView: MonthViewService;
+      rangeView: RangeViewService;
       sources: SourceService;
       transactions: TransactionService;
     },
@@ -78,6 +81,13 @@ export class FinanceController {
     res.status(200).json(result);
   };
 
+  getHouseholdTransactionRange = async (req: Request, res: Response): Promise<void> => {
+    const { id } = householdIdParamsSchema.parse(req.params);
+    const { from, to } = householdTransactionRangeQuerySchema.parse(req.query);
+    const result = await this.services.rangeView.getHouseholdRange(id, req.authUser!.id, from, to);
+    res.status(200).json(result);
+  };
+
   updateHousehold = async (req: Request, res: Response): Promise<void> => {
     const { id } = householdIdParamsSchema.parse(req.params);
     const input = updateHouseholdRequestSchema.parse(req.body);
@@ -113,7 +123,11 @@ export class FinanceController {
   createTransaction = async (req: Request, res: Response): Promise<void> => {
     const { id } = householdIdParamsSchema.parse(req.params);
     const input = createHouseholdTransactionRequestSchema.parse(req.body);
-    const transaction = await this.services.transactions.createTransaction(id, req.authUser!.id, input);
+    const transaction = await this.services.transactions.createTransaction(
+      id,
+      req.authUser!.id,
+      input,
+    );
     res.status(201).json({ transaction });
   };
 
