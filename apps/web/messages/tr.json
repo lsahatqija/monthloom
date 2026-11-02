@@ -511,6 +511,8 @@
     "filterActivity": "Hareketleri filtrele",
     "refineActivity": "Bu ayın hareketlerini daraltın",
     "closeFilters": "Filtreleri kapat",
+    "all": "Tümü",
+    "none": "Hiçbiri",
     "type": "Tür",
     "allTypes": "Tüm türler",
     "allExpenses": "Tüm giderler",

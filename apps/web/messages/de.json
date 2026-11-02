@@ -511,6 +511,8 @@
     "filterActivity": "Aktivitäten filtern",
     "refineActivity": "Aktivitäten dieses Monats eingrenzen",
     "closeFilters": "Filter schließen",
+    "all": "Alle",
+    "none": "Keine",
     "type": "Art",
     "allTypes": "Alle Arten",
     "allExpenses": "Alle Ausgaben",

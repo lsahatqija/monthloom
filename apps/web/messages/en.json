@@ -511,6 +511,8 @@
     "filterActivity": "Filter activity",
     "refineActivity": "Refine this month's activity",
     "closeFilters": "Close filters",
+    "all": "All",
+    "none": "None",
     "type": "Type",
     "allTypes": "All types",
     "allExpenses": "All expenses",

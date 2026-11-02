@@ -515,6 +515,8 @@
     "filterActivity": "Aktiviteti i filtrit",
     "refineActivity": "Përmirëso aktivitetin e këtij muaji",
     "closeFilters": "Mbyll filtrat",
+    "all": "Të gjitha",
+    "none": "Asnjë",
     "type": "Lloji",
     "allTypes": "Të gjitha llojet",
     "allExpenses": "Të gjitha shpenzimet",

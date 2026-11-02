@@ -7,6 +7,7 @@ import {
   includesLocaleText,
   isProjectedTransaction,
   summarizeTransactions,
+  toggleFilterSelection,
 } from '../../src/features/finance/dashboard/transaction-view';
 import { monthLabel } from '../../src/features/finance/transaction-form';
 
@@ -45,10 +46,53 @@ describe('transaction view', () => {
       transaction('small-expense', 'expense', '2.00'),
       transaction('large-expense', 'expense', '20.00'),
     ];
-    const filters = { ...emptyTransactionFilters, type: 'expense' };
+    const filters = { ...emptyTransactionFilters, types: ['expense'] };
     expect(
       filterAndSortTransactions(entries, filters, 'amount', 'ascending', 'en').map(({ id }) => id),
     ).toEqual(['large-expense', 'small-expense']);
+  });
+
+  it('combines toggle-list selections and normalizes a complete selection to all', () => {
+    const options = ['income', 'expense:groceries', 'expense:savings'];
+
+    expect(toggleFilterSelection(['all'], 'expense:savings', options)).toEqual([
+      'income',
+      'expense:groceries',
+    ]);
+    expect(toggleFilterSelection([], 'income', options)).toEqual(['income']);
+    expect(
+      toggleFilterSelection(['income', 'expense:groceries'], 'expense:savings', options),
+    ).toEqual(['all']);
+  });
+
+  it('matches any selected type, source, or user and lets an empty selection match none', () => {
+    const entries = [
+      transaction('income', 'income', '10.00'),
+      transaction('groceries', 'expense', '20.00', { type: 'groceries' }),
+      transaction('savings', 'expense', '30.00', {
+        type: 'savings',
+        source: { id: 'bank', displayName: 'Bank', key: 'bank', aliases: ['Bank'] },
+      }),
+    ];
+
+    expect(
+      filterAndSortTransactions(
+        entries,
+        { ...emptyTransactionFilters, types: ['income', 'expense:groceries'] },
+        'date',
+        'descending',
+        'en',
+      ).map(({ id }) => id),
+    ).toEqual(['groceries', 'income']);
+    expect(
+      filterAndSortTransactions(
+        entries,
+        { ...emptyTransactionFilters, sourceIds: [] },
+        'date',
+        'descending',
+        'en',
+      ),
+    ).toEqual([]);
   });
 
   it('sorts dates in reverse chronological order', () => {

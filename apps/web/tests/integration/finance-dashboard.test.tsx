@@ -311,9 +311,19 @@ describe('household dashboard', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Sort by Amount' }));
     expect(within(table).getAllByRole('row')[1]).toHaveTextContent('Grocer');
     await userEvent.click(screen.getByText('Filters', { exact: true }));
-    await userEvent.selectOptions(screen.getByLabelText('Type'), 'expense');
-    expect(within(table).getAllByRole('row')).toHaveLength(2);
-    expect(within(table).queryByText('Employer')).not.toBeInTheDocument();
+    const typeFilter = screen.getByRole('group', { name: 'Type' });
+    await userEvent.click(within(typeFilter).getByLabelText('Type: All'));
+    await userEvent.click(within(typeFilter).getByRole('button', { name: 'None' }));
+    await userEvent.click(within(typeFilter).getByRole('button', { name: 'Groceries' }));
+    await waitFor(() =>
+      expect(within(typeFilter).getByRole('button', { name: 'Groceries' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      ),
+    );
+    const filteredTable = screen.getByRole('table');
+    expect(within(filteredTable).getAllByRole('row')).toHaveLength(2);
+    expect(within(filteredTable).queryByText('Employer')).not.toBeInTheDocument();
     expect(
       within(screen.getByLabelText('Monthly recap')).getByText('Income').nextElementSibling,
     ).toHaveTextContent('100.00');
@@ -330,10 +340,10 @@ describe('household dashboard', () => {
     await userEvent.click(screen.getByText('Filters', { exact: true }));
     const activeFilters = screen.getByLabelText('Active filters');
     expect(
-      within(activeFilters).getByRole('button', { name: 'Remove Expenses filter' }),
+      within(activeFilters).getByRole('button', { name: 'Remove Groceries filter' }),
     ).toBeVisible();
     await userEvent.click(
-      within(activeFilters).getByRole('button', { name: 'Remove Expenses filter' }),
+      within(activeFilters).getByRole('button', { name: 'Remove Groceries filter' }),
     );
     expect(screen.queryByRole('group', { name: 'Filtered recap' })).not.toBeInTheDocument();
   });
@@ -348,12 +358,18 @@ describe('household dashboard', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Close filters' })).toHaveFocus(),
     );
-    const type = screen.getByLabelText('Type');
-    await userEvent.selectOptions(type, 'expense');
+    const typeFilter = screen.getByRole('group', { name: 'Type' });
+    await userEvent.click(within(typeFilter).getByLabelText('Type: All'));
+    await userEvent.click(within(typeFilter).getByRole('button', { name: 'None' }));
+    await userEvent.click(within(typeFilter).getByRole('button', { name: 'Groceries' }));
+    await userEvent.keyboard('{Escape}');
+    expect(
+      within(typeFilter).getByLabelText('Type: Groceries').closest('details'),
+    ).not.toHaveAttribute('open');
     await userEvent.keyboard('{Escape}');
 
     expect(screen.getByRole('group', { name: 'Filtered recap' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Active filters')).toHaveTextContent('Expenses');
+    expect(screen.getByLabelText('Active filters')).toHaveTextContent('Groceries');
     expect(screen.getByText('Filters', { exact: true }).closest('details')).not.toHaveAttribute(
       'open',
     );
@@ -369,7 +385,14 @@ describe('household dashboard', () => {
     await userEvent.click(trigger);
     expect(screen.getByRole('button', { name: 'Clear filters' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Apply filters' })).toBeDisabled();
-    await userEvent.selectOptions(screen.getByLabelText('Type'), 'expense');
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Type' })).getByLabelText('Type: All'),
+    );
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Type' })).getByRole('button', {
+        name: 'Groceries',
+      }),
+    );
     expect(screen.getByRole('button', { name: 'Clear filters' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Apply filters' })).toBeEnabled();
     await userEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
@@ -390,11 +413,58 @@ describe('household dashboard', () => {
     await userEvent.click(trigger);
 
     expect(trigger.closest('details')).toHaveAttribute('open');
-    expect(screen.getByLabelText('Type')).toBeVisible();
-    expect(screen.getByLabelText('Type').closest('[data-motion]')).toHaveAttribute(
+    expect(screen.getByRole('group', { name: 'Type' })).toBeVisible();
+    expect(screen.getByRole('group', { name: 'Type' }).closest('[data-motion]')).toHaveAttribute(
       'data-motion',
       'entered',
     );
+  });
+
+  it('supports multiple type, source, and user toggles with all and none controls', async () => {
+    mockDashboard();
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+    await userEvent.click(screen.getByText('Filters', { exact: true }));
+
+    const type = screen.getByRole('group', { name: 'Type' });
+    const source = screen.getByRole('group', { name: 'Source' });
+    const user = screen.getByRole('group', { name: 'User' });
+    for (const [group, label] of [
+      [type, 'Type'],
+      [source, 'Source'],
+      [user, 'User'],
+    ] as const) {
+      await userEvent.click(within(group).getByLabelText(`${label}: All`));
+      expect(within(group).getByRole('button', { name: 'All' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      expect(within(group).getByRole('button', { name: 'None' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
+    }
+
+    await userEvent.click(within(type).getByLabelText('Type: All'));
+    await userEvent.click(within(type).getByRole('button', { name: 'None' }));
+    expect(screen.getByText('No transactions match these filters.')).toBeVisible();
+    await userEvent.click(within(type).getByRole('button', { name: 'Income' }));
+    await userEvent.click(within(type).getByRole('button', { name: 'Groceries' }));
+    expect(within(type).getByRole('button', { name: 'All' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    await userEvent.click(within(source).getByLabelText('Source: All'));
+    await userEvent.click(within(source).getByRole('button', { name: 'Employer' }));
+    expect(within(screen.getByRole('table')).queryByText('Employer')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('table')).getByText('Grocer')).toBeVisible();
+
+    await userEvent.click(within(user).getByLabelText('User: All'));
+    await userEvent.click(within(user).getByRole('button', { name: 'None' }));
+    expect(screen.getByText('No transactions match these filters.')).toBeVisible();
+    await userEvent.click(within(user).getByRole('button', { name: 'All' }));
+    expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(2);
   });
 
   it('restores focus as a transaction dialog begins its exit', async () => {
