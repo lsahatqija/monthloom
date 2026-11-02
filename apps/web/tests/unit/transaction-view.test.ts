@@ -5,7 +5,7 @@ import {
   emptyTransactionFilters,
   filterAndSortTransactions,
   includesLocaleText,
-  isUpcomingRecurringTransaction,
+  isProjectedTransaction,
   summarizeTransactions,
 } from '../../src/features/finance/dashboard/transaction-view';
 import { monthLabel } from '../../src/features/finance/transaction-form';
@@ -65,6 +65,30 @@ describe('transaction view', () => {
     ).toEqual(['latest', 'middle', 'oldest']);
   });
 
+  it('excludes future recurring and non-recurring transactions when projections are hidden', () => {
+    const entries = [
+      transaction('realized', 'expense', '10.00', { date: '2026-10-17', projected: true }),
+      transaction('future-one-off', 'expense', '20.00', { date: '2026-10-18' }),
+      transaction('future-recurring', 'expense', '30.00', {
+        date: '2026-10-19',
+        recurring: true,
+      }),
+    ];
+
+    expect(
+      filterAndSortTransactions(
+        entries,
+        emptyTransactionFilters,
+        'date',
+        'descending',
+        'en',
+        undefined,
+        false,
+        new Date(2026, 9, 17, 12),
+      ).map(({ id }) => id),
+    ).toEqual(['realized']);
+  });
+
   it('sorts displayed names with Turkish collation', () => {
     const entries = [
       transaction('dotted', 'expense', '10.00', {
@@ -105,20 +129,16 @@ describe('transaction view', () => {
     expect(summary.balance).toBeCloseTo(-0.3);
   });
 
-  it('identifies only upcoming recurring transactions in the current month', () => {
+  it('identifies every future transaction as projected regardless of recurrence', () => {
     const today = new Date(2026, 9, 17, 12);
     const upcoming = transaction('upcoming', 'expense', '20.00', {
       recurring: true,
       date: '2026-10-18',
     });
 
-    expect(isUpcomingRecurringTransaction(upcoming, '2026-10', today)).toBe(true);
-    expect(
-      isUpcomingRecurringTransaction({ ...upcoming, recurring: false }, '2026-10', today),
-    ).toBe(false);
-    expect(
-      isUpcomingRecurringTransaction({ ...upcoming, date: '2026-10-17' }, '2026-10', today),
-    ).toBe(false);
-    expect(isUpcomingRecurringTransaction(upcoming, '2026-11', today)).toBe(false);
+    expect(isProjectedTransaction(upcoming, today)).toBe(true);
+    expect(isProjectedTransaction({ ...upcoming, recurring: false }, today)).toBe(true);
+    expect(isProjectedTransaction({ ...upcoming, date: '2026-10-17' }, today)).toBe(false);
+    expect(isProjectedTransaction({ ...upcoming, date: '2026-10-16' }, today)).toBe(false);
   });
 });

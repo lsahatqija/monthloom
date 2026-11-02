@@ -36,15 +36,11 @@ function localDateKey(date: Date): string {
   ).padStart(2, '0')}`;
 }
 
-export function isUpcomingRecurringTransaction(
+export function isProjectedTransaction(
   transaction: HouseholdTransaction,
-  selectedMonth: string,
   today = new Date(),
 ): boolean {
-  const todayKey = localDateKey(today);
-  return (
-    transaction.recurring && selectedMonth === todayKey.slice(0, 7) && transaction.date > todayKey
-  );
+  return transaction.date > localDateKey(today);
 }
 
 export function filterAndSortTransactions(
@@ -55,9 +51,12 @@ export function filterAndSortTransactions(
   locale: string,
   typeLabel: (transaction: HouseholdTransaction) => string = (transaction) =>
     transaction.kind === 'income' ? 'income' : (transaction.type ?? 'other'),
+  includeProjected = true,
+  today = new Date(),
 ) {
   const collator = new Intl.Collator(locale, { numeric: true, sensitivity: 'base' });
   const filtered = transactions.filter((transaction) => {
+    if (!includeProjected && isProjectedTransaction(transaction, today)) return false;
     if (filters.type === 'income' && transaction.kind !== 'income') return false;
     if (filters.type === 'expense' && transaction.kind !== 'expense') return false;
     if (

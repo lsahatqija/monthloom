@@ -314,11 +314,7 @@
   background: color-mix(in srgb, var(--ml-accent-1) 45%, var(--ml-surface));
 }
 .filteredRecap {
-  position: relative;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: calc(-1 * var(--space-3));
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--ml-background) 55%, var(--ml-surface));
 }
 .filteredRecap[data-motion='entered'] {
   animation: recap-in var(--motion-content-slow) var(--motion-ease-out) both;
@@ -327,20 +323,13 @@
   pointer-events: none;
   animation: recap-out var(--motion-exit) var(--motion-ease-exit) both;
 }
-.filteredRecap.hasSavings {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
 .filteredRecapLabel {
-  position: absolute;
-  top: var(--space-2);
-  left: var(--space-3);
+  grid-column: 1 / -1;
   margin: 0;
+  padding: clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem) 0;
   color: var(--ml-text-muted);
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 650;
-}
-.filteredRecap > div {
-  padding: 1.8rem var(--space-3) var(--space-3);
 }
 .transactionPanel {
   display: flex;
@@ -374,6 +363,37 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
+}
+.projectionToggle {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--ml-border);
+  border-radius: 10px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+.projectionToggle svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+.projectionToggle:hover {
+  background: var(--ml-surface-hover);
+}
+.projectionToggle[aria-pressed='true'] {
+  border-color: var(--ml-primary);
+  background: color-mix(in srgb, var(--ml-primary) 12%, var(--ml-surface));
+  color: var(--ml-primary);
+}
+.projectionToggle:focus-visible {
+  outline: 2px solid var(--ml-focus-ring);
+  outline-offset: 2px;
 }
 .addTransactionButton {
   display: grid;
@@ -2113,7 +2133,16 @@
     grid-column: 1 / -1;
   }
   .transactionPanelHeading {
+    flex-wrap: nowrap;
+    gap: var(--space-2);
     padding-inline: var(--space-4);
+  }
+  .transactionPanelActions {
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+  }
+  .transactionPanelActions > span {
+    display: none;
   }
   .transactionFilters > summary {
     padding-inline: var(--space-4);

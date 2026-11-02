@@ -504,6 +504,7 @@
     "viewMonth": "Shiko",
     "activity": "Aktiviteti",
     "entries": "{count, plural, one {# hyrje} other {# hyrjet}}",
+    "includeProjected": "Përfshi parashikimet",
     "addTransaction": "Shto transaksion",
     "filters": "Filtrat",
     "matching": "{count} përputhen",

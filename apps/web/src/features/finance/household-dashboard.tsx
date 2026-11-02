@@ -4,6 +4,8 @@ import { Defaults, type HouseholdTransaction } from '@monthloom/contracts';
 import {
   Banknote,
   CalendarDays,
+  Eye,
+  EyeOff,
   RefreshCw,
   SlidersHorizontal,
   Store,
@@ -25,8 +27,7 @@ import { RemoveTransactionDialog } from './dashboard/remove-transaction-dialog';
 import { TransactionSummary } from './dashboard/summary';
 import { TransactionMenu } from './dashboard/transaction-menu';
 import {
-  isUpcomingRecurringTransaction,
-  summarizeTransactions,
+  isProjectedTransaction,
   type RecurringFilter,
   type TransactionFilters,
   type TransactionSortKey,
@@ -281,15 +282,17 @@ export function HouseholdDashboard() {
   const {
     activeFilterCount,
     filters,
+    includeProjected,
     resetFilters,
+    recapSummary,
     setFilters,
+    setIncludeProjected,
     sortBy,
     sortDirection,
     sortKey,
     visibleTransactions: sortedTransactions,
   } = transactionView;
   const filteredTransactions = sortedTransactions;
-  const savings = summarizeTransactions(transactions).savings;
   const sortableHeader = (key: TransactionSortKey, label: string, className?: string) => (
     <SortableHeader
       column={key}
@@ -458,10 +461,10 @@ export function HouseholdDashboard() {
       <TransactionSummary
         currency={household.currency}
         totals={{
-          income: summary.income,
-          expenses: summary.expenses,
-          savings,
-          balance: summary.leftover,
+          income: includeProjected ? summary.income : recapSummary.income,
+          expenses: includeProjected ? summary.expenses : recapSummary.expenses,
+          savings: recapSummary.savings,
+          balance: includeProjected ? summary.leftover : recapSummary.balance,
         }}
       />
       {filteredRecapPresence.visible ? (
@@ -478,6 +481,16 @@ export function HouseholdDashboard() {
           <h2>{t('activity')}</h2>
           <div className="transactionPanelActions">
             <span>{t('entries', { count: transactions.length })}</span>
+            <button
+              type="button"
+              className="projectionToggle"
+              aria-pressed={includeProjected}
+              aria-label={t('includeProjected')}
+              onClick={() => setIncludeProjected((included) => !included)}
+            >
+              {includeProjected ? <Eye aria-hidden="true" /> : <EyeOff aria-hidden="true" />}
+              {t('projected')}
+            </button>
             <button
               ref={addTransactionTriggerRef}
               type="button"
@@ -766,9 +779,7 @@ export function HouseholdDashboard() {
                   <tr
                     key={`${entry.kind}-${entry.id}-${entry.date}`}
                     className={
-                      entry.projected || isUpcomingRecurringTransaction(entry, month)
-                        ? 'projectedTransaction'
-                        : undefined
+                      isProjectedTransaction(entry) ? 'projectedTransaction' : undefined
                     }
                   >
                     <td className="transactionIconColumn">
@@ -791,7 +802,9 @@ export function HouseholdDashboard() {
                       {money.format(Number(entry.amount))}
                     </td>
                     <td className="transactionSourceColumn">
-                      {entry.projected ? <span className="srOnly">{t('projected')}: </span> : null}
+                      {isProjectedTransaction(entry) ? (
+                        <span className="srOnly">{t('projected')}: </span>
+                      ) : null}
                       <span className="transactionSourceName" title={entry.source.displayName}>
                         {entry.source.displayName}
                       </span>

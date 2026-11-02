@@ -504,6 +504,7 @@
     "viewMonth": "Afficher",
     "activity": "Activité",
     "entries": "{count, plural, one {# opération} other {# opérations}}",
+    "includeProjected": "Inclure les prévisions",
     "addTransaction": "Ajouter une opération",
     "filters": "Filtres",
     "matching": "{count} résultat(s)",

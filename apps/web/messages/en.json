@@ -500,6 +500,7 @@
     "viewMonth": "View",
     "activity": "Activity",
     "entries": "{count, plural, one {# entry} other {# entries}}",
+    "includeProjected": "Include projected",
     "addTransaction": "Add transaction",
     "filters": "Filters",
     "matching": "{count} matching",

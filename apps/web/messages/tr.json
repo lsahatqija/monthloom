@@ -500,6 +500,7 @@
     "viewMonth": "Görüntüle",
     "activity": "Hareketler",
     "entries": "{count, plural, one {# kayıt} other {# kayıt}}",
+    "includeProjected": "Tahminleri dahil et",
     "addTransaction": "İşlem ekle",
     "filters": "Filtreler",
     "matching": "{count} eşleşme",

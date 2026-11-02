@@ -500,6 +500,7 @@
     "viewMonth": "Anzeigen",
     "activity": "Aktivitäten",
     "entries": "{count, plural, one {# Eintrag} other {# Einträge}}",
+    "includeProjected": "Prognosen einbeziehen",
     "addTransaction": "Transaktion hinzufügen",
     "filters": "Filter",
     "matching": "{count} Treffer",

@@ -46,7 +46,11 @@ const transactions: HouseholdTransaction[] = [
   },
 ];
 
-function mockDashboard(currency = 'EUR', monthTransactions = transactions) {
+function mockDashboard(
+  currency = 'EUR',
+  monthTransactions = transactions,
+  summary = { income: '100.00', expenses: '20.00', leftover: '80.00' },
+) {
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input, options) => {
     const url = new URL(String(input));
     if (url.pathname === '/api/v1/households') return Response.json({ households: [household] });
@@ -54,7 +58,7 @@ function mockDashboard(currency = 'EUR', monthTransactions = transactions) {
       return Response.json({
         household: { ...household, currency },
         month: url.searchParams.get('month'),
-        summary: { income: '100.00', expenses: '20.00', leftover: '80.00' },
+        summary,
         members: [member],
         sources: [shop, work],
         transactions: monthTransactions,
@@ -105,6 +109,42 @@ describe('household dashboard', () => {
     expect(
       within(screen.getByLabelText('Monthly recap')).getByText('Savings').nextElementSibling,
     ).toHaveTextContent('25.00');
+  });
+
+  it('toggles projected transactions in both activity and the monthly recap', async () => {
+    const projected = {
+      ...transactions[0]!,
+      id: 'projected',
+      date: '2099-01-02',
+      amount: '30.00',
+      projected: false,
+      source: { ...shop, id: 'forecast', displayName: 'Forecast' },
+    };
+    mockDashboard('EUR', [...transactions, projected], {
+      income: '100.00',
+      expenses: '50.00',
+      leftover: '50.00',
+    });
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+
+    const toggle = screen.getByRole('button', { name: 'Include projected' });
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('table')).toHaveTextContent('Forecast');
+    expect(
+      within(screen.getByLabelText('Monthly recap')).getByText('Expenses').nextElementSibling,
+    ).toHaveTextContent(/-.*50\.00/);
+
+    await userEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('table')).not.toHaveTextContent('Forecast');
+    expect(
+      within(screen.getByLabelText('Monthly recap')).getByText('Expenses').nextElementSibling,
+    ).toHaveTextContent(/-.*20\.00/);
+    expect(
+      within(screen.getByLabelText('Monthly recap')).getByText('Balance').nextElementSibling,
+    ).toHaveTextContent('80.00');
   });
 
   it('shows an actionable empty state when no households exist', async () => {
