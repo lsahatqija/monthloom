@@ -262,6 +262,17 @@
 }
 .sourceManagementTable {
   margin-top: var(--space-4);
+  overflow-x: hidden;
+}
+.sourceManagementTable .sourceTable {
+  min-width: 0;
+  table-layout: fixed;
+}
+.sourceManagementTable th:first-child {
+  width: 38%;
+}
+.sourceManagementTable th:last-child {
+  width: 7rem;
 }
 .sourceTable {
   width: 100%;
@@ -284,15 +295,52 @@
 .sourceTable tbody tr:last-child td {
   border-bottom: 0;
 }
-.sourceTable code {
+.sourceAliases {
+  display: block;
+  overflow: hidden;
   color: var(--ml-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sourceManagementTable td:first-child {
   overflow-wrap: anywhere;
 }
 .sourceTableActions {
   display: flex;
   justify-content: flex-end;
-  gap: var(--space-2);
+  gap: var(--space-1);
   white-space: nowrap;
+}
+.sourceIconButton {
+  display: grid;
+  flex: 0 0 2.25rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--ml-border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ml-text);
+  cursor: pointer;
+}
+.sourceIconButton:hover:not(:disabled) {
+  background: var(--ml-surface-hover);
+}
+.sourceIconButton:focus-visible {
+  outline: 2px solid var(--ml-primary);
+  outline-offset: 2px;
+}
+.sourceIconButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.sourceIconButton svg {
+  width: 1rem;
+  height: 1rem;
+}
+.sourceDeleteButton {
+  color: var(--color-danger);
 }
 .sourceTableEmpty {
   margin: 0;
@@ -339,6 +387,18 @@
   }
   .copyHouseholdSelectors {
     grid-template-columns: 1fr;
+  }
+  .sourceManagementTable .sourceTable th,
+  .sourceManagementTable .sourceTable td {
+    padding-inline: var(--space-2);
+  }
+  .sourceManagementTable th:last-child {
+    width: 6.75rem;
+  }
+  .sourceIconButton {
+    flex-basis: 2.75rem;
+    width: 2.75rem;
+    height: 2.75rem;
   }
 }
 

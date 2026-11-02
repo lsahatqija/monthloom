@@ -60,6 +60,9 @@ describe('source settings', () => {
     await waitFor(() => expect(dialog).not.toBeInTheDocument());
     expect(screen.getByText('Source added.')).toBeInTheDocument();
     expect(await screen.findByText('Neighborhood Market')).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Key' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining(`/households/${household.id}/sources`),
       expect.objectContaining({
