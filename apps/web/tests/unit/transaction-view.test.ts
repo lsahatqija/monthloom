@@ -5,8 +5,9 @@ import {
   emptyTransactionFilters,
   filterAndSortTransactions,
   includesLocaleText,
-  isUpcomingRecurringTransaction,
+  isProjectedTransaction,
   summarizeTransactions,
+  toggleFilterSelection,
 } from '../../src/features/finance/dashboard/transaction-view';
 import { monthLabel } from '../../src/features/finance/transaction-form';
 
@@ -45,10 +46,53 @@ describe('transaction view', () => {
       transaction('small-expense', 'expense', '2.00'),
       transaction('large-expense', 'expense', '20.00'),
     ];
-    const filters = { ...emptyTransactionFilters, type: 'expense' };
+    const filters = { ...emptyTransactionFilters, types: ['expense'] };
     expect(
       filterAndSortTransactions(entries, filters, 'amount', 'ascending', 'en').map(({ id }) => id),
     ).toEqual(['large-expense', 'small-expense']);
+  });
+
+  it('combines toggle-list selections and normalizes a complete selection to all', () => {
+    const options = ['income', 'expense:groceries', 'expense:savings'];
+
+    expect(toggleFilterSelection(['all'], 'expense:savings', options)).toEqual([
+      'income',
+      'expense:groceries',
+    ]);
+    expect(toggleFilterSelection([], 'income', options)).toEqual(['income']);
+    expect(
+      toggleFilterSelection(['income', 'expense:groceries'], 'expense:savings', options),
+    ).toEqual(['all']);
+  });
+
+  it('matches any selected type, source, or user and lets an empty selection match none', () => {
+    const entries = [
+      transaction('income', 'income', '10.00'),
+      transaction('groceries', 'expense', '20.00', { type: 'groceries' }),
+      transaction('savings', 'expense', '30.00', {
+        type: 'savings',
+        source: { id: 'bank', displayName: 'Bank', key: 'bank', aliases: ['Bank'] },
+      }),
+    ];
+
+    expect(
+      filterAndSortTransactions(
+        entries,
+        { ...emptyTransactionFilters, types: ['income', 'expense:groceries'] },
+        'date',
+        'descending',
+        'en',
+      ).map(({ id }) => id),
+    ).toEqual(['groceries', 'income']);
+    expect(
+      filterAndSortTransactions(
+        entries,
+        { ...emptyTransactionFilters, sourceIds: [] },
+        'date',
+        'descending',
+        'en',
+      ),
+    ).toEqual([]);
   });
 
   it('sorts dates in reverse chronological order', () => {
@@ -63,6 +107,30 @@ describe('transaction view', () => {
         ({ id }) => id,
       ),
     ).toEqual(['latest', 'middle', 'oldest']);
+  });
+
+  it('excludes future recurring and non-recurring transactions when projections are hidden', () => {
+    const entries = [
+      transaction('realized', 'expense', '10.00', { date: '2026-10-17', projected: true }),
+      transaction('future-one-off', 'expense', '20.00', { date: '2026-10-18' }),
+      transaction('future-recurring', 'expense', '30.00', {
+        date: '2026-10-19',
+        recurring: true,
+      }),
+    ];
+
+    expect(
+      filterAndSortTransactions(
+        entries,
+        emptyTransactionFilters,
+        'date',
+        'descending',
+        'en',
+        undefined,
+        false,
+        new Date(2026, 9, 17, 12),
+      ).map(({ id }) => id),
+    ).toEqual(['realized']);
   });
 
   it('sorts displayed names with Turkish collation', () => {
@@ -105,20 +173,16 @@ describe('transaction view', () => {
     expect(summary.balance).toBeCloseTo(-0.3);
   });
 
-  it('identifies only upcoming recurring transactions in the current month', () => {
+  it('identifies every future transaction as projected regardless of recurrence', () => {
     const today = new Date(2026, 9, 17, 12);
     const upcoming = transaction('upcoming', 'expense', '20.00', {
       recurring: true,
       date: '2026-10-18',
     });
 
-    expect(isUpcomingRecurringTransaction(upcoming, '2026-10', today)).toBe(true);
-    expect(
-      isUpcomingRecurringTransaction({ ...upcoming, recurring: false }, '2026-10', today),
-    ).toBe(false);
-    expect(
-      isUpcomingRecurringTransaction({ ...upcoming, date: '2026-10-17' }, '2026-10', today),
-    ).toBe(false);
-    expect(isUpcomingRecurringTransaction(upcoming, '2026-11', today)).toBe(false);
+    expect(isProjectedTransaction(upcoming, today)).toBe(true);
+    expect(isProjectedTransaction({ ...upcoming, recurring: false }, today)).toBe(true);
+    expect(isProjectedTransaction({ ...upcoming, date: '2026-10-17' }, today)).toBe(false);
+    expect(isProjectedTransaction({ ...upcoming, date: '2026-10-16' }, today)).toBe(false);
   });
 });

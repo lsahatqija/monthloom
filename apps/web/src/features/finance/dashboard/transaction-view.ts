@@ -5,26 +5,39 @@ export type SortDirection = 'ascending' | 'descending';
 export type RecurringFilter = 'all' | 'recurring' | 'one-off';
 
 export type TransactionFilters = {
-  type: string;
-  userId: string;
+  types: string[];
+  userIds: string[];
   dateFrom: string;
   dateTo: string;
-  sourceId: string;
+  sourceIds: string[];
   recurring: RecurringFilter;
   amountOver: string;
   amountUnder: string;
 };
 
 export const emptyTransactionFilters: TransactionFilters = {
-  type: 'all',
-  userId: 'all',
+  types: ['all'],
+  userIds: ['all'],
   dateFrom: '',
   dateTo: '',
-  sourceId: 'all',
+  sourceIds: ['all'],
   recurring: 'all',
   amountOver: '',
   amountUnder: '',
 };
+
+export function toggleFilterSelection(
+  selection: string[],
+  value: string,
+  options: string[],
+): string[] {
+  const selected = new Set(selection.includes('all') ? options : selection);
+  if (selected.has(value)) selected.delete(value);
+  else selected.add(value);
+  return options.every((option) => selected.has(option))
+    ? ['all']
+    : options.filter((option) => selected.has(option));
+}
 
 export function includesLocaleText(value: string, query: string, locale: string): boolean {
   return value.toLocaleLowerCase(locale).includes(query.toLocaleLowerCase(locale));
@@ -36,15 +49,11 @@ function localDateKey(date: Date): string {
   ).padStart(2, '0')}`;
 }
 
-export function isUpcomingRecurringTransaction(
+export function isProjectedTransaction(
   transaction: HouseholdTransaction,
-  selectedMonth: string,
   today = new Date(),
 ): boolean {
-  const todayKey = localDateKey(today);
-  return (
-    transaction.recurring && selectedMonth === todayKey.slice(0, 7) && transaction.date > todayKey
-  );
+  return transaction.date > localDateKey(today);
 }
 
 export function filterAndSortTransactions(
@@ -55,18 +64,22 @@ export function filterAndSortTransactions(
   locale: string,
   typeLabel: (transaction: HouseholdTransaction) => string = (transaction) =>
     transaction.kind === 'income' ? 'income' : (transaction.type ?? 'other'),
+  includeProjected = true,
+  today = new Date(),
 ) {
   const collator = new Intl.Collator(locale, { numeric: true, sensitivity: 'base' });
   const filtered = transactions.filter((transaction) => {
-    if (filters.type === 'income' && transaction.kind !== 'income') return false;
-    if (filters.type === 'expense' && transaction.kind !== 'expense') return false;
+    if (!includeProjected && isProjectedTransaction(transaction, today)) return false;
     if (
-      filters.type.startsWith('expense:') &&
-      transaction.type !== filters.type.slice('expense:'.length)
+      !filters.types.includes('all') &&
+      !filters.types.includes(transaction.kind) &&
+      !filters.types.includes(`expense:${transaction.type}`)
     )
       return false;
-    if (filters.userId !== 'all' && transaction.user.id !== filters.userId) return false;
-    if (filters.sourceId !== 'all' && transaction.source.id !== filters.sourceId) return false;
+    if (!filters.userIds.includes('all') && !filters.userIds.includes(transaction.user.id))
+      return false;
+    if (!filters.sourceIds.includes('all') && !filters.sourceIds.includes(transaction.source.id))
+      return false;
     if (filters.dateFrom && transaction.date < filters.dateFrom) return false;
     if (filters.dateTo && transaction.date > filters.dateTo) return false;
     if (filters.recurring === 'recurring' && !transaction.recurring) return false;
@@ -118,5 +131,7 @@ export function summarizeTransactions(transactions: HouseholdTransaction[]) {
 }
 
 export function activeFilterCount(filters: TransactionFilters): number {
-  return Object.values(filters).filter((value) => value !== '' && value !== 'all').length;
+  return Object.values(filters).filter((value) =>
+    Array.isArray(value) ? !value.includes('all') : value !== '' && value !== 'all',
+  ).length;
 }

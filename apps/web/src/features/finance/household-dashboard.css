@@ -164,7 +164,7 @@
   display: inline-block;
   min-width: 0;
   max-width: 100%;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   overflow: hidden;
   font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
@@ -237,8 +237,7 @@
   filter: brightness(0.92);
 }
 .currentMonthButton.isHidden {
-  visibility: hidden;
-  pointer-events: none;
+  display: none;
 }
 .monthNavigation.isCompact .currentMonthButton {
   display: none;
@@ -314,11 +313,7 @@
   background: color-mix(in srgb, var(--ml-accent-1) 45%, var(--ml-surface));
 }
 .filteredRecap {
-  position: relative;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: calc(-1 * var(--space-3));
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--ml-background) 55%, var(--ml-surface));
 }
 .filteredRecap[data-motion='entered'] {
   animation: recap-in var(--motion-content-slow) var(--motion-ease-out) both;
@@ -327,20 +322,13 @@
   pointer-events: none;
   animation: recap-out var(--motion-exit) var(--motion-ease-exit) both;
 }
-.filteredRecap.hasSavings {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
 .filteredRecapLabel {
-  position: absolute;
-  top: var(--space-2);
-  left: var(--space-3);
+  grid-column: 1 / -1;
   margin: 0;
+  padding: clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem) 0;
   color: var(--ml-text-muted);
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 650;
-}
-.filteredRecap > div {
-  padding: 1.8rem var(--space-3) var(--space-3);
 }
 .transactionPanel {
   display: flex;
@@ -374,6 +362,37 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
+}
+.projectionToggle {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--ml-border);
+  border-radius: 10px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+.projectionToggle svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+.projectionToggle:hover {
+  background: var(--ml-surface-hover);
+}
+.projectionToggle[aria-pressed='true'] {
+  border-color: var(--ml-primary);
+  background: color-mix(in srgb, var(--ml-primary) 12%, var(--ml-surface));
+  color: var(--ml-primary);
+}
+.projectionToggle:focus-visible {
+  outline: 2px solid var(--ml-focus-ring);
+  outline-offset: 2px;
 }
 .addTransactionButton {
   display: grid;
@@ -469,6 +488,8 @@
   font-weight: 500;
 }
 .transactionFilterDrawer {
+  position: relative;
+  z-index: 2;
   padding: var(--space-6) var(--space-8) var(--space-8);
   background: color-mix(in srgb, var(--ml-background) 55%, var(--ml-surface));
 }
@@ -618,11 +639,120 @@
   min-width: 0;
   gap: var(--space-2);
 }
-.transactionFilterField > span {
+.transactionFilterField > span,
+.transactionFilterField > legend {
   color: var(--ml-text-muted);
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.25;
+}
+.transactionFilterToggleField {
+  padding: 0;
+  border: 0;
+}
+.transactionFilterToggleDropdown {
+  position: relative;
+  min-width: 0;
+}
+.transactionFilterToggleDropdown > summary {
+  display: flex;
+  width: 100%;
+  height: 2.75rem;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--ml-border);
+  border-radius: 10px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  cursor: pointer;
+  font-size: 0.86rem;
+  list-style: none;
+}
+.transactionFilterToggleDropdown > summary::-webkit-details-marker {
+  display: none;
+}
+.transactionFilterToggleDropdown > summary > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.transactionFilterToggleDropdown > summary > svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  transition: transform var(--motion-control) var(--motion-ease-out);
+}
+.transactionFilterToggleDropdown[open] > summary > svg {
+  transform: rotate(180deg);
+}
+.transactionFilterToggleDropdown[open] > summary {
+  border-color: var(--ml-primary);
+}
+.transactionFilterToggleDropdown > summary:focus-visible {
+  outline: 2px solid var(--ml-focus-ring);
+  outline-offset: 1px;
+}
+.transactionFilterToggleList {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  left: 0;
+  display: grid;
+  max-height: 14rem;
+  overflow-y: auto;
+  border: 1px solid var(--ml-border);
+  border-radius: 10px;
+  background: var(--ml-surface);
+  /* taste-skill-ignore shadow: this menu floats above the filter sheet */
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--ml-text) 14%, transparent);
+}
+.transactionFilterToggleList button {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-bottom: 1px solid var(--ml-divider);
+  background: transparent;
+  color: var(--ml-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.86rem;
+  text-align: left;
+}
+.transactionFilterToggleList button:last-child {
+  border-bottom: 0;
+}
+.transactionFilterToggleList button:hover {
+  background: var(--ml-surface-hover);
+}
+.transactionFilterToggleList button[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--ml-accent-1) 22%, var(--ml-surface));
+  font-weight: 650;
+}
+.transactionFilterToggleList button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--ml-focus-ring);
+  outline-offset: -2px;
+}
+.transactionFilterToggleList svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  opacity: 0;
+  stroke-width: 2.5;
+}
+.transactionFilterToggleList button[aria-pressed='true'] svg {
+  opacity: 1;
+}
+.transactionFilterToggleList .transactionFilterNone {
+  border-bottom-color: var(--ml-border);
 }
 .transactionFilterField select,
 .transactionFilterField input {
@@ -653,6 +783,11 @@
   padding-top: var(--space-1);
   color: var(--ml-text-muted);
   font-size: 0.8rem;
+}
+.transactionFilterActions {
+  display: flex;
+  margin-left: auto;
+  gap: var(--space-2);
 }
 .transactionFilterChips {
   display: flex;
@@ -712,9 +847,13 @@
   font: inherit;
   font-weight: 700;
 }
-.transactionFilterFooter button:hover {
+.transactionFilterFooter button:hover:not(:disabled) {
   border-color: var(--ml-primary-hover);
   background: var(--ml-primary-hover);
+}
+.transactionFilterClear:disabled,
+.transactionFilterApply {
+  display: none;
 }
 .transactionFilterFooter button:focus-visible {
   outline: 2px solid var(--ml-focus-ring);
@@ -2104,7 +2243,16 @@
     grid-column: 1 / -1;
   }
   .transactionPanelHeading {
+    flex-wrap: nowrap;
+    gap: var(--space-2);
     padding-inline: var(--space-4);
+  }
+  .transactionPanelActions {
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+  }
+  .transactionPanelActions > span {
+    display: none;
   }
   .transactionFilters > summary {
     padding-inline: var(--space-4);
@@ -2199,10 +2347,38 @@
     padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
     border-top: 1px solid var(--ml-divider);
     background: var(--ml-surface);
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .transactionFilterActions {
+    width: 100%;
   }
   .transactionFilterFooter button {
     min-height: 2.75rem;
+    flex: 1;
     padding-inline: var(--space-4);
+  }
+  .transactionFilterApply {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .transactionFilterFooter .transactionFilterClear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ml-surface);
+    color: var(--ml-primary);
+  }
+  .transactionFilterFooter .transactionFilterClear:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--ml-primary) 8%, var(--ml-surface));
+  }
+  .transactionFilterFooter button:disabled {
+    border-color: var(--ml-border);
+    background: var(--ml-surface-hover);
+    color: var(--ml-text-muted);
+    cursor: not-allowed;
+    opacity: 0.6;
   }
   .transactionFilterChips {
     padding-inline: var(--space-4);

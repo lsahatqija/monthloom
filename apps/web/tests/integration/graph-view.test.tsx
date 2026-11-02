@@ -190,6 +190,33 @@ describe('Graph view', () => {
     );
   });
 
+  it('can exclude projected transactions from every graph', async () => {
+    mockGraph({
+      transactions: [
+        transaction,
+        {
+          ...transaction,
+          id: '00000000-0000-4000-8000-000000000005',
+          amount: '30.00',
+          projected: true,
+        },
+      ],
+    });
+    renderGraph();
+    await screen.findByRole('heading', { name: 'Balance' });
+
+    await userEvent.selectOptions(screen.getByLabelText('Graph'), 'category');
+    expect(screen.getByRole('img')).toHaveAttribute('data-category-total', '5000');
+
+    const toggle = screen.getByRole('button', { name: 'Include projected transactions' });
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('img')).toHaveAttribute('data-category-total', '2000');
+    expect(new URL(window.location.href).searchParams.get('projected')).toBe('exclude');
+  });
+
   it('keeps the control surface for empty periods and retryable errors', async () => {
     mockGraph({ transactions: [] });
     const { unmount } = renderGraph();

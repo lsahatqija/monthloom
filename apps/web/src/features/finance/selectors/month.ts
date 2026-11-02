@@ -23,6 +23,10 @@ export function calendarMonth(date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
+export function calendarDate(date = new Date()): string {
+  return `${calendarMonth(date)}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export function shiftCalendarMonth(month: string, offset: number): string {
   const match = CALENDAR_MONTH_PATTERN.exec(month);
   if (!match) throw new Error(`Invalid calendar month: ${month}`);

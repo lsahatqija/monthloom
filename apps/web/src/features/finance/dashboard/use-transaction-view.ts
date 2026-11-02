@@ -6,6 +6,7 @@ import {
   activeFilterCount,
   emptyTransactionFilters,
   filterAndSortTransactions,
+  isProjectedTransaction,
   summarizeTransactions,
   type SortDirection,
   type TransactionFilters,
@@ -21,12 +22,26 @@ export function useTransactionView(transactions: HouseholdTransaction[]) {
     Defaults.TRANSACTION_SORT_DIRECTION,
   );
   const [filters, setFilters] = useState<TransactionFilters>(emptyTransactionFilters);
+  const [includeProjected, setIncludeProjected] = useState(true);
   const visibleTransactions = useMemo(
     () =>
-      filterAndSortTransactions(transactions, filters, sortKey, sortDirection, locale, (entry) =>
-        entry.kind === 'income' ? t('income') : typeLabels(entry.type ?? 'other'),
+      filterAndSortTransactions(
+        transactions,
+        filters,
+        sortKey,
+        sortDirection,
+        locale,
+        (entry) => (entry.kind === 'income' ? t('income') : typeLabels(entry.type ?? 'other')),
+        includeProjected,
       ),
-    [filters, locale, sortDirection, sortKey, t, transactions, typeLabels],
+    [filters, includeProjected, locale, sortDirection, sortKey, t, transactions, typeLabels],
+  );
+  const recapTransactions = useMemo(
+    () =>
+      transactions.filter(
+        (transaction) => includeProjected || !isProjectedTransaction(transaction),
+      ),
+    [includeProjected, transactions],
   );
 
   const sortBy = (key: TransactionSortKey) => {
@@ -41,11 +56,17 @@ export function useTransactionView(transactions: HouseholdTransaction[]) {
   return {
     filters,
     setFilters,
-    resetFilters: () => setFilters(emptyTransactionFilters),
+    resetFilters: () => {
+      setFilters(emptyTransactionFilters);
+      setIncludeProjected(true);
+    },
+    includeProjected,
+    setIncludeProjected,
     sortKey,
     sortDirection,
     sortBy,
     visibleTransactions,
+    recapSummary: summarizeTransactions(recapTransactions),
     filteredSummary: summarizeTransactions(visibleTransactions),
     activeFilterCount: activeFilterCount(filters),
   };

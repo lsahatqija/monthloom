@@ -4,6 +4,10 @@ import { Defaults, type HouseholdTransaction } from '@monthloom/contracts';
 import {
   Banknote,
   CalendarDays,
+  Check,
+  ChevronDown,
+  Eye,
+  EyeOff,
   RefreshCw,
   SlidersHorizontal,
   Store,
@@ -25,8 +29,8 @@ import { RemoveTransactionDialog } from './dashboard/remove-transaction-dialog';
 import { TransactionSummary } from './dashboard/summary';
 import { TransactionMenu } from './dashboard/transaction-menu';
 import {
-  isUpcomingRecurringTransaction,
-  summarizeTransactions,
+  isProjectedTransaction,
+  toggleFilterSelection,
   type RecurringFilter,
   type TransactionFilters,
   type TransactionSortKey,
@@ -41,6 +45,97 @@ import { TransactionForm } from './transaction-form';
 
 function isMobileFilterSheet(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 620px)').matches;
+}
+
+function ToggleFilterList({
+  label,
+  options,
+  value,
+  allLabel,
+  noneLabel,
+  onChange,
+}: {
+  label: string;
+  options: Array<{ value: string; label: string }>;
+  value: string[];
+  allLabel: string;
+  noneLabel: string;
+  onChange: (value: string[]) => void;
+}) {
+  const allSelected = value.includes('all');
+  const selectedLabels = options
+    .filter((option) => value.includes(option.value))
+    .map((option) => option.label);
+  const selectionSummary = allSelected
+    ? allLabel
+    : value.length === 0
+      ? noneLabel
+      : selectedLabels.length > 1
+        ? `${selectedLabels[0]} +${selectedLabels.length - 1}`
+        : (selectedLabels[0] ?? noneLabel);
+  const renderOption = (option: { value: string; label: string }, selected: boolean) => (
+    <button
+      key={option.value}
+      type="button"
+      aria-pressed={selected}
+      onClick={() =>
+        onChange(
+          toggleFilterSelection(
+            value,
+            option.value,
+            options.map(({ value }) => value),
+          ),
+        )
+      }
+    >
+      <Check aria-hidden="true" />
+      <span>{option.label}</span>
+    </button>
+  );
+
+  return (
+    <fieldset className="transactionFilterField transactionFilterToggleField">
+      <legend>{label}</legend>
+      <details
+        className="transactionFilterToggleDropdown"
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) {
+            event.currentTarget.removeAttribute('open');
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape' || !event.currentTarget.open) return;
+          event.preventDefault();
+          event.stopPropagation();
+          event.currentTarget.open = false;
+          event.currentTarget.querySelector('summary')?.focus();
+        }}
+      >
+        <summary aria-label={`${label}: ${selectionSummary}`}>
+          <span>{selectionSummary}</span>
+          <ChevronDown aria-hidden="true" />
+        </summary>
+        <div className="transactionFilterToggleList">
+          <button type="button" aria-pressed={allSelected} onClick={() => onChange(['all'])}>
+            <Check aria-hidden="true" />
+            <span>{allLabel}</span>
+          </button>
+          <button
+            type="button"
+            className="transactionFilterNone"
+            aria-pressed={value.length === 0}
+            onClick={() => onChange([])}
+          >
+            <Check aria-hidden="true" />
+            <span>{noneLabel}</span>
+          </button>
+          {options.map((option) =>
+            renderOption(option, allSelected || value.includes(option.value)),
+          )}
+        </div>
+      </details>
+    </fieldset>
+  );
 }
 
 function EntryIcon({ entry }: { entry: HouseholdTransaction }) {
@@ -281,15 +376,17 @@ export function HouseholdDashboard() {
   const {
     activeFilterCount,
     filters,
+    includeProjected,
     resetFilters,
+    recapSummary,
     setFilters,
+    setIncludeProjected,
     sortBy,
     sortDirection,
     sortKey,
     visibleTransactions: sortedTransactions,
   } = transactionView;
   const filteredTransactions = sortedTransactions;
-  const savings = summarizeTransactions(transactions).savings;
   const sortableHeader = (key: TransactionSortKey, label: string, className?: string) => (
     <SortableHeader
       column={key}
@@ -341,32 +438,50 @@ export function HouseholdDashboard() {
     setFiltersExpanded(false);
     filterSummaryRef.current?.focus();
   };
+  const typeFilterOptions = [
+    { value: 'income', label: t('income') },
+    ...expenseTypes.map((type) => ({ value: `expense:${type}`, label: typeLabels(type) })),
+  ];
+  const sourceFilterOptions = query.data.sources.map((source) => ({
+    value: source.id,
+    label: source.displayName,
+  }));
+  const userFilterOptions = query.data.members.map((member) => ({
+    value: member.id,
+    label: member.displayName,
+  }));
+  const selectionLabel = (
+    selection: string[],
+    options: Array<{ value: string; label: string }>,
+    fallback: string,
+  ) =>
+    selection.length
+      ? selection
+          .map((value) => options.find((option) => option.value === value)?.label)
+          .filter(Boolean)
+          .join(', ')
+      : fallback;
   const activeFilters: Array<{ key: keyof TransactionFilters; label: string }> = [
-    filters.type !== 'all'
+    !filters.types.includes('all')
       ? {
-          key: 'type',
-          label:
-            filters.type === 'income'
-              ? t('income')
-              : filters.type === 'expense'
-                ? t('expenses')
-                : typeLabels(filters.type.slice(8)),
+          key: 'types',
+          label: selectionLabel(filters.types, typeFilterOptions, `${t('type')}: ${t('none')}`),
         }
       : null,
-    filters.userId !== 'all'
+    !filters.userIds.includes('all')
       ? {
-          key: 'userId',
-          label:
-            query.data.members.find((member) => member.id === filters.userId)?.displayName ??
-            t('selectedUser'),
+          key: 'userIds',
+          label: selectionLabel(filters.userIds, userFilterOptions, `${t('user')}: ${t('none')}`),
         }
       : null,
-    filters.sourceId !== 'all'
+    !filters.sourceIds.includes('all')
       ? {
-          key: 'sourceId',
-          label:
-            query.data.sources.find((source) => source.id === filters.sourceId)?.displayName ??
-            t('selectedSource'),
+          key: 'sourceIds',
+          label: selectionLabel(
+            filters.sourceIds,
+            sourceFilterOptions,
+            `${t('source')}: ${t('none')}`,
+          ),
         }
       : null,
     filters.recurring !== 'all'
@@ -408,7 +523,11 @@ export function HouseholdDashboard() {
   const removeFilter = (key: keyof TransactionFilters) =>
     updateFilter(
       key,
-      key === 'type' || key === 'userId' || key === 'sourceId' || key === 'recurring' ? 'all' : '',
+      key === 'types' || key === 'userIds' || key === 'sourceIds'
+        ? ['all']
+        : key === 'recurring'
+          ? 'all'
+          : '',
     );
 
   return (
@@ -458,10 +577,10 @@ export function HouseholdDashboard() {
       <TransactionSummary
         currency={household.currency}
         totals={{
-          income: summary.income,
-          expenses: summary.expenses,
-          savings,
-          balance: summary.leftover,
+          income: includeProjected ? summary.income : recapSummary.income,
+          expenses: includeProjected ? summary.expenses : recapSummary.expenses,
+          savings: recapSummary.savings,
+          balance: includeProjected ? summary.leftover : recapSummary.balance,
         }}
       />
       {filteredRecapPresence.visible ? (
@@ -478,6 +597,16 @@ export function HouseholdDashboard() {
           <h2>{t('activity')}</h2>
           <div className="transactionPanelActions">
             <span>{t('entries', { count: transactions.length })}</span>
+            <button
+              type="button"
+              className="projectionToggle"
+              aria-pressed={includeProjected}
+              aria-label={t('includeProjected')}
+              onClick={() => setIncludeProjected((included) => !included)}
+            >
+              {includeProjected ? <Eye aria-hidden="true" /> : <EyeOff aria-hidden="true" />}
+              {t('projected')}
+            </button>
             <button
               ref={addTransactionTriggerRef}
               type="button"
@@ -540,54 +669,34 @@ export function HouseholdDashboard() {
               </div>
               <div className="transactionFilterGroup transactionFilterGroupPrimary">
                 <div className="transactionFilterGroupFields">
-                  <label className="transactionFilterField">
-                    <span>{t('type')}</span>
-                    <select
-                      value={filters.type}
-                      onChange={(event) => updateFilter('type', event.target.value)}
-                    >
-                      <option value="all">{t('allTypes')}</option>
-                      <option value="income">{t('income')}</option>
-                      <option value="expense">{t('allExpenses')}</option>
-                      {expenseTypes.map((type) => (
-                        <option key={type} value={`expense:${type}`}>
-                          {typeLabels(type)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="transactionFilterField">
-                    <span>{t('source')}</span>
-                    <select
-                      value={filters.sourceId}
-                      onChange={(event) => updateFilter('sourceId', event.target.value)}
-                    >
-                      <option value="all">{t('allSources')}</option>
-                      {query.data.sources.map((source) => (
-                        <option key={source.id} value={source.id}>
-                          {source.displayName}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <ToggleFilterList
+                    label={t('type')}
+                    options={typeFilterOptions}
+                    value={filters.types}
+                    allLabel={t('all')}
+                    noneLabel={t('none')}
+                    onChange={(value) => updateFilter('types', value)}
+                  />
+                  <ToggleFilterList
+                    label={t('source')}
+                    options={sourceFilterOptions}
+                    value={filters.sourceIds}
+                    allLabel={t('all')}
+                    noneLabel={t('none')}
+                    onChange={(value) => updateFilter('sourceIds', value)}
+                  />
                 </div>
               </div>
               <div className="transactionFilterGroup transactionFilterGroupSecondary">
                 <div className="transactionFilterGroupFields">
-                  <label className="transactionFilterField">
-                    <span>{t('user')}</span>
-                    <select
-                      value={filters.userId}
-                      onChange={(event) => updateFilter('userId', event.target.value)}
-                    >
-                      <option value="all">{t('allUsers')}</option>
-                      {query.data.members.map((member) => (
-                        <option key={member.id} value={member.id}>
-                          {member.displayName}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <ToggleFilterList
+                    label={t('user')}
+                    options={userFilterOptions}
+                    value={filters.userIds}
+                    allLabel={t('all')}
+                    noneLabel={t('none')}
+                    onChange={(value) => updateFilter('userIds', value)}
+                  />
                   <label className="transactionFilterField">
                     <span>{t('recurring')}</span>
                     <select
@@ -704,11 +813,24 @@ export function HouseholdDashboard() {
                     total: transactions.length,
                   })}
                 </span>
-                {activeFilterCount ? (
-                  <button type="button" onClick={resetFilters}>
+                <div className="transactionFilterActions">
+                  <button
+                    className="transactionFilterClear"
+                    type="button"
+                    disabled={!activeFilterCount}
+                    onClick={resetFilters}
+                  >
                     {t('clearFilters')}
                   </button>
-                ) : null}
+                  <button
+                    className="transactionFilterApply"
+                    type="button"
+                    disabled={!activeFilterCount}
+                    onClick={closeFilters}
+                  >
+                    {t('applyFilters')}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -752,11 +874,7 @@ export function HouseholdDashboard() {
                 {sortedTransactions.map((entry) => (
                   <tr
                     key={`${entry.kind}-${entry.id}-${entry.date}`}
-                    className={
-                      entry.projected || isUpcomingRecurringTransaction(entry, month)
-                        ? 'projectedTransaction'
-                        : undefined
-                    }
+                    className={isProjectedTransaction(entry) ? 'projectedTransaction' : undefined}
                   >
                     <td className="transactionIconColumn">
                       <EntryIcon entry={entry} />
@@ -778,7 +896,9 @@ export function HouseholdDashboard() {
                       {money.format(Number(entry.amount))}
                     </td>
                     <td className="transactionSourceColumn">
-                      {entry.projected ? <span className="srOnly">{t('projected')}: </span> : null}
+                      {isProjectedTransaction(entry) ? (
+                        <span className="srOnly">{t('projected')}: </span>
+                      ) : null}
                       <span className="transactionSourceName" title={entry.source.displayName}>
                         {entry.source.displayName}
                       </span>

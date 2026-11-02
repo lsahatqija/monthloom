@@ -1,6 +1,7 @@
 'use client';
 
 import type { HouseholdTransactionRangeResponse, ManagedHousehold } from '@monthloom/contracts';
+import { Eye, EyeOff } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
@@ -141,6 +142,16 @@ export function GraphControls({
           onChange={selection.setGraph}
           options={GRAPH_KINDS.map((value) => ({ value, label: t(`graphs.${value}`) }))}
         />
+        <button
+          type="button"
+          className="projectionToggle graphProjectionToggle"
+          aria-pressed={selection.includeProjected}
+          aria-label={t('includeProjected')}
+          onClick={() => selection.setIncludeProjected(!selection.includeProjected)}
+        >
+          {selection.includeProjected ? <Eye aria-hidden="true" /> : <EyeOff aria-hidden="true" />}
+          {t('projected')}
+        </button>
       </div>
 
       {selection.period === 'custom-month' ? (

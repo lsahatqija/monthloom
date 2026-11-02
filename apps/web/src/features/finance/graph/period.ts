@@ -69,6 +69,7 @@ export function resolveGraphPeriod({
       break;
     case 'current-year':
       resolvedFrom = `${current.slice(0, 4)}-01`;
+      resolvedTo = `${current.slice(0, 4)}-12`;
       break;
     case 'last-year': {
       const year = Number(current.slice(0, 4)) - 1;

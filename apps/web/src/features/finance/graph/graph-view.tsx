@@ -9,6 +9,7 @@ import { useTheme } from '../../../components/theme-provider';
 import { Alert } from '../../../components/ui';
 import { useHouseholds, useHouseholdTransactionRange } from '../api/queries';
 import { resolveHouseholdId } from '../selectors/household-picker';
+import { calendarDate } from '../selectors/month';
 
 import { aggregateBalance } from './aggregation/balance';
 import { aggregateCategories } from './aggregation/category';
@@ -56,10 +57,12 @@ export function GraphView() {
   }, [activeHouseholdId, householdId, setHouseholdId]);
 
   const rangeQuery = useHouseholdTransactionRange(activeHouseholdId, selection.from, selection.to);
-  const transactions = useMemo(
-    () => rangeQuery.data?.transactions ?? [],
-    [rangeQuery.data?.transactions],
-  );
+  const transactions = useMemo(() => {
+    const allTransactions = rangeQuery.data?.transactions ?? [];
+    return selection.includeProjected
+      ? allTransactions
+      : allTransactions.filter((transaction) => !transaction.projected);
+  }, [rangeQuery.data?.transactions, selection.includeProjected]);
   const members = useMemo(() => rangeQuery.data?.members ?? [], [rangeQuery.data?.members]);
   const aggregation = useMemo(() => {
     if (selection.graph === 'category') {
@@ -110,6 +113,7 @@ export function GraphView() {
       overview: undefined,
     };
   }, [members, selection, t, theme, transactions, typeLabels]);
+  const today = calendarDate();
 
   const pageHeader = (
     <header className="graphPageHeader">
@@ -215,6 +219,11 @@ export function GraphView() {
                     model: aggregation.balance,
                     variant: selection.balanceChart,
                     currency: rangeQuery.data.household.currency,
+                    currentDate:
+                      selection.period === 'current-month' || selection.period === 'current-year'
+                        ? today
+                        : undefined,
+                    realizedThroughDate: selection.includeProjected ? today : undefined,
                   }
                 : undefined
             }

@@ -62,12 +62,12 @@ vi.mock('recharts', () => {
     CartesianGrid: () => null,
     Line: Series,
     LineChart: ChartContainer,
-    ReferenceLine: ({ label }: { label: { value: string } }) => (
-      <text data-testid="zero-line">{label.value}</text>
-    ),
+    ReferenceLine: () => <line data-testid="zero-line" />,
     ResponsiveContainer: Container,
     Tooltip: () => null,
-    XAxis: () => null,
+    XAxis: ({ ticks }: { ticks: string[] }) => (
+      <metadata data-testid="date-ticks">{JSON.stringify(ticks)}</metadata>
+    ),
     YAxis: () => null,
   };
 });
@@ -133,7 +133,7 @@ describe('BalanceChart', () => {
     });
     expect(screen.getAllByTestId('chart-series')[0]).toHaveAttribute('data-animated', 'true');
   });
-  it('renders solid realized and dashed total line series around a labeled zero line', () => {
+  it('renders solid realized and dashed total line series around an unlabeled zero line', () => {
     renderChart();
 
     const series = screen.getAllByTestId('chart-series');
@@ -148,8 +148,59 @@ describe('BalanceChart', () => {
       'expensesRealized',
       'balanceRealized',
     ]);
-    expect(screen.getByTestId('zero-line')).toHaveTextContent('Zero');
+    expect(screen.getByTestId('zero-line')).toBeEmptyDOMElement();
+    expect(screen.queryByText('Zero')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Balance line chart')).toBeVisible();
+  });
+
+  it('labels month starts and the final day and can mark the current date', () => {
+    const point = model.points[0]!;
+    renderChart({
+      currentDate: '2026-02-14',
+      model: {
+        ...model,
+        points: [
+          { ...point, date: '2026-01-01' },
+          { ...point, date: '2026-01-02' },
+          { ...point, date: '2026-02-01' },
+          { ...point, date: '2026-12-31' },
+        ],
+      },
+    });
+
+    expect(JSON.parse(screen.getByTestId('date-ticks').textContent ?? '[]')).toEqual([
+      '2026-01-01',
+      '2026-02-01',
+      '2026-12-31',
+    ]);
+    const marker = document.querySelector<HTMLElement>('.graphCurrentDateLine');
+    const position =
+      ((Date.parse('2026-02-14') - Date.parse('2026-01-01')) /
+        (Date.parse('2026-12-31') - Date.parse('2026-01-01'))) *
+      100;
+    expect(marker).toHaveStyle({ left: `${position}%` });
+  });
+
+  it('ends realized series at the current date while projections continue', () => {
+    const point = model.points[0]!;
+    renderChart({
+      realizedThroughDate: '2026-10-02',
+      model: {
+        ...model,
+        points: [point, { ...point, date: '2026-10-02' }, { ...point, date: '2026-10-03' }],
+      },
+    });
+
+    const data = JSON.parse(screen.getByTestId('chart-data').textContent ?? '[]');
+    expect(data[1].incomeRealized).toBe(10000);
+    expect(data[2]).toMatchObject({
+      incomeRealized: null,
+      expensesRealized: null,
+      balanceRealized: null,
+      incomeTotal: 12500,
+      expensesTotal: -5000,
+      balanceTotal: 7500,
+    });
   });
 
   it('renders realized and patterned projected area layers', () => {

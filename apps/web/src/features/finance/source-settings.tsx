@@ -2,6 +2,7 @@
 
 import type { HouseholdSource, ManagedHousehold } from '@monthloom/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
@@ -305,7 +306,6 @@ export function SourceSettings({ households }: { households: ManagedHousehold[] 
             <thead>
               <tr>
                 <th scope="col">{t('displayName')}</th>
-                <th scope="col">{t('key')}</th>
                 <th scope="col">{t('aliases')}</th>
                 <th scope="col">
                   <span className="srOnly">{t('actions')}</span>
@@ -319,20 +319,25 @@ export function SourceSettings({ households }: { households: ManagedHousehold[] 
                     <strong>{source.displayName}</strong>
                   </td>
                   <td>
-                    <code>{source.key}</code>
+                    <span className="sourceAliases" title={source.aliases.join(', ')}>
+                      {source.aliases.join(', ')}
+                    </span>
                   </td>
-                  <td>{source.aliases.join(', ')}</td>
                   <td className="sourceTableActions">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setEditingSource(source)}
-                    >
-                      {t('edit')}
-                    </Button>
                     <button
                       type="button"
-                      className="textDangerButton"
+                      className="sourceIconButton"
+                      aria-label={t('edit')}
+                      title={t('edit')}
+                      onClick={() => setEditingSource(source)}
+                    >
+                      <Pencil aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className="sourceIconButton sourceDeleteButton"
+                      aria-label={t('delete')}
+                      title={t('delete')}
                       disabled={deleteMutation.isPending}
                       onClick={() => {
                         if (
@@ -343,7 +348,7 @@ export function SourceSettings({ households }: { households: ManagedHousehold[] 
                         }
                       }}
                     >
-                      {t('delete')}
+                      <Trash2 aria-hidden="true" />
                     </button>
                   </td>
                 </tr>

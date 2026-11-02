@@ -29,6 +29,7 @@ export type OverviewMode = (typeof OVERVIEW_MODES)[number];
 
 export interface GraphSelection extends ResolvedGraphPeriod {
   householdId: string;
+  includeProjected: boolean;
   graph: GraphKind;
   balanceChart: BalanceChart;
   balanceMode: BalanceMode;
@@ -43,6 +44,7 @@ type GraphSelectionUpdate = Partial<
   Pick<
     GraphSelection,
     | 'householdId'
+    | 'includeProjected'
     | 'graph'
     | 'balanceChart'
     | 'balanceMode'
@@ -80,6 +82,7 @@ export function readGraphSelection(url: URL, current = calendarMonth()): GraphSe
   });
   return {
     householdId: url.searchParams.get('household') ?? '',
+    includeProjected: url.searchParams.get('projected') !== 'exclude',
     graph: option(url.searchParams.get('graph'), GRAPH_KINDS, 'balance'),
     balanceChart: option(url.searchParams.get('chart'), BALANCE_CHARTS, 'line'),
     balanceMode: option(url.searchParams.get('mode'), BALANCE_MODES, 'daily'),
@@ -96,6 +99,7 @@ export function graphSelectionSearch(selection: GraphSelection): string {
   const search = new URLSearchParams();
   if (selection.householdId) search.set('household', selection.householdId);
   search.set('period', selection.period);
+  if (!selection.includeProjected) search.set('projected', 'exclude');
   search.set('graph', selection.graph);
   if (selection.period === 'custom-month') search.set('month', selection.from);
   if (selection.period === 'custom-period') {
@@ -156,6 +160,10 @@ export function useGraphSelection() {
   }, []);
 
   const setHouseholdId = useCallback((householdId: string) => update({ householdId }), [update]);
+  const setIncludeProjected = useCallback(
+    (includeProjected: boolean) => update({ includeProjected }),
+    [update],
+  );
   const setGraph = useCallback((graph: GraphKind) => update({ graph }), [update]);
   const setBalanceChart = useCallback(
     (balanceChart: BalanceChart) => update({ balanceChart }),
@@ -195,6 +203,7 @@ export function useGraphSelection() {
   return {
     ...selection,
     setHouseholdId,
+    setIncludeProjected,
     setGraph,
     setBalanceChart,
     setBalanceMode,
