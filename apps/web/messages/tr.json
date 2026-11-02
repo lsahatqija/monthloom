@@ -527,6 +527,7 @@
     "min": "Min.",
     "max": "Maks.",
     "showingEntries": "{total} kayıttan {shown} tanesi gösteriliyor",
+    "applyFilters": "Filtreleri uygula",
     "clearFilters": "Filtreleri temizle",
     "activeFilters": "Etkin filtreler",
     "removeFilter": "{filter} filtresini kaldır",

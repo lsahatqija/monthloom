@@ -527,6 +527,7 @@
     "min": "Min",
     "max": "Max",
     "showingEntries": "Showing {shown} of {total} entries",
+    "applyFilters": "Apply filters",
     "clearFilters": "Clear filters",
     "activeFilters": "Active filters",
     "removeFilter": "Remove {filter} filter",

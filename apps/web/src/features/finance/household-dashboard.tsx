@@ -704,11 +704,24 @@ export function HouseholdDashboard() {
                     total: transactions.length,
                   })}
                 </span>
-                {activeFilterCount ? (
-                  <button type="button" onClick={resetFilters}>
+                <div className="transactionFilterActions">
+                  <button
+                    className="transactionFilterClear"
+                    type="button"
+                    disabled={!activeFilterCount}
+                    onClick={resetFilters}
+                  >
                     {t('clearFilters')}
                   </button>
-                ) : null}
+                  <button
+                    className="transactionFilterApply"
+                    type="button"
+                    disabled={!activeFilterCount}
+                    onClick={closeFilters}
+                  >
+                    {t('applyFilters')}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

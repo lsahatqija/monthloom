@@ -654,6 +654,11 @@
   color: var(--ml-text-muted);
   font-size: 0.8rem;
 }
+.transactionFilterActions {
+  display: flex;
+  margin-left: auto;
+  gap: var(--space-2);
+}
 .transactionFilterChips {
   display: flex;
   flex-wrap: wrap;
@@ -712,9 +717,13 @@
   font: inherit;
   font-weight: 700;
 }
-.transactionFilterFooter button:hover {
+.transactionFilterFooter button:hover:not(:disabled) {
   border-color: var(--ml-primary-hover);
   background: var(--ml-primary-hover);
+}
+.transactionFilterClear:disabled,
+.transactionFilterApply {
+  display: none;
 }
 .transactionFilterFooter button:focus-visible {
   outline: 2px solid var(--ml-focus-ring);
@@ -2199,10 +2208,38 @@
     padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
     border-top: 1px solid var(--ml-divider);
     background: var(--ml-surface);
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .transactionFilterActions {
+    width: 100%;
   }
   .transactionFilterFooter button {
     min-height: 2.75rem;
+    flex: 1;
     padding-inline: var(--space-4);
+  }
+  .transactionFilterApply {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .transactionFilterFooter .transactionFilterClear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ml-surface);
+    color: var(--ml-primary);
+  }
+  .transactionFilterFooter .transactionFilterClear:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--ml-primary) 8%, var(--ml-surface));
+  }
+  .transactionFilterFooter button:disabled {
+    border-color: var(--ml-border);
+    background: var(--ml-surface-hover);
+    color: var(--ml-text-muted);
+    cursor: not-allowed;
+    opacity: 0.6;
   }
   .transactionFilterChips {
     padding-inline: var(--space-4);

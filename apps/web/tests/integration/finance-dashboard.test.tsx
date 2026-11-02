@@ -319,6 +319,26 @@ describe('household dashboard', () => {
     );
   });
 
+  it('applies mobile filters and returns focus to the filter trigger', async () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
+    mockDashboard();
+    renderWithQuery(<HouseholdDashboard />);
+    await screen.findByRole('heading', { name: 'Our Home' });
+    const trigger = screen.getByText('Filters', { exact: true }).closest('summary') as HTMLElement;
+
+    await userEvent.click(trigger);
+    expect(screen.getByRole('button', { name: 'Clear filters' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Apply filters' })).toBeDisabled();
+    await userEvent.selectOptions(screen.getByLabelText('Type'), 'expense');
+    expect(screen.getByRole('button', { name: 'Clear filters' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Apply filters' })).toBeEnabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+
+    expect(screen.getByRole('group', { name: 'Filtered recap' })).toBeInTheDocument();
+    expect(trigger.closest('details')).not.toHaveAttribute('open');
+    expect(trigger).toHaveFocus();
+  });
+
   it('settles rapid filter toggles in the latest requested state', async () => {
     mockDashboard();
     renderWithQuery(<HouseholdDashboard />);
