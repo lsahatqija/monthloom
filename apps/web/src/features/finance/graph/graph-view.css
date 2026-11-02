@@ -84,6 +84,11 @@
   flex: 1 1 12rem;
 }
 
+.graphProjectionToggle {
+  min-height: 2.5rem;
+  padding-inline: var(--space-3);
+}
+
 .graphField {
   display: grid;
   min-width: 0;
@@ -226,6 +231,23 @@
   height: clamp(20rem, 42vw, 27rem);
   min-width: 0;
   border-block: 1px solid var(--ml-divider);
+}
+
+.graphCurrentDatePlot {
+  position: absolute;
+  z-index: 1;
+  top: 1.5rem;
+  right: 1rem;
+  bottom: 2.375rem;
+  left: 5.625rem;
+  pointer-events: none;
+}
+
+.graphCurrentDateLine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 2px dashed var(--ml-divider);
 }
 
 .recharts-wrapper:focus-visible {

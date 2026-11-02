@@ -20,6 +20,8 @@ export default function ChartSurface({
     model: BalanceViewModel;
     variant: 'line' | 'area';
     currency: string;
+    currentDate?: string;
+    realizedThroughDate?: string;
   };
   category?: {
     model: CategoryViewModel;

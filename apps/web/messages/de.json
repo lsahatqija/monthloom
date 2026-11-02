@@ -132,6 +132,8 @@
     "userPresentation": "Benutzerdarstellung",
     "users": "Benutzer",
     "combined": "Kombiniert",
+    "projected": "Prognostiziert",
+    "includeProjected": "Prognostizierte Transaktionen einbeziehen",
     "loading": "Diagrammdaten werden geladen...",
     "updating": "Wird aktualisiert...",
     "retry": "Erneut versuchen",

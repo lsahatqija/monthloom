@@ -164,7 +164,7 @@
   display: inline-block;
   min-width: 0;
   max-width: 100%;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   overflow: hidden;
   font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
@@ -237,8 +237,7 @@
   filter: brightness(0.92);
 }
 .currentMonthButton.isHidden {
-  visibility: hidden;
-  pointer-events: none;
+  display: none;
 }
 .monthNavigation.isCompact .currentMonthButton {
   display: none;

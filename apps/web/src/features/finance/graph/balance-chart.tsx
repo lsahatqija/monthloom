@@ -28,15 +28,15 @@ type BalanceSeries = 'income' | 'expenses' | 'balance';
 interface ChartPoint {
   date: string;
   anchor: boolean;
-  incomeRealized: number;
+  incomeRealized: number | null;
   incomeProjected: number;
   incomeHasProjection: boolean;
   incomeTotal: number;
-  expensesRealized: number;
+  expensesRealized: number | null;
   expensesProjected: number;
   expensesHasProjection: boolean;
   expensesTotal: number;
-  balanceRealized: number;
+  balanceRealized: number | null;
   balanceProjected: number;
   balanceHasProjection: boolean;
   balanceTotal: number;
@@ -63,7 +63,9 @@ const BALANCE_VALUE_KEYS = [
 function baselineData(data: ChartPoint[]): ChartPoint[] {
   return data.map((point) => {
     const baseline = { ...point };
-    for (const key of BALANCE_VALUE_KEYS) baseline[key] = 0;
+    for (const key of BALANCE_VALUE_KEYS) {
+      if (point[key] !== null) baseline[key] = 0;
+    }
     return baseline;
   });
 }
@@ -98,23 +100,26 @@ function chartPoint(
   point: BalancePoint,
   previous: BalancePoint | undefined,
   mode: BalanceViewModel['mode'],
+  realizedThroughDate?: string,
 ): ChartPoint {
   const hasProjection = (series: BalanceSeries) =>
     mode === 'daily'
       ? point[series].projectedCents !== 0
       : point[series].projectedCents !== (previous?.[series].projectedCents ?? 0);
+  const realized = (cents: number) =>
+    realizedThroughDate && point.date > realizedThroughDate ? null : cents;
   return {
     date: point.date,
     anchor: point.anchor,
-    incomeRealized: point.income.realizedCents,
+    incomeRealized: realized(point.income.realizedCents),
     incomeProjected: point.income.projectedCents,
     incomeHasProjection: hasProjection('income'),
     incomeTotal: point.income.totalCents,
-    expensesRealized: point.expenses.realizedCents,
+    expensesRealized: realized(point.expenses.realizedCents),
     expensesProjected: point.expenses.projectedCents,
     expensesHasProjection: hasProjection('expenses'),
     expensesTotal: point.expenses.totalCents,
-    balanceRealized: point.balance.realizedCents,
+    balanceRealized: realized(point.balance.realizedCents),
     balanceProjected: point.balance.projectedCents,
     balanceHasProjection: hasProjection('balance'),
     balanceTotal: point.balance.totalCents,
@@ -130,11 +135,27 @@ function addSplit(left: ProjectionSplit, right: ProjectionSplit): ProjectionSpli
 }
 
 function zeroOffset(data: ChartPoint[], key: 'balanceRealized' | 'balanceTotal'): string {
-  const maximum = Math.max(0, ...data.map((point) => point[key]));
-  const minimum = Math.min(0, ...data.map((point) => point[key]));
+  const maximum = Math.max(0, ...data.map((point) => point[key] ?? 0));
+  const minimum = Math.min(0, ...data.map((point) => point[key] ?? 0));
   if (maximum === 0) return '0%';
   if (minimum === 0) return '100%';
   return `${(maximum / (maximum - minimum)) * 100}%`;
+}
+
+function dateTicks(data: ChartPoint[]): string[] {
+  const dates = [...new Set(data.map(({ date }) => date))];
+  const ticks = dates.filter((date) => date.endsWith('-01'));
+  const finalDate = dates.at(-1);
+  if (finalDate && ticks.at(-1) !== finalDate) ticks.push(finalDate);
+  return ticks;
+}
+
+function datePosition(data: ChartPoint[], date: string | undefined): number | undefined {
+  const start = data[0]?.date;
+  const end = data.at(-1)?.date;
+  if (!date || !start || !end || date < start || date > end) return undefined;
+  const range = Date.parse(end) - Date.parse(start);
+  return range ? (Date.parse(date) - Date.parse(start)) / range : 0;
 }
 
 function balanceTotals(model: BalanceViewModel): BalanceTotals {
@@ -192,7 +213,7 @@ function BalanceTooltip({
       {(['income', 'expenses', 'balance'] as const).map((series) => (
         <div key={series}>
           <span>{t(series)}</span>
-          <span>{formatCurrency(point[`${series}Realized`], currency, locale)}</span>
+          <span>{formatCurrency(point[`${series}Realized`] ?? 0, currency, locale)}</span>
           <span>{formatCurrency(point[`${series}Projected`], currency, locale)}</span>
           <strong>{formatCurrency(point[`${series}Total`], currency, locale)}</strong>
         </div>
@@ -207,17 +228,27 @@ function ChartFrame({
   label,
   description,
   keyboardHelp,
+  currentDatePosition,
 }: {
   children: ReactNode;
   label: string;
   description: string;
   keyboardHelp: string;
+  currentDatePosition?: number;
 }) {
   return (
     <div className="graphChartCanvas" aria-label={label} aria-describedby="balance-chart-summary">
       <ResponsiveContainer width="100%" height="100%">
         {children}
       </ResponsiveContainer>
+      {currentDatePosition === undefined ? null : (
+        <span className="graphCurrentDatePlot" aria-hidden="true">
+          <span
+            className="graphCurrentDateLine"
+            style={{ left: `${currentDatePosition * 100}%` }}
+          />
+        </span>
+      )}
       <span className="srOnly">
         {description} {keyboardHelp}
       </span>
@@ -229,17 +260,19 @@ function Axes({
   domain,
   currency,
   locale,
+  ticks,
 }: {
   domain: readonly [number, number];
   currency: string;
   locale: string;
+  ticks: string[];
 }) {
-  const t = useTranslations('Graph.balance');
   return (
     <>
       <CartesianGrid stroke="var(--ml-divider)" vertical={false} />
       <XAxis
         dataKey="date"
+        ticks={ticks}
         tickFormatter={(date: string) => formatDayLabel(date, locale)}
         interval="preserveStartEnd"
         minTickGap={32}
@@ -255,12 +288,7 @@ function Axes({
         tickLine={false}
         axisLine={false}
       />
-      <ReferenceLine
-        y={0}
-        stroke="var(--ml-text-muted)"
-        strokeWidth={1.5}
-        label={{ value: t('zero'), position: 'insideTopLeft', fill: 'var(--ml-text-muted)' }}
-      />
+      <ReferenceLine y={0} stroke="var(--ml-text-muted)" strokeWidth={1.5} />
     </>
   );
 }
@@ -272,6 +300,7 @@ function BalanceLineChart({
   locale,
   theme,
   animationActive,
+  currentDate,
 }: {
   data: ChartPoint[];
   model: BalanceViewModel;
@@ -279,6 +308,7 @@ function BalanceLineChart({
   locale: string;
   theme: ChartTheme;
   animationActive: boolean;
+  currentDate?: string;
 }) {
   const t = useTranslations('Graph.balance');
   const graphT = useTranslations('Graph');
@@ -294,6 +324,7 @@ function BalanceLineChart({
       label={t('lineChartLabel')}
       description={t('lineChartDescription')}
       keyboardHelp={graphT('keyboardHelp')}
+      currentDatePosition={datePosition(data, currentDate)}
     >
       <LineChart
         data={data}
@@ -302,7 +333,7 @@ function BalanceLineChart({
         title={t('lineChartLabel')}
         desc={`${t('lineChartDescription')} ${graphT('keyboardHelp')}`}
       >
-        <Axes domain={model.domain} currency={currency} locale={locale} />
+        <Axes domain={model.domain} currency={currency} locale={locale} ticks={dateTicks(data)} />
         <Tooltip
           content={(props) => <BalanceTooltip {...props} currency={currency} locale={locale} />}
           isAnimationActive="auto"
@@ -352,6 +383,7 @@ function BalanceAreaChart({
   locale,
   theme,
   animationActive,
+  currentDate,
 }: {
   data: ChartPoint[];
   model: BalanceViewModel;
@@ -359,6 +391,7 @@ function BalanceAreaChart({
   locale: string;
   theme: ChartTheme;
   animationActive: boolean;
+  currentDate?: string;
 }) {
   const t = useTranslations('Graph.balance');
   const graphT = useTranslations('Graph');
@@ -370,6 +403,7 @@ function BalanceAreaChart({
       label={t('areaChartLabel')}
       description={t('areaChartDescription')}
       keyboardHelp={graphT('keyboardHelp')}
+      currentDatePosition={datePosition(data, currentDate)}
     >
       <AreaChart
         data={data}
@@ -407,7 +441,7 @@ function BalanceAreaChart({
             <line x1="0" y1="0" x2="0" y2="8" stroke={colors.projected} strokeWidth="3" />
           </pattern>
         </defs>
-        <Axes domain={model.domain} currency={currency} locale={locale} />
+        <Axes domain={model.domain} currency={currency} locale={locale} ticks={dateTicks(data)} />
         <Tooltip
           content={(props) => <BalanceTooltip {...props} currency={currency} locale={locale} />}
           isAnimationActive="auto"
@@ -541,19 +575,25 @@ export function BalanceChart({
   variant,
   currency,
   theme = 'light',
+  currentDate,
+  realizedThroughDate,
 }: {
   model: BalanceViewModel;
   variant: 'line' | 'area';
   currency: string;
   theme?: ChartTheme;
+  currentDate?: string;
+  realizedThroughDate?: string;
 }) {
   const locale = useLocale();
   const t = useTranslations('Graph.balance');
   const animationEnabled = useChartAnimation();
   const data = useMemo(
     () =>
-      model.points.map((point, index) => chartPoint(point, model.points[index - 1], model.mode)),
-    [model],
+      model.points.map((point, index) =>
+        chartPoint(point, model.points[index - 1], model.mode, realizedThroughDate),
+      ),
+    [model, realizedThroughDate],
   );
   const entrance = useBalanceEntrance(data, animationEnabled);
   const totals = balanceTotals(model);
@@ -581,6 +621,7 @@ export function BalanceChart({
           locale={locale}
           theme={theme}
           animationActive={entrance.animate}
+          currentDate={currentDate}
         />
       ) : (
         <BalanceAreaChart
@@ -590,6 +631,7 @@ export function BalanceChart({
           locale={locale}
           theme={theme}
           animationActive={entrance.animate}
+          currentDate={currentDate}
         />
       )}
       <BalanceLegend totals={totals} currency={currency} locale={locale} theme={theme} />

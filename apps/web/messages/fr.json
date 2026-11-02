@@ -132,6 +132,8 @@
     "userPresentation": "Présentation des utilisateurs",
     "users": "Utilisateurs",
     "combined": "Combiné",
+    "projected": "Projeté",
+    "includeProjected": "Inclure les transactions projetées",
     "loading": "Chargement des données...",
     "updating": "Mise à jour...",
     "retry": "Réessayer",

@@ -132,6 +132,8 @@
     "userPresentation": "User presentation",
     "users": "Users",
     "combined": "Combined",
+    "projected": "Projected",
+    "includeProjected": "Include projected transactions",
     "loading": "Loading graph data...",
     "updating": "Updating...",
     "retry": "Try again",

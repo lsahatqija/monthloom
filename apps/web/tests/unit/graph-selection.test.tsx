@@ -80,6 +80,18 @@ describe('graph URL selection', () => {
     );
   });
 
+  it('keeps projected transactions by default and persists their exclusion', () => {
+    expect(readGraphSelection(new URL('https://monthloom.test/graph'), '2026-10')).toMatchObject({
+      includeProjected: true,
+    });
+    const selection = readGraphSelection(
+      new URL('https://monthloom.test/graph?projected=exclude'),
+      '2026-10',
+    );
+    expect(selection.includeProjected).toBe(false);
+    expect(graphSelectionSearch(selection)).toContain('projected=exclude');
+  });
+
   it('defaults category graphs to transaction type', () => {
     expect(readGraphSelection(new URL('https://monthloom.test/graph'), '2026-10')).toMatchObject({
       categoryGrouping: 'transaction-type',

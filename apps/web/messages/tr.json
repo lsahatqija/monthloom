@@ -132,6 +132,8 @@
     "userPresentation": "Kullanıcı görünümü",
     "users": "Kullanıcılar",
     "combined": "Birleşik",
+    "projected": "Tahmini",
+    "includeProjected": "Tahmini işlemleri dahil et",
     "loading": "Grafik verileri yükleniyor...",
     "updating": "Güncelleniyor...",
     "retry": "Tekrar dene",
