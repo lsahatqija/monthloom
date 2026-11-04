@@ -13,6 +13,7 @@ import type { Database } from '../../../infrastructure/database/client.js';
 import {
   expenses,
   incomes,
+  recurrenceExclusions,
   sources,
   users,
 } from '../../../infrastructure/database/schema/index.js';
@@ -100,6 +101,18 @@ export class PostgresTransactionRepository implements TransactionRepository {
         ),
       );
 
+    const excludedOccurrences = new Set(
+      (
+        await this.db
+          .select({
+            recurrenceId: recurrenceExclusions.recurrenceId,
+            date: recurrenceExclusions.date,
+          })
+          .from(recurrenceExclusions)
+          .where(eq(recurrenceExclusions.householdId, householdId))
+      ).map(({ recurrenceId, date }) => `${recurrenceId}:${date}`),
+    );
+
     const mapRow = (
       row: (typeof incomeRows)[number],
       kind: HouseholdTransaction['kind'],
@@ -131,8 +144,16 @@ export class PostgresTransactionRepository implements TransactionRepository {
     });
 
     const actualTransactions = [
-      ...incomeRows.map((row) => mapRow(row, 'income')),
-      ...expenseRows.map((row) => ({ ...mapRow(row, 'expense'), type: row.type })),
+      ...incomeRows
+        .filter(
+          (row) => !row.recurrenceId || !excludedOccurrences.has(`${row.recurrenceId}:${row.date}`),
+        )
+        .map((row) => mapRow(row, 'income')),
+      ...expenseRows
+        .filter(
+          (row) => !row.recurrenceId || !excludedOccurrences.has(`${row.recurrenceId}:${row.date}`),
+        )
+        .map((row) => ({ ...mapRow(row, 'expense'), type: row.type })),
     ];
 
     const thisMonth = currentMonth();
@@ -217,7 +238,8 @@ export class PostgresTransactionRepository implements TransactionRepository {
           date >= start &&
           date < end &&
           date >= today &&
-          !actualDatesBySeries.get(recurrenceId)?.has(date),
+          !actualDatesBySeries.get(recurrenceId)?.has(date) &&
+          !excludedOccurrences.has(`${recurrenceId}:${date}`),
       );
       for (const projectedDate of projectedDates) {
         const template = series.find((row) => row.date <= projectedDate) ?? first;
@@ -551,9 +573,15 @@ export class PostgresTransactionRepository implements TransactionRepository {
       const original = income ?? expense;
       if (!original) return false;
 
-      if (original.recurrenceId && occurrenceDate && occurrenceDate !== original.date) {
-        if (scope === 'current') return false;
+      if (original.recurrenceId && occurrenceDate && scope === 'current') {
+        await transaction
+          .insert(recurrenceExclusions)
+          .values({ householdId, recurrenceId: original.recurrenceId, date: occurrenceDate })
+          .onConflictDoNothing();
+        return true;
+      }
 
+      if (original.recurrenceId && occurrenceDate && occurrenceDate !== original.date) {
         const cutoff = new Date(`${occurrenceDate}T00:00:00Z`);
         cutoff.setUTCDate(cutoff.getUTCDate() - 1);
         const expiresOn = cutoff.toISOString().slice(0, 10);
@@ -576,6 +604,15 @@ export class PostgresTransactionRepository implements TransactionRepository {
                 eq(table.householdId, householdId),
                 eq(table.recurrenceId, original.recurrenceId),
                 lt(table.date, occurrenceDate),
+              ),
+            );
+          await transaction
+            .delete(recurrenceExclusions)
+            .where(
+              and(
+                eq(recurrenceExclusions.householdId, householdId),
+                eq(recurrenceExclusions.recurrenceId, original.recurrenceId),
+                gte(recurrenceExclusions.date, occurrenceDate),
               ),
             );
           return true;
@@ -605,6 +642,19 @@ export class PostgresTransactionRepository implements TransactionRepository {
                   eq(expenses.recurrenceId, original.recurrenceId),
                   scope === 'current_and_future' ? gte(expenses.date, original.date) : undefined,
                 ),
+          );
+      }
+      if (original.recurrenceId) {
+        await transaction
+          .delete(recurrenceExclusions)
+          .where(
+            and(
+              eq(recurrenceExclusions.householdId, householdId),
+              eq(recurrenceExclusions.recurrenceId, original.recurrenceId),
+              scope === 'current_and_future'
+                ? gte(recurrenceExclusions.date, original.date)
+                : undefined,
+            ),
           );
       }
       return true;

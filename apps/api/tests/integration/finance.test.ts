@@ -243,6 +243,18 @@ describe('finance HTTP + PostgreSQL', () => {
       ]);
 
       await agent
+        .delete(`${base}/transactions/${transactionId}?scope=current&occurrenceDate=2026-01-29`)
+        .expect(204);
+      const removedOne = await agent.get(`${base}/month?month=2026-01`).expect(200);
+      expect(removedOne.body.transactions.map(({ date }: { date: string }) => date)).toEqual([
+        '2026-01-01',
+        '2026-01-15',
+        '2026-01-22',
+      ]);
+      const future = await agent.get(`${base}/month?month=2026-02`).expect(200);
+      expect(future.body.transactions[0]).toMatchObject({ date: '2026-02-05' });
+
+      await agent
         .delete(
           `${base}/transactions/${transactionId}?scope=current_and_future&occurrenceDate=2026-01-22`,
         )

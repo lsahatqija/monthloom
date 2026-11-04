@@ -578,12 +578,19 @@ describe('household dashboard', () => {
   });
 
   it('confirms transaction removal before making the DELETE request', async () => {
-    const fetch = mockDashboard();
+    const fetch = mockDashboard(
+      'EUR',
+      transactions.map((transaction) =>
+        transaction.id === 'income' ? { ...transaction, recurring: true } : transaction,
+      ),
+    );
     renderWithQuery(<HouseholdDashboard />);
     await screen.findByRole('heading', { name: 'Our Home' });
     await userEvent.click(screen.getByLabelText('Actions for Employer'));
     await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
     const dialog = screen.getByRole('alertdialog');
+    expect(within(dialog).getByRole('radio', { name: 'This transaction' })).toBeChecked();
+    expect(within(dialog).getAllByRole('radio')).toHaveLength(3);
     expect(fetch.mock.calls.some(([, options]) => options?.method === 'DELETE')).toBe(false);
     await userEvent.click(within(dialog).getByRole('button', { name: 'Remove' }));
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());

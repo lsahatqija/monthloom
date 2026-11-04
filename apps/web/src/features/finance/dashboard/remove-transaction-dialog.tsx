@@ -24,9 +24,7 @@ export function RemoveTransactionDialog({
   const t = useTranslations('Finance');
   const errorMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
-  const [scope, setScope] = useState<TransactionEditScope>(
-    transaction.recurring ? 'current_and_future' : 'current',
-  );
+  const [scope, setScope] = useState<TransactionEditScope>('current');
   const mutation = useMutation({
     mutationFn: () =>
       removeHouseholdTransaction(householdId, transaction.id, scope, transaction.date),
@@ -77,6 +75,15 @@ export function RemoveTransactionDialog({
           {transaction.recurring ? (
             <fieldset className="transactionScope">
               <legend>{t('removeScope')}</legend>
+              <label>
+                <input
+                  type="radio"
+                  name="removeScope"
+                  checked={scope === 'current'}
+                  onChange={() => setScope('current')}
+                />
+                {t('thisTransaction')}
+              </label>
               <label>
                 <input
                   type="radio"

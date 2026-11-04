@@ -56,6 +56,25 @@ export const sources = pgTable(
   }),
 );
 
+export const recurrenceExclusions = pgTable(
+  'recurrence_exclusions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    householdId: uuid('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    recurrenceId: uuid('recurrence_id').notNull(),
+    date: date('date', { mode: 'string' }).notNull(),
+  },
+  (table) => ({
+    recurrenceDateUniqueIdx: uniqueIndex('recurrence_exclusions_recurrence_date_unique_idx').on(
+      table.recurrenceId,
+      table.date,
+    ),
+    householdIdIdx: index('recurrence_exclusions_household_id_idx').on(table.householdId),
+  }),
+);
+
 export const incomes = pgTable(
   'incomes',
   {
