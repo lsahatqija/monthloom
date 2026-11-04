@@ -117,7 +117,7 @@ describe('household dashboard', () => {
       id: 'projected',
       date: '2099-01-02',
       amount: '30.00',
-      projected: false,
+      projected: true,
       source: { ...shop, id: 'forecast', displayName: 'Forecast' },
     };
     mockDashboard('EUR', [...transactions, projected], {
@@ -131,6 +131,7 @@ describe('household dashboard', () => {
     const toggle = screen.getByRole('button', { name: 'Include projected' });
     expect(toggle).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('table')).toHaveTextContent('Forecast');
+    expect(screen.getByLabelText('Actions for Forecast')).toBeVisible();
     expect(
       within(screen.getByLabelText('Monthly recap')).getByText('Expenses').nextElementSibling,
     ).toHaveTextContent(/-.*50\.00/);
@@ -587,7 +588,7 @@ describe('household dashboard', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Remove' }));
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/transactions/income?scope=current'),
+      expect.stringContaining('/transactions/income?scope=current&occurrenceDate=2026-01-01'),
       expect.objectContaining({ method: 'DELETE' }),
     );
   });

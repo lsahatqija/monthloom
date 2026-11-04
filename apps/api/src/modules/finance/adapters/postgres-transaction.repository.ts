@@ -43,6 +43,7 @@ export class PostgresTransactionRepository implements TransactionRepository {
   ): Promise<HouseholdMonthResponse['transactions']> {
     const start = `${from}-01`;
     const end = monthEnd(to);
+    const today = new Date().toISOString().slice(0, 10);
     const selection = {
       id: incomes.id,
       date: incomes.date,
@@ -114,7 +115,7 @@ export class PostgresTransactionRepository implements TransactionRepository {
       recurrenceInterval: row.recurrenceInterval,
       recurrenceUnit: row.recurrenceUnit,
       expiresOn: row.expiresOn,
-      projected: false,
+      projected: row.date > today,
       user: {
         id: row.userId,
         displayName: row.userDisplayName,
@@ -215,36 +216,43 @@ export class PostgresTransactionRepository implements TransactionRepository {
         (date) =>
           date >= start &&
           date < end &&
-          date >= new Date().toISOString().slice(0, 10) &&
+          date >= today &&
           !actualDatesBySeries.get(recurrenceId)?.has(date),
       );
-      for (const projectedDate of projectedDates)
+      for (const projectedDate of projectedDates) {
+        const template = series.find((row) => row.date <= projectedDate) ?? first;
         projectedTransactions.push({
-          id: latest.id,
-          kind: latest.kind,
-          type: latest.type,
+          id: template.id,
+          kind: template.kind,
+          type: template.type,
           date: projectedDate,
-          icon: latest.icon,
-          color: latest.color,
-          amount: averageAmounts(series.slice(0, 6).map((row) => row.amount)),
+          icon: template.icon,
+          color: template.color,
+          amount: averageAmounts(
+            series
+              .filter((row) => row.date <= projectedDate)
+              .slice(0, 6)
+              .map((row) => row.amount),
+          ),
           recurring: true,
-          recurrenceInterval: latest.recurrenceInterval,
-          recurrenceUnit: latest.recurrenceUnit,
-          expiresOn: latest.expiresOn,
-          projected: true,
+          recurrenceInterval: template.recurrenceInterval,
+          recurrenceUnit: template.recurrenceUnit,
+          expiresOn: template.expiresOn,
+          projected: projectedDate > today,
           user: {
-            id: latest.userId,
-            displayName: latest.userDisplayName,
-            profileImage: latest.userProfileImage,
-            desiredColor: latest.userDesiredColor,
+            id: template.userId,
+            displayName: template.userDisplayName,
+            profileImage: template.userProfileImage,
+            desiredColor: template.userDesiredColor,
           },
           source: {
-            id: latest.sourceId,
-            displayName: latest.sourceDisplayName,
-            key: latest.sourceKey,
-            aliases: latest.sourceAliases,
+            id: template.sourceId,
+            displayName: template.sourceDisplayName,
+            key: template.sourceKey,
+            aliases: template.sourceAliases,
           },
         });
+      }
     }
 
     return [...actualTransactions, ...projectedTransactions].sort(
@@ -373,6 +381,7 @@ export class PostgresTransactionRepository implements TransactionRepository {
             .limit(1);
       const original = income ?? expense;
       if (!original) return null;
+      const occurrenceDate = input.occurrenceDate ?? original.date;
 
       const originalKind: HouseholdTransaction['kind'] = income ? 'income' : 'expense';
       let occurrences = [original];
@@ -401,10 +410,22 @@ export class PostgresTransactionRepository implements TransactionRepository {
                 ),
               );
       }
+      const projectedOccurrenceId = randomUUID();
+      const isProjectedOccurrence =
+        occurrenceDate !== original.date &&
+        Boolean(original.recurrenceId) &&
+        !occurrences.some((occurrence) => occurrence.date === occurrenceDate);
+      if (isProjectedOccurrence) {
+        occurrences.push({
+          id: projectedOccurrenceId,
+          date: occurrenceDate,
+          recurrenceId: original.recurrenceId,
+        });
+      }
       occurrences = occurrences.filter((occurrence) => {
-        if (occurrence.id === transactionId) return input.selection.current;
-        if (occurrence.date < original.date) return input.selection.past;
-        if (occurrence.date > original.date) return input.selection.future;
+        if (occurrence.date === occurrenceDate) return input.selection.current;
+        if (occurrence.date < occurrenceDate) return input.selection.past;
+        if (occurrence.date > occurrenceDate) return input.selection.future;
         return false;
       });
 
@@ -434,7 +455,7 @@ export class PostgresTransactionRepository implements TransactionRepository {
           color: input.transaction.color,
           amount: input.transaction.amount,
           date:
-            occurrence.id === transactionId
+            occurrence.date === occurrenceDate
               ? input.transaction.date
               : alignOccurrenceDate(occurrence.date, input.transaction.date),
           recurring: input.transaction.recurring,
@@ -445,7 +466,17 @@ export class PostgresTransactionRepository implements TransactionRepository {
           updatedAt: new Date(),
         };
 
-        if (input.transaction.kind === originalKind) {
+        if (occurrence.id === projectedOccurrenceId) {
+          if (input.transaction.kind === 'income') {
+            await transaction.insert(incomes).values({ id: occurrence.id, ...values });
+          } else {
+            await transaction.insert(expenses).values({
+              id: occurrence.id,
+              ...values,
+              type: input.transaction.type as ExpenseType,
+            });
+          }
+        } else if (input.transaction.kind === originalKind) {
           if (originalKind === 'income') {
             await transaction.update(incomes).set(values).where(eq(incomes.id, occurrence.id));
           } else {
@@ -480,7 +511,7 @@ export class PostgresTransactionRepository implements TransactionRepository {
       if (!user) throw new Error('Failed to load transaction user.');
 
       return {
-        id: transactionId,
+        id: isProjectedOccurrence ? projectedOccurrenceId : transactionId,
         kind: input.transaction.kind,
         type: input.transaction.kind === 'expense' ? input.transaction.type : 'income',
         date: input.transaction.date,
@@ -502,6 +533,7 @@ export class PostgresTransactionRepository implements TransactionRepository {
     householdId: string,
     transactionId: string,
     scope: TransactionEditScope,
+    occurrenceDate?: string,
   ): Promise<boolean> {
     return this.db.transaction(async (transaction) => {
       const [income] = await transaction
@@ -518,6 +550,37 @@ export class PostgresTransactionRepository implements TransactionRepository {
             .limit(1);
       const original = income ?? expense;
       if (!original) return false;
+
+      if (original.recurrenceId && occurrenceDate && occurrenceDate !== original.date) {
+        if (scope === 'current') return false;
+
+        const cutoff = new Date(`${occurrenceDate}T00:00:00Z`);
+        cutoff.setUTCDate(cutoff.getUTCDate() - 1);
+        const expiresOn = cutoff.toISOString().slice(0, 10);
+        const table = income ? incomes : expenses;
+        if (scope === 'current_and_future') {
+          await transaction
+            .delete(table)
+            .where(
+              and(
+                eq(table.householdId, householdId),
+                eq(table.recurrenceId, original.recurrenceId),
+                gte(table.date, occurrenceDate),
+              ),
+            );
+          await transaction
+            .update(table)
+            .set({ expiresOn, updatedAt: new Date() })
+            .where(
+              and(
+                eq(table.householdId, householdId),
+                eq(table.recurrenceId, original.recurrenceId),
+                lt(table.date, occurrenceDate),
+              ),
+            );
+          return true;
+        }
+      }
 
       if (income) {
         await transaction

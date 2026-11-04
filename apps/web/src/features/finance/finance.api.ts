@@ -200,8 +200,9 @@ export async function removeHouseholdTransaction(
   householdId: string,
   transactionId: string,
   scope: TransactionEditScope,
+  occurrenceDate?: string,
 ): Promise<void> {
   await apiClient.delete(`households/${householdId}/transactions/${transactionId}`, {
-    query: { scope },
+    query: { scope, occurrenceDate },
   });
 }

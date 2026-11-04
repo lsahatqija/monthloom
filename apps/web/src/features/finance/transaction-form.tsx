@@ -518,7 +518,11 @@ export function TransactionForm({
   const mutation = useMutation({
     mutationFn: (input: CreateHouseholdTransactionRequest) =>
       transaction
-        ? updateHouseholdTransaction(householdId, transaction.id, { transaction: input, selection })
+        ? updateHouseholdTransaction(householdId, transaction.id, {
+            occurrenceDate: transaction.date,
+            transaction: input,
+            selection,
+          })
         : createHouseholdTransaction(householdId, input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: financeKeys.all });

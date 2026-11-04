@@ -178,8 +178,14 @@ export class FinanceController {
 
   removeTransaction = async (req: Request, res: Response): Promise<void> => {
     const { id, transactionId } = householdTransactionParamsSchema.parse(req.params);
-    const { scope } = removeHouseholdTransactionQuerySchema.parse(req.query);
-    await this.services.transactions.removeTransaction(id, transactionId, req.authUser!.id, scope);
+    const { scope, occurrenceDate } = removeHouseholdTransactionQuerySchema.parse(req.query);
+    await this.services.transactions.removeTransaction(
+      id,
+      transactionId,
+      req.authUser!.id,
+      scope,
+      occurrenceDate,
+    );
     res.status(204).send();
   };
 }

@@ -74,6 +74,7 @@ export interface TransactionRepository {
     householdId: string,
     transactionId: string,
     scope: TransactionEditScope,
+    occurrenceDate?: string,
   ): Promise<boolean>;
 }
 

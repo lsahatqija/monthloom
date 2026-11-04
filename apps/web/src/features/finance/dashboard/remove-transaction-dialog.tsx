@@ -28,7 +28,8 @@ export function RemoveTransactionDialog({
     transaction.recurring ? 'current_and_future' : 'current',
   );
   const mutation = useMutation({
-    mutationFn: () => removeHouseholdTransaction(householdId, transaction.id, scope),
+    mutationFn: () =>
+      removeHouseholdTransaction(householdId, transaction.id, scope, transaction.date),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: financeKeys.all });
       onClose();

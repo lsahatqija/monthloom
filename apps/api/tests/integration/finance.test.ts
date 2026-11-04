@@ -136,7 +136,7 @@ describe('finance HTTP + PostgreSQL', () => {
       ).toEqual([
         { date: '2025-12-31', amount: '10.25', projected: false },
         { date: '2026-01-10', amount: '2.50', projected: false },
-        { date: '2026-01-31', amount: '10.25', projected: false },
+        { date: '2026-01-31', amount: '10.25', projected: true },
         { date: '2026-02-28', amount: '10.25', projected: true },
       ]);
 
@@ -186,9 +186,71 @@ describe('finance HTTP + PostgreSQL', () => {
         ),
       ).toEqual([
         { date: '2026-01-01', projected: false },
-        { date: '2026-01-15', projected: true },
+        { date: '2026-01-15', projected: false },
         { date: '2026-01-22', projected: true },
         { date: '2026-01-29', projected: true },
+      ]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('edits and removes a projected recurring occurrence without changing earlier entries', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-01-15T12:00:00Z'));
+    try {
+      const { agent, base, transaction } = await fixture();
+      const input = {
+        ...transaction,
+        date: '2026-01-01',
+        recurring: true,
+        recurrenceInterval: 1,
+        recurrenceUnit: 'week' as const,
+      };
+      const created = await agent
+        .post(`${base}/transactions`)
+        .send({ ...input, recurrenceUnit: 'month' })
+        .expect(201);
+      const transactionId = created.body.transaction.id as string;
+      await agent
+        .patch(`${base}/transactions/${transactionId}`)
+        .send({
+          transaction: input,
+          selection: { past: false, current: true, future: true },
+        })
+        .expect(200);
+
+      await agent
+        .patch(`${base}/transactions/${transactionId}`)
+        .send({
+          occurrenceDate: '2026-01-22',
+          transaction: { ...input, date: '2026-01-22', amount: '30.00' },
+          selection: { past: false, current: true, future: false },
+        })
+        .expect(200);
+
+      const edited = await agent.get(`${base}/month?month=2026-01`).expect(200);
+      expect(
+        edited.body.transactions.map(({ date, amount }: { date: string; amount: string }) => ({
+          date,
+          amount,
+        })),
+      ).toEqual([
+        { date: '2026-01-01', amount: '12.34' },
+        { date: '2026-01-15', amount: '12.34' },
+        { date: '2026-01-22', amount: '30.00' },
+        { date: '2026-01-29', amount: '21.17' },
+      ]);
+
+      await agent
+        .delete(
+          `${base}/transactions/${transactionId}?scope=current_and_future&occurrenceDate=2026-01-22`,
+        )
+        .expect(204);
+      const removed = await agent.get(`${base}/month?month=2026-01`).expect(200);
+      expect(removed.body.transactions.map(({ date }: { date: string }) => date)).toEqual([
+        '2026-01-01',
+        '2026-01-15',
       ]);
     } finally {
       vi.useRealTimers();
@@ -245,8 +307,8 @@ describe('finance HTTP + PostgreSQL', () => {
         ),
       ).toEqual([
         { date: '2026-01-01', projected: false },
-        { date: '2026-01-15', projected: true },
-        { date: '2026-01-22', projected: false },
+        { date: '2026-01-15', projected: false },
+        { date: '2026-01-22', projected: true },
         { date: '2026-01-29', projected: true },
       ]);
     } finally {
@@ -272,7 +334,10 @@ describe('finance HTTP + PostgreSQL', () => {
       ]) {
         const response = await agent.get(`${base}/month?month=${month}`).expect(200);
         expect(response.body.transactions).toHaveLength(1);
-        expect(response.body.transactions[0]).toMatchObject({ date, projected: false });
+        expect(response.body.transactions[0]).toMatchObject({
+          date,
+          projected: date > '2026-04-15',
+        });
       }
     } finally {
       vi.useRealTimers();

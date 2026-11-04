@@ -917,13 +917,11 @@ export function HouseholdDashboard() {
                       </span>
                     </td>
                     <td className="transactionActionsColumn">
-                      {entry.projected ? null : (
-                        <TransactionMenu
-                          entry={entry}
-                          onEdit={() => setTransactionToEdit(entry)}
-                          onRemove={() => setTransactionToRemove(entry)}
-                        />
-                      )}
+                      <TransactionMenu
+                        entry={entry}
+                        onEdit={() => setTransactionToEdit(entry)}
+                        onRemove={() => setTransactionToRemove(entry)}
+                      />
                     </td>
                   </tr>
                 ))}

@@ -240,12 +240,14 @@ export const transactionSeriesSelectionSchema = z
   });
 
 export const updateHouseholdTransactionRequestSchema = z.object({
+  occurrenceDate: calendarDateSchema.optional(),
   transaction: householdTransactionInputSchema,
   selection: transactionSeriesSelectionSchema,
 });
 
 export const removeHouseholdTransactionQuerySchema = z.object({
   scope: transactionEditScopeSchema,
+  occurrenceDate: calendarDateSchema.optional(),
 });
 
 export const householdMonthResponseSchema = z.object({
