@@ -75,6 +75,12 @@ export const householdSourceSchema = z.object({
   displayName: sourceNameSchema,
   key: sourceNameSchema,
   aliases: z.array(sourceNameSchema).min(1).max(Constants.SOURCE_ALIAS_MAX_COUNT),
+  lastAppearance: z
+    .object({
+      icon: financialIconSchema,
+      color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+    })
+    .optional(),
 });
 
 export const createHouseholdSourceRequestSchema = z.object({

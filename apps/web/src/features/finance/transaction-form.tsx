@@ -415,9 +415,14 @@ export function TransactionForm({
     }
     if (appearanceLockedRef.current) return;
 
+    const lastAppearance = availableSources.find(
+      (source) => source.id === selectedSourceId,
+    )?.lastAppearance;
     const appearance = mostRecentTransaction
       ? { icon: mostRecentTransaction.icon, color: mostRecentTransaction.color }
-      : (randomAppearanceBySourceRef.current.get(selectedSourceId) ?? randomAppearance());
+      : (lastAppearance ??
+        randomAppearanceBySourceRef.current.get(selectedSourceId) ??
+        randomAppearance());
     randomAppearanceBySourceRef.current.set(selectedSourceId, appearance);
     setValue('icon', appearance.icon);
     setValue('color', appearance.color);

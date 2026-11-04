@@ -68,6 +68,18 @@ describe('finance HTTP + PostgreSQL', () => {
     expect((await agent.get(`${base}/month?month=2026-01`)).body.summary.expenses).toBe('0.00');
   });
 
+  it('returns each source appearance from its latest transaction', async () => {
+    const { agent, base, transaction } = await fixture();
+    await agent.post(`${base}/transactions`).send(transaction).expect(201);
+    await agent
+      .post(`${base}/transactions`)
+      .send({ ...transaction, date: '2026-02-01', icon: 'receipt', color: '#ABCDEF' })
+      .expect(201);
+
+    const month = await agent.get(`${base}/month?month=2026-03`).expect(200);
+    expect(month.body.sources[0].lastAppearance).toEqual({ icon: 'receipt', color: '#ABCDEF' });
+  });
+
   it('projects recurring entries across short months and stops at their expiration', async () => {
     // Fake only Date so database sockets and HTTP timers continue to work normally.
     vi.useFakeTimers({ toFake: ['Date'] });

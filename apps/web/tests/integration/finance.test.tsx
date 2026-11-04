@@ -1,4 +1,4 @@
-import type { HouseholdTransaction } from '@monthloom/contracts';
+import type { HouseholdMonthResponse, HouseholdTransaction } from '@monthloom/contracts';
 import { QueryClient } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -28,7 +28,7 @@ const salarySource = {
 
 function renderForm(
   transaction?: HouseholdTransaction,
-  sources = [source],
+  sources: HouseholdMonthResponse['sources'] = [source],
   transactions: HouseholdTransaction[] = [],
   selectedMonth = transaction?.date.slice(0, 7) ?? '2026-10',
 ) {
@@ -360,6 +360,16 @@ describe('transaction form + query + HTTP client', () => {
     expect(screen.getByRole('radio', { name: 'Income' })).toBeChecked();
     expect(screen.getByLabelText('Type')).toHaveValue('income');
     expect(screen.getByLabelText('Icon: Banknote')).toBeInTheDocument();
+    expect(screen.getByLabelText('Color: #ABCDEF')).toBeInTheDocument();
+  });
+
+  it('prefills the last appearance when the source was used outside the loaded month', async () => {
+    renderForm(undefined, [{ ...source, lastAppearance: { icon: 'receipt', color: '#ABCDEF' } }]);
+
+    await userEvent.click(screen.getByRole('combobox', { name: 'Source' }));
+    await userEvent.click(screen.getByRole('option', { name: source.displayName }));
+
+    expect(screen.getByLabelText('Icon: Receipt')).toBeInTheDocument();
     expect(screen.getByLabelText('Color: #ABCDEF')).toBeInTheDocument();
   });
 

@@ -5,7 +5,7 @@ import type {
   HouseholdSource,
   UpdateHouseholdSourceRequest,
 } from '@monthloom/contracts';
-import { and, asc, eq, inArray, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm';
 
 import type { Database } from '../../../infrastructure/database/client.js';
 import { expenses, incomes, sources } from '../../../infrastructure/database/schema/index.js';
@@ -16,16 +16,53 @@ export class PostgresSourceRepository implements SourceRepository {
   constructor(private readonly db: Database) {}
 
   async getSources(householdId: string): Promise<HouseholdMonthResponse['sources']> {
-    return this.db
-      .select({
-        id: sources.id,
-        displayName: sources.displayName,
-        key: sources.key,
-        aliases: sources.aliases,
-      })
-      .from(sources)
-      .where(eq(sources.householdId, householdId))
-      .orderBy(asc(sources.displayName), asc(sources.id));
+    const [sourceRows, latestIncomes, latestExpenses] = await Promise.all([
+      this.db
+        .select({
+          id: sources.id,
+          displayName: sources.displayName,
+          key: sources.key,
+          aliases: sources.aliases,
+        })
+        .from(sources)
+        .where(eq(sources.householdId, householdId))
+        .orderBy(asc(sources.displayName), asc(sources.id)),
+      this.db
+        .selectDistinctOn([incomes.sourceId], {
+          sourceId: incomes.sourceId,
+          date: incomes.date,
+          id: incomes.id,
+          icon: incomes.icon,
+          color: incomes.color,
+        })
+        .from(incomes)
+        .where(eq(incomes.householdId, householdId))
+        .orderBy(incomes.sourceId, desc(incomes.date), desc(incomes.id)),
+      this.db
+        .selectDistinctOn([expenses.sourceId], {
+          sourceId: expenses.sourceId,
+          date: expenses.date,
+          id: expenses.id,
+          icon: expenses.icon,
+          color: expenses.color,
+        })
+        .from(expenses)
+        .where(eq(expenses.householdId, householdId))
+        .orderBy(expenses.sourceId, desc(expenses.date), desc(expenses.id)),
+    ]);
+    const latestBySource = new Map(
+      [...latestIncomes, ...latestExpenses]
+        .sort(
+          (left, right) => left.date.localeCompare(right.date) || left.id.localeCompare(right.id),
+        )
+        .map((entry) => [entry.sourceId, entry]),
+    );
+    return sourceRows.map((source) => {
+      const latest = latestBySource.get(source.id);
+      return latest
+        ? { ...source, lastAppearance: { icon: latest.icon, color: latest.color } }
+        : source;
+    });
   }
 
   async getSource(householdId: string, sourceId: string): Promise<HouseholdSource | null> {
@@ -162,4 +199,3 @@ export class PostgresSourceRepository implements SourceRepository {
     });
   }
 }
-
