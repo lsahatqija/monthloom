@@ -343,7 +343,7 @@ describe('finance HTTP + PostgreSQL', () => {
         ['2026-02', '2026-02-28'],
         ['2026-03', '2026-03-31'],
         ['2026-04', '2026-04-30'],
-      ]) {
+      ] as const) {
         const response = await agent.get(`${base}/month?month=${month}`).expect(200);
         expect(response.body.transactions).toHaveLength(1);
         expect(response.body.transactions[0]).toMatchObject({
