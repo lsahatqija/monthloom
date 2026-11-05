@@ -436,22 +436,22 @@
   background: var(--preview-accent-3);
 }
 .themeOption[data-palette='linen-sage'] {
-  --preview-primary: #35675b;
-  --preview-accent-1: #c9dccf;
-  --preview-accent-2: #f0d4bf;
-  --preview-accent-3: #ddd7e9;
+  --preview-primary: #1e4d45;
+  --preview-accent-1: #c9973f;
+  --preview-accent-2: #f7f4ee;
+  --preview-accent-3: #e3eae4;
 }
 .themeOption[data-palette='sea-glass'] {
-  --preview-primary: #286a68;
-  --preview-accent-1: #bfded6;
-  --preview-accent-2: #ccddec;
-  --preview-accent-3: #f2d0c7;
+  --preview-primary: #1f5f6b;
+  --preview-accent-1: #e07a5f;
+  --preview-accent-2: #ead9bc;
+  --preview-accent-3: #c7dfe2;
 }
 .themeOption[data-palette='lavender-mist'] {
-  --preview-primary: #67558a;
-  --preview-accent-1: #d9d1ea;
-  --preview-accent-2: #c8dfd8;
-  --preview-accent-3: #eed4dc;
+  --preview-primary: #4a2545;
+  --preview-accent-1: #e9a66b;
+  --preview-accent-2: #f8f3ee;
+  --preview-accent-3: #eadde3;
 }
 .themeOption[data-palette='apricot-cotton'] {
   --preview-primary: #a72f68;
@@ -460,28 +460,28 @@
   --preview-accent-3: #f4a6c4;
 }
 .themeOption[data-palette='blue-hour'] {
-  --preview-primary: #45658b;
-  --preview-accent-1: #c9d9ec;
-  --preview-accent-2: #d9d4e8;
-  --preview-accent-3: #eedcc3;
+  --preview-primary: #172a3a;
+  --preview-accent-1: #c2693e;
+  --preview-accent-2: #f4efe8;
+  --preview-accent-3: #dce6ee;
 }
 .themeOption[data-palette='rosewood-ember'] {
-  --preview-primary: #913d45;
-  --preview-accent-1: #e9b1b1;
-  --preview-accent-2: #ecc0b8;
-  --preview-accent-3: #d9a8aa;
+  --preview-primary: #8e2f2a;
+  --preview-accent-1: #c98a3b;
+  --preview-accent-2: #f5eee4;
+  --preview-accent-3: #ebd3cb;
 }
 .themeOption[data-palette='golden-hour'] {
-  --preview-primary: #a07400;
-  --preview-accent-1: #ffd100;
-  --preview-accent-2: #ffc72c;
-  --preview-accent-3: #f3dd6d;
+  --preview-primary: #233a6b;
+  --preview-accent-1: #e3a72f;
+  --preview-accent-2: #f7f2e8;
+  --preview-accent-3: #dce3f0;
 }
 .themeOption[data-palette='terracotta-grove'] {
-  --preview-primary: #763b2b;
-  --preview-accent-1: #c77755;
-  --preview-accent-2: #9fa36a;
-  --preview-accent-3: #b8836f;
+  --preview-primary: #5a3e2b;
+  --preview-accent-1: #a7b49a;
+  --preview-accent-2: #f3ede3;
+  --preview-accent-3: #e4d8c4;
 }
 .themeOption[data-palette='high-contrast'] {
   --preview-primary: #000000;
