@@ -291,7 +291,9 @@
       "theme": "Tema",
       "themeDescription": "Zgjidhni një temë me ngjyra për Monthloom.",
       "darkHeader": "Titulli i errët në modalitetin e dritës",
-      "darkHeaderDescription": "Përdorni kokën më të errët ndërsa pjesa tjetër e aplikacionit mbetet e lehtë."
+      "darkHeaderDescription": "Përdorni kokën më të errët ndërsa pjesa tjetër e aplikacionit mbetet e lehtë.",
+      "patternOpacity": "Patejdukshmëria e motivit të kokës",
+      "patternOpacityDescription": "Rregulloni dukshmërinë e motivit të qilimit në kokë."
     }
   },
   "Files": {

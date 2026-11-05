@@ -9,7 +9,9 @@ export function ThemePicker() {
   const labels = useTranslations('Labels');
   const {
     darkHeaderInLightMode,
+    headerPatternOpacity,
     setDarkHeaderInLightMode,
+    setHeaderPatternOpacity,
     theme: selectedTheme,
     setTheme,
   } = useTheme();
@@ -49,6 +51,21 @@ export function ThemePicker() {
           type="checkbox"
           checked={darkHeaderInLightMode}
           onChange={(event) => setDarkHeaderInLightMode(event.target.checked)}
+        />
+      </label>
+      <label className="patternOpacityControl">
+        <span>
+          <strong>{t('patternOpacity')}</strong>
+          <small>{t('patternOpacityDescription')}</small>
+        </span>
+        <output>{Math.round(headerPatternOpacity * 100)}%</output>
+        <input
+          type="range"
+          min="0"
+          max="40"
+          step="1"
+          value={Math.round(headerPatternOpacity * 100)}
+          onChange={(event) => setHeaderPatternOpacity(Number(event.target.value) / 100)}
         />
       </label>
     </div>

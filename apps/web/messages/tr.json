@@ -287,7 +287,9 @@
       "theme": "Tema",
       "themeDescription": "Monthloom için bir renk teması seçin.",
       "darkHeader": "Açık modda koyu üstbilgi",
-      "darkHeaderDescription": "Uygulamanın geri kalanı açık kalırken koyu üstbilgiyi kullanın."
+      "darkHeaderDescription": "Uygulamanın geri kalanı açık kalırken koyu üstbilgiyi kullanın.",
+      "patternOpacity": "Üstbilgi deseni opaklığı",
+      "patternOpacityDescription": "Üstbilgideki kilim deseninin görünürlüğünü ayarlayın."
     }
   },
   "Files": {

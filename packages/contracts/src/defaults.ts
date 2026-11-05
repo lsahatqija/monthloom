@@ -9,6 +9,7 @@ export class Defaults {
   static readonly THEME = 'linen-sage' as const;
   static readonly COLOR_MODE = 'light' as const;
   static readonly DARK_HEADER_IN_LIGHT_MODE = true;
+  static readonly HEADER_PATTERN_OPACITY = 0.12;
 
   static readonly USER_PROFILE_IMAGE = 'diamond-kilim' as const;
   static readonly USER_DESIRED_COLOR = 'indigo' as const;

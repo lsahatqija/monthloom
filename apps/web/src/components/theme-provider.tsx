@@ -30,13 +30,17 @@ export type ColorMode = 'light' | 'dark';
 const THEME_STORAGE_KEY = 'monthloom-theme';
 const MODE_STORAGE_KEY = 'monthloom-mode';
 const DARK_HEADER_STORAGE_KEY = 'monthloom-dark-header';
+const HEADER_PATTERN_OPACITY_STORAGE_KEY = 'monthloom-header-pattern-opacity';
+const MAX_HEADER_PATTERN_OPACITY = 0.4;
 
 interface ThemeContextValue {
   theme: ThemeId;
   mode: ColorMode;
   darkHeaderInLightMode: boolean;
+  headerPatternOpacity: number;
   setTheme: (theme: ThemeId) => void;
   setDarkHeaderInLightMode: (enabled: boolean) => void;
+  setHeaderPatternOpacity: (opacity: number) => void;
   toggleMode: () => void;
 }
 
@@ -55,6 +59,20 @@ function applyHeaderStyle(enabled: boolean) {
   document.documentElement.dataset.headerStyle = enabled ? 'dark' : 'theme';
 }
 
+function readHeaderPatternOpacity(value: string | null) {
+  const opacity = Number(value);
+  return value !== null &&
+    Number.isFinite(opacity) &&
+    opacity >= 0 &&
+    opacity <= MAX_HEADER_PATTERN_OPACITY
+    ? opacity
+    : Defaults.HEADER_PATTERN_OPACITY;
+}
+
+function applyHeaderPatternOpacity(opacity: number) {
+  document.documentElement.style.setProperty('--ml-header-pattern-opacity', String(opacity));
+}
+
 function syncThemeColor() {
   const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   if (!themeColor) return;
@@ -70,11 +88,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeId>(Defaults.THEME);
   const [mode, setMode] = useState<ColorMode>(Defaults.COLOR_MODE);
   const [darkHeaderInLightMode, setDarkHeaderState] = useState(Defaults.DARK_HEADER_IN_LIGHT_MODE);
+  const [headerPatternOpacity, setHeaderPatternOpacityState] = useState(
+    Defaults.HEADER_PATTERN_OPACITY,
+  );
 
   useEffect(() => {
     const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
     const storedMode = localStorage.getItem(MODE_STORAGE_KEY);
     const storedDarkHeader = localStorage.getItem(DARK_HEADER_STORAGE_KEY);
+    const initialHeaderPatternOpacity = readHeaderPatternOpacity(
+      localStorage.getItem(HEADER_PATTERN_OPACITY_STORAGE_KEY),
+    );
     const initialDarkHeader =
       storedDarkHeader === null ? Defaults.DARK_HEADER_IN_LIGHT_MODE : storedDarkHeader === 'true';
     const initialTheme = isThemeId(storedTheme) ? storedTheme : Defaults.THEME;
@@ -84,8 +108,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(initialTheme);
     setMode(initialMode);
     setDarkHeaderState(initialDarkHeader);
+    setHeaderPatternOpacityState(initialHeaderPatternOpacity);
     applyAppearance(initialTheme, initialMode);
     applyHeaderStyle(initialDarkHeader);
+    applyHeaderPatternOpacity(initialHeaderPatternOpacity);
     syncThemeColor();
   }, []);
 
@@ -93,6 +119,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setDarkHeaderState(enabled);
     localStorage.setItem(DARK_HEADER_STORAGE_KEY, String(enabled));
     applyHeaderStyle(enabled);
+  }, []);
+
+  const setHeaderPatternOpacity = useCallback((opacity: number) => {
+    const nextOpacity = Number.isFinite(opacity)
+      ? Math.min(MAX_HEADER_PATTERN_OPACITY, Math.max(0, opacity))
+      : Defaults.HEADER_PATTERN_OPACITY;
+    setHeaderPatternOpacityState(nextOpacity);
+    localStorage.setItem(HEADER_PATTERN_OPACITY_STORAGE_KEY, String(nextOpacity));
+    applyHeaderPatternOpacity(nextOpacity);
   }, []);
 
   const setTheme = useCallback(
@@ -116,8 +151,26 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [theme]);
 
   const value = useMemo(
-    () => ({ theme, mode, darkHeaderInLightMode, setTheme, setDarkHeaderInLightMode, toggleMode }),
-    [darkHeaderInLightMode, mode, setDarkHeaderInLightMode, setTheme, theme, toggleMode],
+    () => ({
+      theme,
+      mode,
+      darkHeaderInLightMode,
+      headerPatternOpacity,
+      setTheme,
+      setDarkHeaderInLightMode,
+      setHeaderPatternOpacity,
+      toggleMode,
+    }),
+    [
+      darkHeaderInLightMode,
+      headerPatternOpacity,
+      mode,
+      setDarkHeaderInLightMode,
+      setHeaderPatternOpacity,
+      setTheme,
+      theme,
+      toggleMode,
+    ],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

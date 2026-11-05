@@ -5,10 +5,23 @@
   border-bottom: 1px solid var(--ml-divider);
   background: var(--ml-surface);
 }
+.header::before {
+  position: absolute;
+  inset: 0;
+  background: var(--ml-primary);
+  content: '';
+  -webkit-mask: url('/patterns/header-kilim.svg') 0 50% / 10rem 4.5rem repeat;
+  mask: url('/patterns/header-kilim.svg') 0 50% / 10rem 4.5rem repeat;
+  opacity: var(--ml-header-pattern-opacity);
+  pointer-events: none;
+}
 :root[data-mode='light'][data-header-style='dark'] .header {
   --header-foreground: #fff;
   border-bottom-color: color-mix(in srgb, var(--header-foreground) 18%, transparent);
   background: var(--ml-dark-header-background);
+}
+:root[data-mode='light'][data-header-style='dark'] .header::before {
+  background: var(--ml-accent-2);
 }
 :root[data-mode='light'][data-header-style='dark'] .header .brandLight {
   display: none;
@@ -30,6 +43,8 @@
   background: transparent;
 }
 .headerInner {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;

@@ -371,6 +371,35 @@
   flex: 0 0 auto;
   accent-color: var(--ml-primary);
 }
+.patternOpacityControl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--ml-border);
+  border-radius: var(--radius);
+}
+.patternOpacityControl span {
+  display: grid;
+  gap: var(--space-1);
+}
+.patternOpacityControl small {
+  color: var(--ml-text-muted);
+  line-height: 1.4;
+}
+.patternOpacityControl output {
+  align-self: start;
+  color: var(--ml-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.patternOpacityControl input {
+  width: 100%;
+  grid-column: 1 / -1;
+  min-height: 2.75rem;
+  margin: 0;
+  accent-color: var(--ml-primary);
+  cursor: pointer;
+}
 
 .themePicker legend {
   padding: 0;

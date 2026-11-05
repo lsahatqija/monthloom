@@ -287,7 +287,9 @@
       "theme": "Design",
       "themeDescription": "Wählen Sie ein Farbdesign für Monthloom.",
       "darkHeader": "Dunkle Kopfzeile im Hellmodus",
-      "darkHeaderDescription": "Verwenden Sie eine dunklere Kopfzeile, während der Rest der App hell bleibt."
+      "darkHeaderDescription": "Verwenden Sie eine dunklere Kopfzeile, während der Rest der App hell bleibt.",
+      "patternOpacity": "Deckkraft des Kopfzeilenmusters",
+      "patternOpacityDescription": "Passen Sie die Sichtbarkeit des Kelim-Musters in der Kopfzeile an."
     }
   },
   "Files": {

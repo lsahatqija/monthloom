@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThemeProvider, useTheme } from '../../src/components/theme-provider';
 
 function ThemeControls() {
-  const { setTheme, toggleMode } = useTheme();
+  const { headerPatternOpacity, setHeaderPatternOpacity, setTheme, toggleMode } = useTheme();
   return (
     <>
       <button type="button" onClick={() => setTheme('sea-glass')}>
@@ -13,6 +13,10 @@ function ThemeControls() {
       <button type="button" onClick={toggleMode}>
         Toggle mode
       </button>
+      <button type="button" onClick={() => setHeaderPatternOpacity(0.24)}>
+        Set pattern opacity
+      </button>
+      <output aria-label="Pattern opacity">{headerPatternOpacity}</output>
     </>
   );
 }
@@ -61,5 +65,23 @@ describe('ThemeProvider', () => {
         'rgb(29, 45, 48)',
       ),
     );
+  });
+
+  it('persists and applies the header pattern opacity', async () => {
+    render(
+      <ThemeProvider>
+        <ThemeControls />
+      </ThemeProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Set pattern opacity' }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Pattern opacity')).toHaveTextContent('0.24');
+      expect(localStorage.getItem('monthloom-header-pattern-opacity')).toBe('0.24');
+      expect(document.documentElement.style.getPropertyValue('--ml-header-pattern-opacity')).toBe(
+        '0.24',
+      );
+    });
   });
 });

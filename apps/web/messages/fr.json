@@ -291,7 +291,9 @@
       "theme": "Thème",
       "themeDescription": "Choisissez un thème de couleurs pour Monthloom.",
       "darkHeader": "En-tête sombre en mode clair",
-      "darkHeaderDescription": "Utiliser un en-tête plus sombre tout en conservant le reste de l’application en mode clair."
+      "darkHeaderDescription": "Utiliser un en-tête plus sombre tout en conservant le reste de l’application en mode clair.",
+      "patternOpacity": "Opacité du motif d’en-tête",
+      "patternOpacityDescription": "Réglez la visibilité du motif kilim dans l’en-tête."
     }
   },
   "Files": {

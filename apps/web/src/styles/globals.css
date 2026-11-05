@@ -212,6 +212,7 @@
 }
 
 :root {
+  --ml-header-pattern-opacity: 0.12;
   --ml-dark-header-background: color-mix(in srgb, var(--ml-primary) 28%, var(--ml-text));
   --ml-pwa-theme-color: var(--ml-dark-header-background);
   --ml-on-primary: var(--ml-surface);

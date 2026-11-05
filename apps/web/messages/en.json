@@ -287,7 +287,9 @@
       "theme": "Theme",
       "themeDescription": "Choose a color theme for Monthloom.",
       "darkHeader": "Dark header in light mode",
-      "darkHeaderDescription": "Use the darker header while the rest of the app stays light."
+      "darkHeaderDescription": "Use the darker header while the rest of the app stays light.",
+      "patternOpacity": "Header pattern opacity",
+      "patternOpacityDescription": "Adjust the visibility of the kilim pattern in the header."
     }
   },
   "Files": {
