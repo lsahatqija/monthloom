@@ -8,7 +8,7 @@ export class Defaults {
   static readonly USER_LOCALE = 'en' as const;
   static readonly THEME = 'linen-sage' as const;
   static readonly COLOR_MODE = 'light' as const;
-  static readonly DARK_HEADER_IN_LIGHT_MODE = false;
+  static readonly DARK_HEADER_IN_LIGHT_MODE = true;
 
   static readonly USER_PROFILE_IMAGE = 'diamond-kilim' as const;
   static readonly USER_DESIRED_COLOR = 'indigo' as const;

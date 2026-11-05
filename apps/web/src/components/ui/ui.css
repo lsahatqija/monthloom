@@ -442,10 +442,10 @@
   --preview-accent-3: #e3eae4;
 }
 .themeOption[data-palette='sea-glass'] {
-  --preview-primary: #1f5f6b;
-  --preview-accent-1: #e07a5f;
-  --preview-accent-2: #ead9bc;
-  --preview-accent-3: #c7dfe2;
+  --preview-primary: #286a68;
+  --preview-accent-1: #bfded6;
+  --preview-accent-2: #ccddec;
+  --preview-accent-3: #f2d0c7;
 }
 .themeOption[data-palette='lavender-mist'] {
   --preview-primary: #4a2545;
