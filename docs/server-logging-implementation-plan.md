@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase: implementation in progress; Tasks 1-9 complete
+- Phase: implementation in progress; Tasks 1-10 complete
 - Approved: 2026-11-06
 - Scope: durable server, HTTP, and selected audit logging for the Express API
 - Implementation rule: complete and verify one task before starting the next
@@ -478,15 +478,15 @@ request handling.
 
 ### Task 10: Docker and local production Compose
 
-- [ ] Create `/app/logs` with `apiapp` ownership in the API image.
-- [ ] Add the exact ignore entry for `compose.production.local.yml`.
-- [ ] Create the complete ignored production Compose file.
-- [ ] Add the separate `api_logs` volume and `/app/logs` mount.
-- [ ] Set `LOG_DIRECTORY=/app/logs` and `TZ=UTC` for the API.
-- [ ] Confirm the application remains non-root.
-- [ ] Build the API image.
-- [ ] Validate the Compose file with `docker compose config` when Docker is available.
-- [ ] Manually verify volume persistence across API container recreation when Docker is available.
+- [x] Create `/app/logs` with `apiapp` ownership in the API image.
+- [x] Add the exact ignore entry for `compose.production.local.yml`.
+- [x] Create the complete ignored production Compose file.
+- [x] Add the separate `api_logs` volume and `/app/logs` mount.
+- [x] Set `LOG_DIRECTORY=/app/logs` and `TZ=UTC` for the API.
+- [x] Confirm the application remains non-root.
+- [x] Build the API image.
+- [x] Validate the Compose file with `docker compose config` when Docker is available.
+- [x] Manually verify volume persistence across API container recreation when Docker is available.
 
 Completion condition: production-style container recreation preserves dated log files in a volume
 that is not shared with PostgreSQL or uploads.
