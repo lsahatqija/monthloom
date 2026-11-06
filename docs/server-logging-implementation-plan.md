@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase: implementation in progress; Tasks 1-7 complete
+- Phase: implementation in progress; Tasks 1-8 complete
 - Approved: 2026-11-06
 - Scope: durable server, HTTP, and selected audit logging for the Express API
 - Implementation rule: complete and verify one task before starting the next
@@ -455,12 +455,12 @@ non-orphaning owner-leave flow.
 
 ### Task 8: Source and transaction audit events
 
-- [ ] Instrument source create, update, delete, and copy.
-- [ ] Instrument transaction create, update, and delete.
-- [ ] Include IDs, kind, counts, and recurrence scope only where approved.
-- [ ] Test successful operations, failures, and denials.
-- [ ] Test that amounts, dates, descriptions, categories, source names, and DTOs never appear.
-- [ ] Run finance unit/integration tests, typecheck, and lint.
+- [x] Instrument source create, update, delete, and copy.
+- [x] Instrument transaction create, update, and delete.
+- [x] Include IDs, kind, counts, and recurrence scope only where approved.
+- [x] Test successful operations, failures, and denials.
+- [x] Test that amounts, dates, descriptions, categories, source names, and DTOs never appear.
+- [x] Run finance unit/integration tests, typecheck, and lint.
 
 Completion condition: every approved finance mutation produces a minimal safe audit record.
 

@@ -36,6 +36,48 @@ export function createFinanceRouter(
     requireAuth,
     asyncHandler(financeController.leaveHousehold),
   );
+  router.post(
+    '/:id/sources',
+    audit('source.created'),
+    requireAuth,
+    asyncHandler(financeController.createSource),
+  );
+  router.post(
+    '/:id/sources/copy',
+    audit('source.copied'),
+    requireAuth,
+    asyncHandler(financeController.copySources),
+  );
+  router.patch(
+    '/:id/sources/:sourceId',
+    audit('source.updated'),
+    requireAuth,
+    asyncHandler(financeController.updateSource),
+  );
+  router.delete(
+    '/:id/sources/:sourceId',
+    audit('source.deleted'),
+    requireAuth,
+    asyncHandler(financeController.deleteSource),
+  );
+  router.post(
+    '/:id/transactions',
+    audit('transaction.created'),
+    requireAuth,
+    asyncHandler(financeController.createTransaction),
+  );
+  router.patch(
+    '/:id/transactions/:transactionId',
+    audit('transaction.updated'),
+    requireAuth,
+    asyncHandler(financeController.updateTransaction),
+  );
+  router.delete(
+    '/:id/transactions/:transactionId',
+    audit('transaction.deleted'),
+    requireAuth,
+    asyncHandler(financeController.removeTransaction),
+  );
 
   router.use(requireAuth);
   router.get('/', asyncHandler(financeController.listHouseholds));
@@ -44,19 +86,6 @@ export function createFinanceRouter(
   router.get('/:id/month', asyncHandler(financeController.getHouseholdMonth));
   router.get('/:id/transactions', asyncHandler(financeController.getHouseholdTransactionRange));
   router.get('/:id/sources', asyncHandler(financeController.listSources));
-  router.post('/:id/sources', asyncHandler(financeController.createSource));
-  router.post('/:id/sources/copy', asyncHandler(financeController.copySources));
-  router.patch('/:id/sources/:sourceId', asyncHandler(financeController.updateSource));
-  router.delete('/:id/sources/:sourceId', asyncHandler(financeController.deleteSource));
-  router.post('/:id/transactions', asyncHandler(financeController.createTransaction));
-  router.patch(
-    '/:id/transactions/:transactionId',
-    asyncHandler(financeController.updateTransaction),
-  );
-  router.delete(
-    '/:id/transactions/:transactionId',
-    asyncHandler(financeController.removeTransaction),
-  );
   router.patch('/:id', asyncHandler(financeController.updateHousehold));
   router.put('/:id/primary', asyncHandler(financeController.setPrimaryHousehold));
   router.delete('/:id', asyncHandler(financeController.deleteHousehold));

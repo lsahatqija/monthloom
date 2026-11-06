@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import {
   addAuditEventBeforePrimary,
   setAuditFields,
+  type AuditFields,
 } from '../../infrastructure/logging/audit-logger.js';
 
 import {
@@ -148,6 +149,11 @@ export class FinanceController {
       req.authUser!.id,
       input,
     );
+    setAuditFields(res, {
+      householdId: id,
+      transactionId: transaction.id,
+      transactionKind: transaction.kind,
+    });
     res.status(201).json({ transaction });
   };
 
@@ -155,6 +161,7 @@ export class FinanceController {
     const { id } = householdIdParamsSchema.parse(req.params);
     const input = createHouseholdSourceRequestSchema.parse(req.body);
     const source = await this.services.sources.createSource(id, req.authUser!.id, input);
+    setAuditFields(res, { householdId: id, sourceId: source.id });
     res.status(201).json({ source });
   };
 
@@ -168,12 +175,14 @@ export class FinanceController {
     const { id, sourceId } = householdSourceParamsSchema.parse(req.params);
     const input = updateHouseholdSourceRequestSchema.parse(req.body);
     const source = await this.services.sources.updateSource(id, sourceId, req.authUser!.id, input);
+    setAuditFields(res, { householdId: id, sourceId: source.id });
     res.status(200).json({ source });
   };
 
   deleteSource = async (req: Request, res: Response): Promise<void> => {
     const { id, sourceId } = householdSourceParamsSchema.parse(req.params);
     await this.services.sources.deleteSource(id, sourceId, req.authUser!.id);
+    setAuditFields(res, { householdId: id, sourceId });
     res.status(204).send();
   };
 
@@ -181,6 +190,11 @@ export class FinanceController {
     const { id } = householdIdParamsSchema.parse(req.params);
     const input = copyHouseholdSourcesRequestSchema.parse(req.body);
     const result = await this.services.sources.copySources(id, req.authUser!.id, input);
+    setAuditFields(res, {
+      sourceHouseholdId: id,
+      targetHouseholdId: input.targetHouseholdId,
+      copiedCount: result.copiedCount,
+    });
     res.status(201).json(result);
   };
 
@@ -193,19 +207,45 @@ export class FinanceController {
       req.authUser!.id,
       input,
     );
+    setAuditFields(res, {
+      householdId: id,
+      transactionId: transaction.id,
+      transactionKind: transaction.kind,
+      recurrenceScope: getRecurrenceScope(input.selection),
+    });
     res.status(200).json({ transaction });
   };
 
   removeTransaction = async (req: Request, res: Response): Promise<void> => {
     const { id, transactionId } = householdTransactionParamsSchema.parse(req.params);
     const { scope, occurrenceDate } = removeHouseholdTransactionQuerySchema.parse(req.query);
-    await this.services.transactions.removeTransaction(
+    const kind = await this.services.transactions.removeTransaction(
       id,
       transactionId,
       req.authUser!.id,
       scope,
       occurrenceDate,
     );
+    setAuditFields(res, {
+      householdId: id,
+      transactionId,
+      transactionKind: kind,
+      recurrenceScope: scope,
+    });
     res.status(204).send();
   };
+}
+
+function getRecurrenceScope(selection: {
+  past: boolean;
+  current: boolean;
+  future: boolean;
+}): NonNullable<AuditFields['recurrenceScope']> {
+  if (selection.past && selection.current && selection.future) return 'past_current_and_future';
+  if (selection.past && selection.current) return 'past_and_current';
+  if (selection.past && selection.future) return 'past_and_future';
+  if (selection.current && selection.future) return 'current_and_future';
+  if (selection.past) return 'past';
+  if (selection.current) return 'current';
+  return 'future';
 }

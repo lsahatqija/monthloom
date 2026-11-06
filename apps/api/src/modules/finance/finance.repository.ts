@@ -75,7 +75,7 @@ export interface TransactionRepository {
     transactionId: string,
     scope: TransactionEditScope,
     occurrenceDate?: string,
-  ): Promise<boolean>;
+  ): Promise<'income' | 'expense' | null>;
 }
 
 export interface InvitationRepository {
