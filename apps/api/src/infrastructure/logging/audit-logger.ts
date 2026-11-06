@@ -48,9 +48,14 @@ export interface AuditFields {
   copiedCount?: number;
 }
 
-interface AuditContext {
+interface AuditEntry {
   event: AuditEventName;
   fields: AuditFields;
+}
+
+interface AuditContext {
+  primary: AuditEntry;
+  preceding: AuditEntry[];
   includeSecurityContext: boolean;
   logger: Logger;
 }
@@ -69,8 +74,8 @@ export function auditEvent(event: AuditEventName, options: AuditEventOptions = {
   return (req, response, next) => {
     const res = response as AuditResponse;
     const context: AuditContext = {
-      event,
-      fields: {},
+      primary: { event, fields: {} },
+      preceding: [],
       includeSecurityContext: options.includeSecurityContext ?? false,
       logger: options.logger ?? auditLogger,
     };
@@ -80,7 +85,10 @@ export function auditEvent(event: AuditEventName, options: AuditEventOptions = {
     const recordOnce = (aborted = false) => {
       if (recorded) return;
       recorded = true;
-      recordAuditEvent(req, res, context, aborted);
+      for (const entry of context.preceding) {
+        recordAuditEvent(req, res, context, entry, aborted);
+      }
+      recordAuditEvent(req, res, context, context.primary, aborted);
     };
 
     res.once('finish', () => recordOnce());
@@ -92,7 +100,17 @@ export function auditEvent(event: AuditEventName, options: AuditEventOptions = {
 export function setAuditFields(response: Response, fields: AuditFields): void {
   const context = (response as AuditResponse)[auditContextKey];
   if (!context) return;
-  context.fields = { ...context.fields, ...sanitizeAuditFields(fields) };
+  context.primary.fields = { ...context.primary.fields, ...sanitizeAuditFields(fields) };
+}
+
+export function addAuditEventBeforePrimary(
+  response: Response,
+  event: AuditEventName,
+  fields: AuditFields,
+): void {
+  const context = (response as AuditResponse)[auditContextKey];
+  if (!context) return;
+  context.preceding.push({ event, fields: sanitizeAuditFields(fields) });
 }
 
 export function createAuditRateLimitHandler(
@@ -128,6 +146,7 @@ function recordAuditEvent(
   req: Request,
   res: Response,
   context: AuditContext,
+  entry: AuditEntry,
   aborted: boolean,
 ): void {
   const outcome = aborted
@@ -138,11 +157,11 @@ function recordAuditEvent(
         ? 'failure'
         : 'success';
   const fields = {
-    event: context.event,
+    event: entry.event,
     outcome,
     requestId: req.id,
-    ...context.fields,
-    ...(!context.fields.actorUserId && req.authUser && UUID.test(req.authUser.id)
+    ...entry.fields,
+    ...(!entry.fields.actorUserId && req.authUser && UUID.test(req.authUser.id)
       ? { actorUserId: req.authUser.id }
       : {}),
     ...(res.locals.logErrorCode ? { code: res.locals.logErrorCode as string } : {}),

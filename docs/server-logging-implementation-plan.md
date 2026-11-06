@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase: implementation in progress; Tasks 1-6 complete
+- Phase: implementation in progress; Tasks 1-7 complete
 - Approved: 2026-11-06
 - Scope: durable server, HTTP, and selected audit logging for the Express API
 - Implementation rule: complete and verify one task before starting the next
@@ -441,14 +441,14 @@ Completion condition: all approved account-security events are complete and priv
 
 ### Task 7: Household and invitation audit events
 
-- [ ] Instrument invitation send with counts only.
-- [ ] Instrument invitation acceptance as the household join event.
-- [ ] Instrument member removal.
-- [ ] Instrument household leave.
-- [ ] Emit ownership transfer before leave when `newOwnerId` is used.
-- [ ] Test failures and authorization denials.
-- [ ] Test that invitation tokens, email recipients, and household names never appear.
-- [ ] Run finance unit/integration tests, typecheck, and lint.
+- [x] Instrument invitation send with counts only.
+- [x] Instrument invitation acceptance as the household join event.
+- [x] Instrument member removal.
+- [x] Instrument household leave.
+- [x] Emit ownership transfer before leave when `newOwnerId` is used.
+- [x] Test failures and authorization denials.
+- [x] Test that invitation tokens, email recipients, and household names never appear.
+- [x] Run finance unit/integration tests, typecheck, and lint.
 
 Completion condition: approved membership lifecycle events are complete, including the
 non-orphaning owner-leave flow.

@@ -1,6 +1,11 @@
 import type { Request, Response } from 'express';
 
 import {
+  addAuditEventBeforePrimary,
+  setAuditFields,
+} from '../../infrastructure/logging/audit-logger.js';
+
+import {
   copyHouseholdSourcesRequestSchema,
   createHouseholdSourceRequestSchema,
   createHouseholdRequestSchema,
@@ -53,6 +58,11 @@ export class FinanceController {
     const { id } = householdIdParamsSchema.parse(req.params);
     const input = createHouseholdInvitationRequestSchema.parse(req.body);
     const invitation = await this.services.invitations.createInvitation(id, req.authUser!, input);
+    setAuditFields(res, {
+      householdId: id,
+      sentCount: invitation.mode === 'email' ? invitation.sentTo.length : 0,
+      failedCount: invitation.mode === 'email' ? invitation.failedTo.length : 0,
+    });
     res.status(201).json(invitation);
   };
 
@@ -65,6 +75,7 @@ export class FinanceController {
   acceptInvitation = async (req: Request, res: Response): Promise<void> => {
     const { token } = householdInvitationParamsSchema.parse(req.params);
     const result = await this.services.invitations.acceptInvitation(token, req.authUser!.id);
+    setAuditFields(res, { householdId: result.householdId });
     res.status(200).json(result);
   };
 
@@ -104,6 +115,7 @@ export class FinanceController {
   removeMember = async (req: Request, res: Response): Promise<void> => {
     const { id, memberId } = householdMemberParamsSchema.parse(req.params);
     await this.services.households.removeMember(id, memberId, req.authUser!.id);
+    setAuditFields(res, { householdId: id, targetUserId: memberId });
     res.status(204).send();
   };
 
@@ -111,6 +123,14 @@ export class FinanceController {
     const { id } = householdIdParamsSchema.parse(req.params);
     const input = transferHouseholdOwnershipRequestSchema.partial().parse(req.body ?? {});
     await this.services.households.leaveHousehold(id, req.authUser!.id, input.newOwnerId);
+    setAuditFields(res, { householdId: id });
+    if (input.newOwnerId) {
+      addAuditEventBeforePrimary(res, 'household.ownership_transferred', {
+        actorUserId: req.authUser!.id,
+        targetUserId: input.newOwnerId,
+        householdId: id,
+      });
+    }
     res.status(204).send();
   };
 
