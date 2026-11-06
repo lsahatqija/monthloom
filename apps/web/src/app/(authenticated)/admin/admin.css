@@ -1,0 +1,371 @@
+.adminPage {
+  width: min(100% - 2rem, 75rem);
+  margin: 0 auto;
+  padding: 2rem 0 4rem;
+  font-size: 0.875rem;
+}
+
+.adminTitleRow,
+.adminSectionHeading,
+.adminFreshness,
+.adminBarRow > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.adminTitleRow h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.adminTitleRow p,
+.adminSectionHeading p {
+  margin: 0.25rem 0 0;
+  color: var(--ml-text-muted);
+}
+
+.adminFreshness {
+  color: var(--ml-text-muted);
+  font-size: 0.8rem;
+}
+
+.adminRefresh {
+  min-height: 2.25rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--ml-border);
+  border-radius: 6px;
+  color: var(--ml-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.adminTabs {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1.75rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--ml-border);
+}
+
+.adminTabs a {
+  flex: 0 0 auto;
+  padding: 0.75rem 0;
+  border-bottom: 2px solid transparent;
+  color: var(--ml-text-muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.adminTabs a[aria-current='page'] {
+  border-color: var(--ml-text);
+  color: var(--ml-text);
+}
+
+.adminView {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.adminPanel {
+  padding: 1.25rem;
+  border: 1px solid var(--ml-border);
+  border-radius: 8px;
+  background: var(--ml-surface);
+}
+
+.adminSectionHeading h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.adminSectionHeading > span {
+  color: var(--ml-text-muted);
+  font-size: 0.8rem;
+}
+
+.adminStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--ml-text) !important;
+  font-weight: 600;
+}
+
+.adminStatus > span {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+
+.adminStatus[data-status='degraded'] > span {
+  background: #a86600;
+}
+
+.adminStatus[data-status='critical'] > span,
+.adminStatus[data-status='unavailable'] > span {
+  background: var(--color-danger);
+}
+
+.adminMetricStrip,
+.adminSeverityGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--ml-divider);
+}
+
+.adminMetric,
+.adminSeverity {
+  min-width: 0;
+  padding: 1rem;
+  border-right: 1px solid var(--ml-divider);
+}
+
+.adminMetric:first-child,
+.adminSeverity:first-child {
+  padding-left: 0;
+}
+
+.adminMetric:last-child,
+.adminSeverity:last-child {
+  border-right: 0;
+}
+
+.adminMetric > span,
+.adminSeverity > span {
+  display: block;
+  color: var(--ml-text-muted);
+}
+
+.adminMetric strong,
+.adminSeverity strong {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 1.65rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.adminMetric small,
+.adminSeverity small,
+.adminLogEvent small {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--ml-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.adminSeverityGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.adminSeverity[data-level='warn'] strong {
+  color: #8a5700;
+}
+
+.adminSeverity[data-level='error'] strong,
+.adminSeverity[data-level='fatal'] strong {
+  color: var(--color-danger);
+}
+
+.adminTableWrap {
+  margin-top: 0.75rem;
+  overflow-x: auto;
+}
+
+.adminLogTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.adminLogTable th {
+  height: 2.25rem;
+  color: var(--ml-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: left;
+}
+
+.adminLogTable th:first-child {
+  width: 60%;
+}
+
+.adminLogTable th:last-child,
+.adminLogTable td:last-child {
+  text-align: right;
+}
+
+.adminLogTable td {
+  height: 3.5rem;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--ml-divider);
+  vertical-align: middle;
+}
+
+.adminLogEvent {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.75rem;
+  padding-right: 1rem;
+}
+
+.adminLogEvent strong {
+  display: block;
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adminLevel {
+  padding-left: 0.5rem;
+  border-left: 3px solid #a86600;
+  color: var(--ml-text-muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+
+.adminLevel[data-level='error'],
+.adminLevel[data-level='fatal'] {
+  border-color: var(--color-danger);
+}
+
+.adminNumeric {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.adminEmpty {
+  margin: 1rem 0 0;
+  padding: 1rem;
+  border: 1px dashed var(--ml-border);
+  border-radius: 8px;
+  color: var(--ml-text-muted);
+}
+
+.adminBars {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.adminBarRow strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.adminBarTrack {
+  height: 0.5rem;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--ml-divider);
+}
+
+.adminBarTrack span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ml-primary);
+}
+
+@media (max-width: 700px) {
+  .adminPage {
+    width: min(100% - 2rem, 75rem);
+    padding-top: 1.25rem;
+  }
+
+  .adminTitleRow {
+    align-items: flex-start;
+  }
+
+  .adminFreshness {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .adminMetricStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .adminMetric:nth-child(2) {
+    border-right: 0;
+  }
+
+  .adminMetric:nth-child(3) {
+    padding-left: 0;
+    border-top: 1px solid var(--ml-divider);
+  }
+
+  .adminMetric:nth-child(4) {
+    border-top: 1px solid var(--ml-divider);
+  }
+
+  .adminLogTable,
+  .adminLogTable tbody {
+    display: block;
+  }
+
+  .adminLogTable thead {
+    display: none;
+  }
+
+  .adminLogTable tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    padding: 0.8rem 0;
+    border-top: 1px solid var(--ml-divider);
+  }
+
+  .adminLogTable td {
+    height: auto;
+    padding: 0;
+    border: 0;
+  }
+
+  .adminLogTable td:first-child {
+    grid-column: 1 / -1;
+    margin-bottom: 0.5rem;
+  }
+
+  .adminLogTable td:last-child {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .adminTitleRow {
+    display: grid;
+  }
+
+  .adminFreshness {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .adminSeverityGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .adminSeverity,
+  .adminSeverity:first-child {
+    padding: 0.75rem 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--ml-divider);
+  }
+
+  .adminSeverity:last-child {
+    border-bottom: 0;
+  }
+}

@@ -5,6 +5,10 @@ import { db } from './infrastructure/database/client.js';
 import { LogEmailSender, ResendEmailSender } from './infrastructure/email/index.js';
 import { logger } from './infrastructure/logging/logger.js';
 import { LocalFileStorage } from './infrastructure/storage/index.js';
+import { PostgresAdminRepository } from './modules/admin/adapters/postgres-admin.repository.js';
+import { FileAdminLogReader } from './modules/admin/admin-log-reader.js';
+import { AdminController } from './modules/admin/admin.controller.js';
+import { AdminService } from './modules/admin/admin.service.js';
 import { PostgresSessionRepository } from './modules/auth/adapters/postgres-session.repository.js';
 import { AuthController } from './modules/auth/auth.controller.js';
 import { createAuthMiddleware, requireRole } from './modules/auth/auth.middleware.js';
@@ -52,6 +56,10 @@ export function buildAppDependencies() {
       ? new ResendEmailSender(config.email)
       : new LogEmailSender(logger);
   const emailService = new AutomatedEmailService(emailSender);
+  const adminService = new AdminService(
+    new PostgresAdminRepository(db),
+    new FileAdminLogReader(path.resolve(config.logging.directory)),
+  );
 
   const userService = new UserService(userRepository);
   const feedbackService = new FeedbackService(emailService, config.email.feedbackAddress);
@@ -92,6 +100,7 @@ export function buildAppDependencies() {
   const financeController = new FinanceController(financeServices);
   const systemController = new SystemController(systemService);
   const feedbackController = new FeedbackController(feedbackService);
+  const adminController = new AdminController(adminService);
 
   return {
     controllers: {
@@ -101,6 +110,7 @@ export function buildAppDependencies() {
       financeController,
       systemController,
       feedbackController,
+      adminController,
     },
     middleware: { requireAuth, optionalAuth, requireRole },
   };

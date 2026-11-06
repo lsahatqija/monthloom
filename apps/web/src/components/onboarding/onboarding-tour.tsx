@@ -108,6 +108,10 @@ export function OnboardingTour({ user }: { user: PublicUser }) {
     : null;
 
   useEffect(() => {
+    if (pathname.startsWith('/admin')) {
+      setStep(null);
+      return;
+    }
     if (pathname.startsWith('/invite/')) return;
     if (window.localStorage.getItem(storageKey(user.id)) === 'true') return;
     const activeStep = window.sessionStorage.getItem(activeStepKey(user.id)) as TourStep | null;
