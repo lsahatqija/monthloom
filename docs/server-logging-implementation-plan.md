@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase: implementation in progress; Tasks 1-10 complete
+- Phase: implementation complete; Tasks 1-11 complete
 - Approved: 2026-11-06
 - Scope: durable server, HTTP, and selected audit logging for the Express API
 - Implementation rule: complete and verify one task before starting the next
@@ -46,14 +46,14 @@ framework.
 
 Use Pino's existing levels with string labels in stored records:
 
-| Level | Intended use |
-| --- | --- |
-| `trace` | Extremely detailed diagnostics; normally disabled |
-| `debug` | Developer diagnostics |
-| `info` | Successful operations and normal HTTP responses |
-| `warn` | Authentication failures, authorization denials, rate limits, and suspicious behavior |
-| `error` | Failed operations and HTTP 5xx responses |
-| `fatal` | A process cannot safely start or continue |
+| Level   | Intended use                                                                         |
+| ------- | ------------------------------------------------------------------------------------ |
+| `trace` | Extremely detailed diagnostics; normally disabled                                    |
+| `debug` | Developer diagnostics                                                                |
+| `info`  | Successful operations and normal HTTP responses                                      |
+| `warn`  | Authentication failures, authorization denials, rate limits, and suspicious behavior |
+| `error` | Failed operations and HTTP 5xx responses                                             |
+| `fatal` | A process cannot safely start or continue                                            |
 
 Audit importance is represented by `category`, `event`, and `outcome`, not by inflating severity.
 A successful sensitive action remains `info`.
@@ -191,29 +191,29 @@ Unexpected errors still receive a structured operational error record with their
 
 ### 6.1 Authentication and account security
 
-| Event | Success fields | Failure behavior | IP/user agent |
-| --- | --- | --- | --- |
-| `auth.registration` | created `actorUserId` | expected conflict is a warning without submitted identity | yes |
-| `auth.login` | `actorUserId` | generic failure; include no email or account-existence signal | yes |
-| `auth.logout` | `actorUserId` | record an operational error only if session revocation fails | yes |
-| `auth.password_changed` | `actorUserId` | generic failure/denial code | yes |
-| `auth.password_reset_requested` | target user ID only when internally resolved | external behavior and message remain identical for known/unknown accounts | yes |
-| `auth.password_reset_completed` | resolved `actorUserId` | rejected, expired, or reused token is a warning; never store token | yes |
-| `auth.email_verification_requested` | `actorUserId` | generic failure/denial code | yes |
-| `auth.email_verification_completed` | resolved `actorUserId` | rejected, expired, or reused token is a warning; never store token | yes |
+| Event                               | Success fields                               | Failure behavior                                                          | IP/user agent |
+| ----------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------- | ------------- |
+| `auth.registration`                 | created `actorUserId`                        | expected conflict is a warning without submitted identity                 | yes           |
+| `auth.login`                        | `actorUserId`                                | generic failure; include no email or account-existence signal             | yes           |
+| `auth.logout`                       | `actorUserId`                                | record an operational error only if session revocation fails              | yes           |
+| `auth.password_changed`             | `actorUserId`                                | generic failure/denial code                                               | yes           |
+| `auth.password_reset_requested`     | target user ID only when internally resolved | external behavior and message remain identical for known/unknown accounts | yes           |
+| `auth.password_reset_completed`     | resolved `actorUserId`                       | rejected, expired, or reused token is a warning; never store token        | yes           |
+| `auth.email_verification_requested` | `actorUserId`                                | generic failure/denial code                                               | yes           |
+| `auth.email_verification_completed` | resolved `actorUserId`                       | rejected, expired, or reused token is a warning; never store token        | yes           |
 
 Authentication failures, authorization denials, and rate limits use `warn`. Successful operations
 use `info`.
 
 ### 6.2 Household and invitations
 
-| Event | Fields |
-| --- | --- |
-| `household.invitation_sent` | actor, household, successful count, failed count |
-| `household.invitation_accepted` | actor and household |
-| `household.left` | actor and household |
-| `household.member_removed` | actor, target user, and household |
-| `household.ownership_transferred` | old owner, new owner, and household |
+| Event                             | Fields                                           |
+| --------------------------------- | ------------------------------------------------ |
+| `household.invitation_sent`       | actor, household, successful count, failed count |
+| `household.invitation_accepted`   | actor and household                              |
+| `household.left`                  | actor and household                              |
+| `household.member_removed`        | actor, target user, and household                |
+| `household.ownership_transferred` | old owner, new owner, and household              |
 
 Invitation acceptance represents both joining the household and accepting the invitation. Do not
 emit a redundant second `household.joined` record.
@@ -223,20 +223,20 @@ When an owner leaves with `newOwnerId`, emit `household.ownership_transferred` f
 
 ### 6.3 Sources
 
-| Event | Fields |
-| --- | --- |
-| `source.created` | actor, household, source ID |
-| `source.updated` | actor, household, source ID |
-| `source.deleted` | actor, household, source ID |
-| `source.copied` | actor, source/destination household IDs, copied count |
+| Event            | Fields                                                |
+| ---------------- | ----------------------------------------------------- |
+| `source.created` | actor, household, source ID                           |
+| `source.updated` | actor, household, source ID                           |
+| `source.deleted` | actor, household, source ID                           |
+| `source.copied`  | actor, source/destination household IDs, copied count |
 
 Do not log source names or aliases.
 
 ### 6.4 Transactions
 
-| Event | Fields |
-| --- | --- |
-| `transaction.created` | actor, household, transaction ID, kind |
+| Event                 | Fields                                                                   |
+| --------------------- | ------------------------------------------------------------------------ |
+| `transaction.created` | actor, household, transaction ID, kind                                   |
 | `transaction.updated` | actor, household, transaction ID, kind, recurrence scope when applicable |
 | `transaction.deleted` | actor, household, transaction ID, kind, recurrence scope when applicable |
 
@@ -493,16 +493,25 @@ that is not shared with PostgreSQL or uploads.
 
 ### Task 11: Documentation and final verification
 
-- [ ] Document file locations, naming, severity, retention, permissions, and failure behavior.
-- [ ] Document JSONL inspection with safe local tools.
-- [ ] Document how a server administrator locates the named volume and current file.
-- [ ] Document the privacy exclusions and limited IP policy.
-- [ ] Document the untracked Compose file workflow.
-- [ ] Run formatting checks.
-- [ ] Run complete typecheck, lint, API unit/integration tests, and production build.
-- [ ] Review the final diff specifically for accidental PII, token, or raw URL logging.
+- [x] Document file locations, naming, severity, retention, permissions, and failure behavior.
+- [x] Document JSONL inspection with safe local tools.
+- [x] Document how a server administrator locates the named volume and current file.
+- [x] Document the privacy exclusions and limited IP policy.
+- [x] Document the untracked Compose file workflow.
+- [x] Run formatting checks.
+- [x] Run complete typecheck, lint, API unit/integration tests, and production build.
+- [x] Review the final diff specifically for accidental PII, token, or raw URL logging.
 
 Completion condition: all checks pass and documentation matches implemented behavior.
+
+Verification notes:
+
+- All logging-feature and Task 11 files pass Prettier. The repository-wide check also reports
+  pre-existing drift in unrelated application files and local `.agents` skill packages; Task 11
+  does not rewrite those files.
+- The native Windows web build compiles, typechecks, and generates all pages, then encounters the
+  documented standalone-output symlink `EPERM`. The Linux Docker production build completes and
+  verifies the deployable artifact.
 
 ## 10. Final acceptance criteria
 

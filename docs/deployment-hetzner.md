@@ -78,7 +78,7 @@ units. Those files must exist on the Ubuntu server.
 | GitHub                         | Source code and deployment files                                    | Updated by normal Git pushes                                  |
 | Docker Hub                     | Built `api-*` and `web-*` images                                    | Updated by GitHub Actions                                     |
 | `/opt/monthloom` on the server | Compose, Caddy, scripts, systemd source units and `.env.production` | Initially cloned; deployment-file changes are pulled manually |
-| Docker volumes on the server   | PostgreSQL data, uploads and Caddy certificates                     | Changed by the running application                            |
+| Docker volumes on the server   | PostgreSQL data, uploads, API logs, and Caddy certificates          | Changed by the running application                            |
 
 The recommended approach is to keep a Git checkout at `/opt/monthloom`. Run the following commands
 **on the Ubuntu server**, not on the development computer:
@@ -108,6 +108,20 @@ runs the prebuilt images from Docker Hub. Likewise, the automatic image updater 
 `git pull`: application image releases are automatic, while changes to Compose, Caddy, scripts, or
 systemd units are deliberately applied manually.
 
+The file-logging deployment uses the complete `compose.production.local.yml` created on the
+operator workstation. It is intentionally ignored by Git, so cloning or pulling the repository
+does not install or update it. Transfer it manually to `/opt/monthloom`, restrict it to the
+deployment owner, and validate it before use:
+
+```bash
+chmod 600 compose.production.local.yml
+docker compose --env-file .env.production -f compose.production.local.yml config --quiet
+```
+
+Preserve this file separately and manually reconcile relevant changes from tracked
+`compose.prod.yml`. See [Server logging operations](server-logging.md) for log inspection, privacy,
+retention, and automatic-updater configuration.
+
 Generate a session secret with the `openssl` command above, then edit `.env.production` and put its
 output in `SESSION_SECRET`.
 
@@ -125,8 +139,8 @@ Run:
 ```bash
 cd /opt/monthloom
 chmod +x infrastructure/production/*.sh
-./infrastructure/production/deploy.sh
-docker compose --env-file .env.production -f compose.prod.yml logs -f --tail=100
+COMPOSE_FILE=compose.production.local.yml ./infrastructure/production/deploy.sh
+docker compose --env-file .env.production -f compose.production.local.yml logs -f --tail=100
 ```
 
 The API applies database migrations before it starts accepting traffic. The deployment waits for
@@ -150,10 +164,10 @@ If a container is unhealthy, inspect the health command and service logs rather 
 Compose's dependency summary:
 
 ```bash
-docker compose --env-file .env.production -f compose.prod.yml ps
+docker compose --env-file .env.production -f compose.production.local.yml ps
 docker inspect --format '{{json .State.Health}}' \
-  "$(docker compose --env-file .env.production -f compose.prod.yml ps -q caddy)" | jq
-docker compose --env-file .env.production -f compose.prod.yml logs --tail=200 caddy
+  "$(docker compose --env-file .env.production -f compose.production.local.yml ps -q caddy)" | jq
+docker compose --env-file .env.production -f compose.production.local.yml logs --tail=200 caddy
 ```
 
 Browser API traffic is same-origin in production. If the browser reports CORS, first inspect the
@@ -162,7 +176,7 @@ failed request URL in its Network panel. It must start with
 
 ```bash
 grep '^DOMAIN=' .env.production
-docker compose --env-file .env.production -f compose.prod.yml exec api \
+docker compose --env-file .env.production -f compose.production.local.yml exec api \
   sh -c 'printf "%s\n" "$CORS_ALLOWED_ORIGINS"'
 ```
 
@@ -175,7 +189,8 @@ The included helper creates a compressed logical PostgreSQL dump, a compressed u
 and checksums:
 
 ```bash
-sudo BACKUP_DIR=/var/backups/monthloom ./infrastructure/production/backup.sh
+sudo COMPOSE_FILE=compose.production.local.yml BACKUP_DIR=/var/backups/monthloom \
+  ./infrastructure/production/backup.sh
 ```
 
 Schedule it with a systemd timer or cron, then copy each completed directory to encrypted storage
@@ -186,7 +201,7 @@ securely as a separate secret; do not place it in the data archive.
 Example restore drill on an isolated host:
 
 ```bash
-gunzip -c postgres.sql.gz | docker compose --env-file .env.production -f compose.prod.yml exec -T postgres \
+gunzip -c postgres.sql.gz | docker compose --env-file .env.production -f compose.production.local.yml exec -T postgres \
   sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" "$POSTGRES_DB"'
 ```
 
@@ -201,6 +216,20 @@ systemd timer:
 ```bash
 cd /opt/monthloom
 sudo ./infrastructure/production/install-auto-update.sh
+sudo systemctl edit monthloom-update.service
+```
+
+Add this override so automatic updates use the same operator-managed Compose file:
+
+```ini
+[Service]
+Environment=COMPOSE_FILE=/opt/monthloom/compose.production.local.yml
+```
+
+Then verify the updater once:
+
+```bash
+sudo systemctl daemon-reload
 sudo systemctl start monthloom-update.service
 systemctl status monthloom-update.service --no-pager
 systemctl list-timers monthloom-update.timer --no-pager
@@ -248,14 +277,14 @@ updates to Compose, Caddy, deployment scripts, or systemd units, then rerun
 Useful operations:
 
 ```bash
-docker compose --env-file .env.production -f compose.prod.yml ps
-docker compose --env-file .env.production -f compose.prod.yml logs -f --tail=200 api web caddy
-docker compose --env-file .env.production -f compose.prod.yml pull
+docker compose --env-file .env.production -f compose.production.local.yml ps
+docker compose --env-file .env.production -f compose.production.local.yml logs -f --tail=200 api web caddy
+docker compose --env-file .env.production -f compose.production.local.yml pull
 docker system df
 ```
 
-Do not run `docker compose down -v`: `-v` deletes the named database, upload, and certificate
-volumes. Do not prune volumes on the production host.
+Do not run `docker compose down -v`: `-v` deletes the named database, upload, API log, and
+certificate volumes. Do not prune volumes on the production host.
 
 ## 8. Production follow-ups
 

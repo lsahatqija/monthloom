@@ -486,9 +486,11 @@ volumes for database and upload persistence and waits for service health before 
 dependents. `API_INTERNAL_URL` lets the Next.js server address the API by its container hostname,
 while `NEXT_PUBLIC_API_URL` must be reachable by the visitor's browser.
 
-Structured application and request logs go through Pino. Request IDs connect HTTP responses with
-warning/error records. Metrics, distributed traces, hosted error reporting, and backup automation
-are not currently included.
+Structured operational, HTTP, and approved audit records go through Pino into daily UTC JSONL
+files. Request IDs connect HTTP responses with operational and audit records. Production keeps logs
+in a dedicated named volume with 90-day retention; see
+[`server-logging.md`](./server-logging.md). Metrics, distributed traces, hosted error reporting, and
+alerting are not currently included.
 
 ## 14. Testing and production boundaries
 
