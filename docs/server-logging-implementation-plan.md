@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase: implementation in progress; Tasks 1-2 complete
+- Phase: implementation in progress; Tasks 1-3 complete
 - Approved: 2026-11-06
 - Scope: durable server, HTTP, and selected audit logging for the Express API
 - Implementation rule: complete and verify one task before starting the next
@@ -385,13 +385,13 @@ without changing application call sites.
 
 ### Task 3: Structured logger schema
 
-- [ ] Connect the shared Pino logger to the new destination.
-- [ ] Emit ISO UTC timestamps and string severity labels.
-- [ ] Add `schemaVersion`, `service`, and explicit `category` fields.
-- [ ] Preserve and test secret redaction.
-- [ ] Use a discard destination in tests unless a test opts into a temporary directory.
-- [ ] Update existing logger mocks/types only where compilation requires it.
-- [ ] Run logger tests, API typecheck, and lint.
+- [x] Connect the shared Pino logger to the new destination.
+- [x] Emit ISO UTC timestamps and string severity labels.
+- [x] Add `schemaVersion`, `service`, and explicit `category` fields.
+- [x] Preserve and test secret redaction.
+- [x] Use a discard destination in tests unless a test opts into a temporary directory.
+- [x] Update existing logger mocks/types only where compilation requires it.
+- [x] Run logger tests, API typecheck, and lint.
 
 Completion condition: existing operational calls produce valid JSONL files with the approved base
 schema and no secrets.

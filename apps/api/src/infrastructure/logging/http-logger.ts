@@ -3,7 +3,9 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import { pinoHttp, type Options } from 'pino-http';
 
-import { logger } from './logger.js';
+import { createCategoryLogger } from './logger.js';
+
+const logger = createCategoryLogger('http');
 
 const genReqId: NonNullable<Options['genReqId']> = (req: IncomingMessage, res: ServerResponse) => {
   const existing = req.headers['x-request-id'];
