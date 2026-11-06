@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase: implementation in progress; Task 1 complete
+- Phase: implementation in progress; Tasks 1-2 complete
 - Approved: 2026-11-06
 - Scope: durable server, HTTP, and selected audit logging for the Express API
 - Implementation rule: complete and verify one task before starting the next
@@ -256,9 +256,11 @@ These still produce sanitized HTTP logs but no dedicated audit event in this ver
 
 ### 7.1 Logger destination
 
-Use `pino-roll` with daily frequency, UTC-dated names, directory creation disabled after explicit
-directory setup, and a live symlink. Add a small application-owned cleanup function because
-count-based retention does not guarantee deletion by calendar age.
+Use a small application-owned rotating writable built on Node's file streams. `pino-roll` was
+evaluated and rejected during Task 2 because version 4 always adds a numeric filename segment,
+uses local time for calendar formatting, and omits its declared TypeScript file from the published
+package. The local destination keeps the exact UTC filename and fail-open behavior without an
+additional runtime dependency.
 
 Wrap the rotating destination behind a resilient writable destination:
 
@@ -358,7 +360,8 @@ failures.
 
 ### Task 1: Configuration and dependency
 
-- [x] Add `pino-roll` to the API package and lockfile.
+- [x] Evaluate the rotation dependency and keep the implementation dependency-free when it does
+      not satisfy the approved filename, UTC, and TypeScript requirements.
 - [x] Add and validate `LOG_DIRECTORY`.
 - [x] Map it into `config.logging.directory`.
 - [x] Document it in `.env.example` and runtime configuration docs.
@@ -369,13 +372,13 @@ Completion condition: configuration is typed and tested; logging behavior is unc
 
 ### Task 2: Rotating resilient destination
 
-- [ ] Add directory setup with restrictive permissions.
-- [ ] Add daily UTC `pino-roll` destination and `current.log` link.
-- [ ] Add exact date-based 90-day cleanup at startup and rollover.
-- [ ] Add the fail-open writable wrapper and one-time emergency stderr reporting.
-- [ ] Add explicit close/flush support.
-- [ ] Unit-test naming, UTC boundary calculation, retention, failure fallback, and shutdown flush.
-- [ ] Integration-test writes and rollover in a temporary directory.
+- [x] Add directory setup with restrictive permissions.
+- [x] Add a daily UTC rotating destination and `current.log` link.
+- [x] Add exact date-based 90-day cleanup at startup and rollover.
+- [x] Add the fail-open writable wrapper and one-time emergency stderr reporting.
+- [x] Add explicit close/flush support.
+- [x] Unit-test naming, UTC boundary calculation, retention, failure fallback, and shutdown flush.
+- [x] Integration-test writes and rollover in a temporary directory.
 
 Completion condition: a standalone logger destination rotates, cleans, flushes, and fails open
 without changing application call sites.
