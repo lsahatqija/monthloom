@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 
 import { config } from '../../config/index.js';
+import { setAuditFields } from '../../infrastructure/logging/audit-logger.js';
 
 import { clearSessionCookie, setSessionCookie } from './auth.cookies.js';
 import {
@@ -23,6 +24,7 @@ export class AuthController {
   register = async (req: Request, res: Response): Promise<void> => {
     const input = registerRequestSchema.parse(req.body);
     const { user, sessionToken } = await this.authService.register(input);
+    setAuditFields(res, { actorUserId: user.id });
     setSessionCookie(res, sessionToken);
     res.status(201).json({ user });
   };
@@ -30,19 +32,22 @@ export class AuthController {
   login = async (req: Request, res: Response): Promise<void> => {
     const input = loginRequestSchema.parse(req.body);
     const { user, sessionToken } = await this.authService.login(input);
+    setAuditFields(res, { actorUserId: user.id });
     setSessionCookie(res, sessionToken);
     res.status(200).json({ user });
   };
 
   forgotPassword = async (req: Request, res: Response): Promise<void> => {
     const input = forgotPasswordRequestSchema.parse(req.body);
-    await this.authService.requestPasswordReset(input);
+    const targetUserId = await this.authService.requestPasswordReset(input);
+    if (targetUserId) setAuditFields(res, { targetUserId });
     res.status(202).json({ message: PASSWORD_RESET_REQUEST_MESSAGE });
   };
 
   resetPassword = async (req: Request, res: Response): Promise<void> => {
     const input = resetPasswordRequestSchema.parse(req.body);
-    await this.authService.resetPassword(input);
+    const actorUserId = await this.authService.resetPassword(input);
+    setAuditFields(res, { actorUserId });
     clearSessionCookie(res);
     res.status(204).send();
   };
@@ -54,7 +59,8 @@ export class AuthController {
 
   verifyEmail = async (req: Request, res: Response): Promise<void> => {
     const input = verifyEmailRequestSchema.parse(req.body);
-    await this.authService.verifyEmail(input);
+    const actorUserId = await this.authService.verifyEmail(input);
+    setAuditFields(res, { actorUserId });
     res.status(200).json({ message: EMAIL_VERIFIED_MESSAGE });
   };
 

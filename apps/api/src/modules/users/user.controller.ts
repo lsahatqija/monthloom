@@ -1,5 +1,7 @@
 import type { Request, Response } from 'express';
 
+import { setAuditFields } from '../../infrastructure/logging/audit-logger.js';
+
 import { changePasswordRequestSchema, updateProfileRequestSchema } from './user.schemas.js';
 import type { UserService } from './user.service.js';
 
@@ -20,6 +22,7 @@ export class UserController {
   changePassword = async (req: Request, res: Response): Promise<void> => {
     const input = changePasswordRequestSchema.parse(req.body);
     await this.userService.changePassword(req.authUser!.id, input);
+    setAuditFields(res, { actorUserId: req.authUser!.id });
     res.status(204).send();
   };
 }

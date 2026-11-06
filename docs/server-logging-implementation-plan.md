@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase: implementation in progress; Tasks 1-5 complete
+- Phase: implementation in progress; Tasks 1-6 complete
 - Approved: 2026-11-06
 - Scope: durable server, HTTP, and selected audit logging for the Express API
 - Implementation rule: complete and verify one task before starting the next
@@ -426,16 +426,16 @@ the full event list yet.
 
 ### Task 6: Authentication audit events
 
-- [ ] Instrument registration.
-- [ ] Instrument login success and generic failure.
-- [ ] Instrument logout.
-- [ ] Instrument password change.
-- [ ] Instrument password-reset request and completion.
-- [ ] Instrument email-verification request and completion.
-- [ ] Test rate limits, invalid/expired/reused tokens, and authentication denials.
-- [ ] Test that submitted email, passwords, cookies, and tokens never appear.
-- [ ] Test that IP/user agent appear on these events and nowhere else.
-- [ ] Run auth unit/integration tests, typecheck, and lint.
+- [x] Instrument registration.
+- [x] Instrument login success and generic failure.
+- [x] Instrument logout.
+- [x] Instrument password change.
+- [x] Instrument password-reset request and completion.
+- [x] Instrument email-verification request and completion.
+- [x] Test rate limits, invalid/expired/reused tokens, and authentication denials.
+- [x] Test that submitted email, passwords, cookies, and tokens never appear.
+- [x] Test that IP/user agent appear on these events and nowhere else.
+- [x] Run auth unit/integration tests, typecheck, and lint.
 
 Completion condition: all approved account-security events are complete and privacy-tested.
 
