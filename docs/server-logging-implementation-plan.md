@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase: planning complete; implementation not started
+- Phase: implementation in progress; Task 1 complete
 - Approved: 2026-11-06
 - Scope: durable server, HTTP, and selected audit logging for the Express API
 - Implementation rule: complete and verify one task before starting the next
@@ -358,12 +358,12 @@ failures.
 
 ### Task 1: Configuration and dependency
 
-- [ ] Add `pino-roll` to the API package and lockfile.
-- [ ] Add and validate `LOG_DIRECTORY`.
-- [ ] Map it into `config.logging.directory`.
-- [ ] Document it in `.env.example` and runtime configuration docs.
-- [ ] Add configuration-schema tests for default, override, and invalid empty values.
-- [ ] Run API typecheck and the environment-schema unit tests.
+- [x] Add `pino-roll` to the API package and lockfile.
+- [x] Add and validate `LOG_DIRECTORY`.
+- [x] Map it into `config.logging.directory`.
+- [x] Document it in `.env.example` and runtime configuration docs.
+- [x] Add configuration-schema tests for default, override, and invalid empty values.
+- [x] Run API typecheck and the environment-schema unit tests.
 
 Completion condition: configuration is typed and tested; logging behavior is unchanged.
 

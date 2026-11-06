@@ -36,6 +36,11 @@ always required. Production Compose explicitly enables secure session cookies. S
 provider secret. Compose uses required interpolation for production infrastructure credentials,
 the public domain, image tag, and sender address, so omissions fail during Compose evaluation.
 
+`LOG_LEVEL` selects the minimum Pino severity and `LOG_DIRECTORY` selects the application log
+directory, defaulting to `logs` relative to the API working directory. Daily rotation, retention,
+and the production log volume are introduced by the server-logging implementation plan; adding the
+configuration value alone does not change the current logger destination.
+
 ## Health probes
 
 The local API health check uses `/health/live`: it proves the process serves HTTP without making a

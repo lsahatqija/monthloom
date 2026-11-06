@@ -16,6 +16,7 @@ Object.assign(process.env, {
   RESEND_API_KEY: '',
   RESEND_ADMIN_KEY: '',
   LOG_LEVEL: 'silent',
+  LOG_DIRECTORY: 'unused-test-logs',
   UPLOAD_DIR: 'unused-test-uploads',
   UPLOAD_MAX_SIZE_BYTES: '1024',
   UPLOAD_ALLOWED_MIME_TYPES: 'image/jpeg,image/png,image/webp',
