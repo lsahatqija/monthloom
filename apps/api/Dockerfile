@@ -22,7 +22,9 @@ RUN addgroup -S apiapp && adduser -S apiapp -G apiapp
 WORKDIR /app
 COPY --from=build /prod/api ./
 COPY --from=build /repo/apps/api/dist ./dist
-RUN mkdir -p /app/uploads && chown -R apiapp:apiapp /app
+RUN mkdir -p /app/uploads /app/logs \
+    && chown -R apiapp:apiapp /app \
+    && chmod 0700 /app/logs
 USER apiapp
 EXPOSE 4000
 CMD ["node", "dist/server.js"]

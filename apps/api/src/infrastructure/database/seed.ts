@@ -81,7 +81,7 @@ async function run(): Promise<void> {
       })
       .onConflictDoNothing({ target: users.email });
 
-    logger.info(`Seeded development user: ${seedUser.email} (development credentials only)`);
+    logger.info('Seeded development user fixture');
   }
 
   const testPasswordHash = await hashPassword(TEST_USER_PASSWORD);
@@ -111,7 +111,6 @@ async function run(): Promise<void> {
     testUsers.push(testUser);
   }
 
-  let transactionCount = 0;
   await db.transaction(async (transaction) => {
     await transaction.delete(households).where(
       inArray(
@@ -158,13 +157,10 @@ async function run(): Promise<void> {
       });
       await transaction.insert(incomes).values(generated.incomes);
       await transaction.insert(expenses).values(generated.expenses);
-      transactionCount += generated.incomes.length + generated.expenses.length;
     }
   });
 
-  logger.info(
-    `Seeded test1@email.com through test5@email.com with 5 shared households and ${transactionCount} transactions`,
-  );
+  logger.info('Seeded development finance fixtures');
 
   await closeDatabaseConnection();
 }

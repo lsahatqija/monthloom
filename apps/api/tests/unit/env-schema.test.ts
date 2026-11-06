@@ -22,4 +22,28 @@ describe('API environment schema', () => {
   it('accepts production log delivery without a provider secret', () => {
     expect(apiEnvSchema.safeParse(validProductionEnv).success).toBe(true);
   });
+
+  it('defaults the log directory', () => {
+    const result = apiEnvSchema.parse(validProductionEnv);
+
+    expect(result.LOG_DIRECTORY).toBe('logs');
+  });
+
+  it('accepts a custom log directory', () => {
+    const result = apiEnvSchema.parse({
+      ...validProductionEnv,
+      LOG_DIRECTORY: '/var/log/monthloom',
+    });
+
+    expect(result.LOG_DIRECTORY).toBe('/var/log/monthloom');
+  });
+
+  it('rejects an empty log directory', () => {
+    const result = apiEnvSchema.safeParse({
+      ...validProductionEnv,
+      LOG_DIRECTORY: '',
+    });
+
+    expect(result.success).toBe(false);
+  });
 });

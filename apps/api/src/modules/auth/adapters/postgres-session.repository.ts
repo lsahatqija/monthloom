@@ -64,7 +64,7 @@ export class PostgresSessionRepository implements SessionRepository {
     await this.db.delete(passwordResetTokens).where(eq(passwordResetTokens.tokenHash, tokenHash));
   }
 
-  async resetPassword(tokenHash: string, passwordHash: string, now: Date): Promise<boolean> {
+  async resetPassword(tokenHash: string, passwordHash: string, now: Date): Promise<string | null> {
     return this.db.transaction(async (tx) => {
       const [token] = await tx
         .update(passwordResetTokens)
@@ -78,7 +78,7 @@ export class PostgresSessionRepository implements SessionRepository {
         )
         .returning({ userId: passwordResetTokens.userId });
 
-      if (!token) return false;
+      if (!token) return null;
 
       await tx
         .update(passwordResetTokens)
@@ -95,7 +95,7 @@ export class PostgresSessionRepository implements SessionRepository {
         .set({ revokedAt: now })
         .where(and(eq(sessions.userId, token.userId), isNull(sessions.revokedAt)));
 
-      return true;
+      return token.userId;
     });
   }
 
@@ -114,7 +114,7 @@ export class PostgresSessionRepository implements SessionRepository {
       .where(eq(emailVerificationTokens.tokenHash, tokenHash));
   }
 
-  async verifyEmail(tokenHash: string, now: Date): Promise<boolean> {
+  async verifyEmail(tokenHash: string, now: Date): Promise<string | null> {
     return this.db.transaction(async (tx) => {
       const [token] = await tx
         .delete(emailVerificationTokens)
@@ -125,7 +125,7 @@ export class PostgresSessionRepository implements SessionRepository {
           ),
         )
         .returning({ userId: emailVerificationTokens.userId });
-      if (!token) return false;
+      if (!token) return null;
 
       await tx
         .update(users)
@@ -134,7 +134,7 @@ export class PostgresSessionRepository implements SessionRepository {
       await tx
         .delete(emailVerificationTokens)
         .where(eq(emailVerificationTokens.userId, token.userId));
-      return true;
+      return token.userId;
     });
   }
 }

@@ -10,7 +10,8 @@ commands from the repository root.
 | Local container development | `compose.yml`                         | `docker compose -f compose.yml up --build -d`                                                                                                                  |
 | Integration-test database   | `compose.test.yml`                    | `pnpm test:db:up`, then `pnpm test:integration`; finish with `pnpm test:db:down`                                                                               |
 | Build and publish images    | `compose.yml` + `compose.publish.yml` | `$env:IMAGE_TAG = '<tag>'; docker compose -f compose.yml -f compose.publish.yml build; docker compose -f compose.yml -f compose.publish.yml push` (PowerShell) |
-| Production deployment       | `compose.prod.yml`                    | `docker compose --env-file .env.production -f compose.prod.yml up -d`                                                                                          |
+| Production reference        | `compose.prod.yml`                    | Tracked reference topology; do not deploy it when file logging is required                                                                                     |
+| Production deployment       | `compose.production.local.yml`        | `COMPOSE_FILE=compose.production.local.yml ./infrastructure/production/deploy.sh`                                                                              |
 
 For source-level development, start PostgreSQL with `docker compose -f compose.yml up -d postgres`
 and run `pnpm dev`. The full container command above remains the reproducible local-stack check.
@@ -25,8 +26,10 @@ which wraps the production command with migration, backup, update, and rollback 
   production Compose. Never add credentials or provider keys to it.
 - `compose.yml` explicitly owns local URLs, local database credentials, insecure local cookies,
   and the development upload volume.
-- `compose.prod.yml` explicitly owns public URLs, secure cookies, trusted-proxy configuration,
-  production secret interpolation, network isolation, and persistent storage mounts.
+- `compose.prod.yml` is the tracked production reference. The complete
+  `compose.production.local.yml` is intentionally ignored and operator-managed; it carries the
+  reference topology plus the production log volume and must be transferred to the server
+  manually.
 - `.env.production` is an uncommitted, mode-`0600` server file based on
   `infrastructure/production/env.example`.
 
@@ -35,6 +38,12 @@ always required. Production Compose explicitly enables secure session cookies. S
 `EMAIL_TRANSPORT=resend` also requires `RESEND_API_KEY`; log delivery deliberately needs no
 provider secret. Compose uses required interpolation for production infrastructure credentials,
 the public domain, image tag, and sender address, so omissions fail during Compose evaluation.
+
+`LOG_LEVEL` selects the minimum Pino severity and `LOG_DIRECTORY` selects the application log
+directory, defaulting to `logs` relative to the API working directory. Production sets it to
+`/app/logs` in the dedicated `api_logs` volume. Logs rotate at midnight UTC and retain 90 complete
+days. See [Server logging operations](server-logging.md) for inspection, privacy, permissions, and
+failure behavior.
 
 ## Health probes
 
@@ -63,10 +72,11 @@ secret. Keep it out of `.env.production`; production delivery only receives `RES
 
 ## Production durability
 
-`postgres_data`, `uploads_data`, `caddy_data`, and `caddy_config` are named Docker volumes. The
-first two contain irreplaceable application state and must be backed up off-host together: database
-records can reference uploaded files, so restoring only one can leave inconsistent state. Never run
-`docker compose down -v` or prune volumes on the production host. The single-server layout is not
-highly available; before storing irreplaceable data, configure tested off-host backups, restore
-drills, disk alerts, and external `/health/ready` monitoring. See the deployment runbook for the
-backup commands and migration rollback constraints.
+`postgres_data`, `uploads_data`, `api_logs`, `caddy_data`, and `caddy_config` are named Docker
+volumes. Database and uploads contain irreplaceable application state and must be backed up off-host
+together: database records can reference uploaded files, so restoring only one can leave
+inconsistent state. The log volume is separate and follows its own automatic 90-day retention.
+Never run `docker compose down -v` or prune volumes on the production host. The single-server layout
+is not highly available; before storing irreplaceable data, configure tested off-host backups,
+restore drills, disk alerts, and external `/health/ready` monitoring. See the deployment runbook for
+the backup commands and migration rollback constraints.

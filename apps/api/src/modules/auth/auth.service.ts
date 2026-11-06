@@ -104,7 +104,7 @@ export class AuthService {
     return { user: toPublicUser(user), sessionToken };
   }
 
-  async requestPasswordReset(input: ForgotPasswordRequest): Promise<void> {
+  async requestPasswordReset(input: ForgotPasswordRequest): Promise<string | undefined> {
     const user = await this.userRepository.findByEmail(normalizeEmail(input.email));
     if (!user || !user.emailVerified) return;
 
@@ -125,13 +125,15 @@ export class AuthService {
         expiresAt,
         locale: user.locale,
       });
+      return user.id;
     } catch (error) {
       await this.sessionRepository.deletePasswordResetToken(tokenHash).catch(() => undefined);
       this.logger.error({ err: error, userId: user.id }, 'Failed to send password reset email');
+      return undefined;
     }
   }
 
-  async resetPassword(input: ResetPasswordRequest): Promise<void> {
+  async resetPassword(input: ResetPasswordRequest): Promise<string> {
     const passwordHash = await hashPassword(input.newPassword);
     const reset = await this.sessionRepository.resetPassword(
       hashSessionToken(input.token),
@@ -145,6 +147,7 @@ export class AuthService {
         'PASSWORD_RESET_TOKEN_INVALID',
       );
     }
+    return reset;
   }
 
   async sendEmailVerification(userId: string): Promise<void> {
@@ -169,7 +172,7 @@ export class AuthService {
     }
   }
 
-  async verifyEmail(input: VerifyEmailRequest): Promise<void> {
+  async verifyEmail(input: VerifyEmailRequest): Promise<string> {
     const verified = await this.sessionRepository.verifyEmail(
       hashSessionToken(input.token),
       new Date(),
@@ -181,6 +184,7 @@ export class AuthService {
         'EMAIL_VERIFICATION_TOKEN_INVALID',
       );
     }
+    return verified;
   }
 
   async logout(sessionToken: string): Promise<void> {

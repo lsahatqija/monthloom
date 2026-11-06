@@ -80,6 +80,7 @@ web_modules/
 .env.test.local
 .env.production.local
 .env.local
+/compose.production.local.yml
 
 # Private security findings (keep local; never publish or commit)
 /docs/security-review.md

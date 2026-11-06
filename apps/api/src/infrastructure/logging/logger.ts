@@ -1,37 +1,78 @@
-import pino from 'pino';
+import pino, { type DestinationStream } from 'pino';
 
 import { config } from '../../config/index.js';
+
+import {
+  createRotatingFileDestination,
+  type RotatingFileDestination,
+} from './rotating-file-destination.js';
+
+export type LogCategory = 'system' | 'http' | 'audit';
+
+const sensitiveKeys = [
+  'password',
+  'currentPassword',
+  'newPassword',
+  'confirmNewPassword',
+  'passwordHash',
+  'token',
+  'sessionToken',
+  'secret',
+  'apiKey',
+  'resendApiKey',
+  'resendAdminKey',
+];
 
 const redactPaths = [
   'req.headers.cookie',
   'req.headers.authorization',
   'res.headers["set-cookie"]',
-  '*.password',
-  '*.currentPassword',
-  '*.newPassword',
-  '*.confirmNewPassword',
-  '*.passwordHash',
-  '*.token',
-  '*.sessionToken',
-  '*.secret',
-  '*.apiKey',
-  '*.resendApiKey',
-  '*.resendAdminKey',
+  ...sensitiveKeys.flatMap((key) => [key, `*.${key}`]),
 ];
 
-export const logger = pino({
-  level: config.logging.level,
-  redact: {
-    paths: redactPaths,
-    censor: '[REDACTED]',
-  },
-  transport: config.isDevelopment
-    ? {
-        target: 'pino-pretty',
-        options: { colorize: true, translateTime: 'HH:MM:ss', ignore: 'pid,hostname' },
-      }
-    : undefined,
-  base: { service: 'api' },
-});
+const discardDestination: RotatingFileDestination = {
+  healthy: true,
+  currentFilePath: undefined,
+  write: () => undefined,
+  flush: async () => undefined,
+  rotate: async () => undefined,
+  close: async () => undefined,
+};
+
+const logDestination =
+  config.env === 'test'
+    ? discardDestination
+    : await createRotatingFileDestination({ directory: config.logging.directory });
+
+export function createCategoryLogger(
+  category: LogCategory,
+  destination: DestinationStream = logDestination,
+) {
+  return pino(
+    {
+      level: config.logging.level,
+      timestamp: pino.stdTimeFunctions.isoTime,
+      formatters: {
+        level: (label) => ({ level: label }),
+      },
+      redact: {
+        paths: redactPaths,
+        censor: '[REDACTED]',
+      },
+      base: { schemaVersion: 1, service: 'api', category },
+    },
+    destination,
+  );
+}
+
+export const logger = createCategoryLogger('system');
+
+export async function flushLogger(): Promise<void> {
+  await logDestination.flush();
+}
+
+export async function closeLogger(): Promise<void> {
+  await logDestination.close();
+}
 
 export type Logger = typeof logger;

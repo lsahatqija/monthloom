@@ -556,7 +556,7 @@ export class PostgresTransactionRepository implements TransactionRepository {
     transactionId: string,
     scope: TransactionEditScope,
     occurrenceDate?: string,
-  ): Promise<boolean> {
+  ): Promise<'income' | 'expense' | null> {
     return this.db.transaction(async (transaction) => {
       const [income] = await transaction
         .select({ id: incomes.id, date: incomes.date, recurrenceId: incomes.recurrenceId })
@@ -571,14 +571,15 @@ export class PostgresTransactionRepository implements TransactionRepository {
             .where(and(eq(expenses.householdId, householdId), eq(expenses.id, transactionId)))
             .limit(1);
       const original = income ?? expense;
-      if (!original) return false;
+      if (!original) return null;
+      const kind = income ? 'income' : 'expense';
 
       if (original.recurrenceId && occurrenceDate && scope === 'current') {
         await transaction
           .insert(recurrenceExclusions)
           .values({ householdId, recurrenceId: original.recurrenceId, date: occurrenceDate })
           .onConflictDoNothing();
-        return true;
+        return kind;
       }
 
       if (original.recurrenceId && occurrenceDate && occurrenceDate !== original.date) {
@@ -615,7 +616,7 @@ export class PostgresTransactionRepository implements TransactionRepository {
                 gte(recurrenceExclusions.date, occurrenceDate),
               ),
             );
-          return true;
+          return kind;
         }
       }
 
@@ -657,7 +658,7 @@ export class PostgresTransactionRepository implements TransactionRepository {
             ),
           );
       }
-      return true;
+      return kind;
     });
   }
 }

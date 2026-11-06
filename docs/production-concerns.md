@@ -13,11 +13,12 @@ organization-specific and must be addressed before relying on the service for ir
   retention, monitoring, and restore drills must be configured operationally.
 - **Secret management** — the initial deployment uses an owner-only `.env.production` file.
   Move to a secret manager when the operational environment supports one.
-- **Monitoring, metrics and tracing** — only structured request/error logging is included. No
-  hosted logging, metrics, tracing, analytics, or error-reporting provider is wired up.
+- **Monitoring, metrics and tracing** — structured operational, HTTP, and audit logging is stored
+  in a local Docker volume with 90-day retention. No hosted logging, metrics, tracing, analytics,
+  alerting, or error-reporting provider is wired up.
 - **Horizontal scaling of sessions** — sessions are stored in Postgres (not in-memory), so multiple
   API instances already share session state; however, no load balancer or autoscaling
   configuration is provided.
 
 See [`deployment-hetzner.md`](deployment-hetzner.md) for the implemented topology and launch
-runbook.
+runbook, and [`server-logging.md`](server-logging.md) for log operations and privacy boundaries.

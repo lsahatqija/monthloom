@@ -70,17 +70,17 @@ export class TransactionService {
     requestingUserId: string,
     scope: TransactionEditScope,
     occurrenceDate?: string,
-  ): Promise<void> {
+  ): Promise<'income' | 'expense'> {
     await requireHouseholdMember(this.households, householdId, requestingUserId);
-    if (
-      !(await this.transactions.removeTransaction(
-        householdId,
-        transactionId,
-        scope,
-        occurrenceDate,
-      ))
-    ) {
+    const kind = await this.transactions.removeTransaction(
+      householdId,
+      transactionId,
+      scope,
+      occurrenceDate,
+    );
+    if (!kind) {
       throw new NotFoundError('Transaction was not found.', 'TRANSACTION_NOT_FOUND');
     }
+    return kind;
   }
 }

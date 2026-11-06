@@ -158,6 +158,36 @@ describe('finance service', () => {
     );
   });
 
+  it('logs invitation delivery failures with a household ID and no personal data', async () => {
+    const notifier = mock<AutomatedEmailService>();
+    const logger = mock<Logger>();
+    const service = new InvitationService(households, invitations, notifier, logger);
+    const deliveryError = new Error('offline');
+    households.isMember.mockResolvedValue(true);
+    households.findHousehold.mockResolvedValue(household);
+    invitations.deleteInvitation.mockResolvedValue();
+    notifier.sendHouseholdInvitation.mockRejectedValue(deliveryError);
+
+    await service.createInvitation(
+      household.id,
+      {
+        ...user,
+        emailVerified: true,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+      },
+      { mode: 'email', emails: ['private@example.com'] },
+    );
+
+    expect(logger.error).toHaveBeenCalledWith(
+      { err: deliveryError, householdId: household.id },
+      'Failed to send a household invitation email',
+    );
+    expect(logger.error.mock.calls[0]![0]).not.toHaveProperty('email');
+    expect(logger.error.mock.calls[0]![0]).not.toHaveProperty('recipient');
+    expect(logger.error.mock.calls[0]![0]).not.toHaveProperty('householdName');
+  });
+
   it('prevents an owner from leaving the last household member behind as nobody', async () => {
     households.isMember.mockResolvedValue(true);
     households.findHousehold.mockResolvedValue(household);

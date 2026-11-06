@@ -34,6 +34,7 @@ export const apiEnvShape = {
   RESEND_API_KEY: emptyStringAsUndefined(z.string().startsWith('re_')),
   RESEND_ADMIN_KEY: emptyStringAsUndefined(z.string().startsWith('re_')),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  LOG_DIRECTORY: z.string().min(1).default('logs'),
   RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().min(1).default(15),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().min(1).default(300),
   AUTH_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().min(1).default(15),

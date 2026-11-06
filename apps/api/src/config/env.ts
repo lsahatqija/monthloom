@@ -77,6 +77,7 @@ export const config = {
 
   logging: {
     level: env.LOG_LEVEL,
+    directory: env.LOG_DIRECTORY,
   },
 
   rateLimit: {

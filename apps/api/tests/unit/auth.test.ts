@@ -13,7 +13,8 @@ describe('authentication service', () => {
   const users = mock<UserRepository>();
   const sessions = mock<SessionRepository>();
   const email = mock<AutomatedEmailService>();
-  const service = new AuthService(users, sessions, email, mock<Logger>());
+  const logger = mock<Logger>();
+  const service = new AuthService(users, sessions, email, logger);
 
   beforeEach(() => vi.resetAllMocks());
 
@@ -70,5 +71,11 @@ describe('authentication service', () => {
     expect(sessions.deletePasswordResetToken).toHaveBeenCalledWith(
       sessions.createPasswordResetToken.mock.calls[0]![0].tokenHash,
     );
+    expect(logger.error).toHaveBeenCalledWith(
+      { err: expect.any(Error), userId: user.id },
+      'Failed to send password reset email',
+    );
+    expect(logger.error.mock.calls[0]![0]).not.toHaveProperty('email');
+    expect(logger.error.mock.calls[0]![0]).not.toHaveProperty('displayName');
   });
 });
