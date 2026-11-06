@@ -3,12 +3,36 @@ import { describe, expect, it } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
 import type { EmailSender } from '../../src/infrastructure/email/email-sender.js';
+import { LogEmailSender } from '../../src/infrastructure/email/log-email-sender.js';
+import type { Logger } from '../../src/infrastructure/logging/logger.js';
 import { AutomatedEmailService } from '../../src/modules/email/automated-email.service.js';
 import {
   localizedTemplateAlias,
   resendTemplateDefinitions,
   selectResendTemplateDefinitions,
 } from '../../src/modules/email/resend-template-definitions.js';
+
+it('logs local email delivery metadata without the recipient or content', async () => {
+  const logger = mock<Logger>();
+  const sender = new LogEmailSender(logger);
+
+  await sender.send({
+    kind: 'rendered',
+    label: 'password-reset',
+    to: 'private@example.com',
+    subject: 'Private subject',
+    text: 'Private body',
+    html: '<p>Private body</p>',
+  });
+
+  expect(logger.info).toHaveBeenCalledWith(
+    { emailTemplate: 'password-reset' },
+    'Email captured by log transport',
+  );
+  expect(JSON.stringify(logger.info.mock.calls)).not.toContain('private@example.com');
+  expect(JSON.stringify(logger.info.mock.calls)).not.toContain('Private subject');
+  expect(JSON.stringify(logger.info.mock.calls)).not.toContain('Private body');
+});
 
 it('uses the selected feedback type in the Resend template subject', () => {
   expect(

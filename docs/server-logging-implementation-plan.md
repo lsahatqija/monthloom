@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase: implementation in progress; Tasks 1-8 complete
+- Phase: implementation in progress; Tasks 1-9 complete
 - Approved: 2026-11-06
 - Scope: durable server, HTTP, and selected audit logging for the Express API
 - Implementation rule: complete and verify one task before starting the next
@@ -466,12 +466,12 @@ Completion condition: every approved finance mutation produces a minimal safe au
 
 ### Task 9: Process lifecycle and failure severity
 
-- [ ] Update unrecoverable startup/process records to `fatal`.
-- [ ] Flush during graceful shutdown.
-- [ ] Preserve the forced-shutdown timeout without hanging on the logger.
-- [ ] Confirm database/email operational errors retain useful request or entity IDs without PII.
-- [ ] Test graceful and failed destination shutdown behavior where practical.
-- [ ] Run server tests, typecheck, and lint.
+- [x] Update unrecoverable startup/process records to `fatal`.
+- [x] Flush during graceful shutdown.
+- [x] Preserve the forced-shutdown timeout without hanging on the logger.
+- [x] Confirm database/email operational errors retain useful request or entity IDs without PII.
+- [x] Test graceful and failed destination shutdown behavior where practical.
+- [x] Run server tests, typecheck, and lint.
 
 Completion condition: normal shutdown flushes; a broken logger cannot prevent process shutdown or
 request handling.
