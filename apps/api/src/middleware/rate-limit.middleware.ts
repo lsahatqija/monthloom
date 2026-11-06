@@ -1,6 +1,7 @@
 import rateLimit from 'express-rate-limit';
 
 import { config } from '../config/index.js';
+import { auditRateLimitHandler } from '../infrastructure/logging/audit-logger.js';
 
 /** General-purpose API rate limiter applied to the whole `/api` surface. */
 export const generalRateLimiter = rateLimit({
@@ -8,6 +9,7 @@ export const generalRateLimiter = rateLimit({
   limit: config.rateLimit.general.maxRequests,
   standardHeaders: true,
   legacyHeaders: false,
+  handler: auditRateLimitHandler,
   message: {
     error: {
       code: 'RATE_LIMITED',
@@ -23,6 +25,7 @@ export const authRateLimiter = rateLimit({
   limit: config.rateLimit.authentication.maxRequests,
   standardHeaders: true,
   legacyHeaders: false,
+  handler: auditRateLimitHandler,
   message: {
     error: {
       code: 'RATE_LIMITED',
@@ -38,6 +41,7 @@ export const passwordResetRateLimiter = rateLimit({
   limit: config.rateLimit.passwordReset.maxRequests,
   standardHeaders: true,
   legacyHeaders: false,
+  handler: auditRateLimitHandler,
   message: {
     error: {
       code: 'RATE_LIMITED',
@@ -53,6 +57,7 @@ export const emailVerificationRateLimiter = rateLimit({
   limit: config.rateLimit.emailVerification.maxRequests,
   standardHeaders: true,
   legacyHeaders: false,
+  handler: auditRateLimitHandler,
   message: {
     error: {
       code: 'RATE_LIMITED',

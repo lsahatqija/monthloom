@@ -45,6 +45,8 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   }
 
   if (err instanceof ZodError) {
+    res.locals.logErrorCode = 'VALIDATION_ERROR';
+    res.locals.logErrorReason = 'INVALID_INPUT';
     res.status(400).json({
       error: {
         code: 'VALIDATION_ERROR' satisfies ApiErrorCode,
@@ -59,13 +61,18 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
 
   if (err instanceof MulterError) {
     const code: ApiErrorCode = 'VALIDATION_ERROR';
+    const reason = mapMulterReason(err);
+    res.locals.logErrorCode = code;
+    res.locals.logErrorReason = reason;
     res.status(400).json({
-      error: { code, reason: mapMulterReason(err), message: mapMulterMessage(err), requestId },
+      error: { code, reason, message: mapMulterMessage(err), requestId },
     });
     return;
   }
 
   if (err instanceof SyntaxError && 'body' in err) {
+    res.locals.logErrorCode = 'VALIDATION_ERROR';
+    res.locals.logErrorReason = 'INVALID_JSON';
     res.status(400).json({
       error: {
         code: 'VALIDATION_ERROR' satisfies ApiErrorCode,
@@ -78,6 +85,8 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   }
 
   if (isPayloadTooLargeError(err)) {
+    res.locals.logErrorCode = 'VALIDATION_ERROR';
+    res.locals.logErrorReason = 'PAYLOAD_TOO_LARGE';
     res.status(413).json({
       error: {
         code: 'VALIDATION_ERROR' satisfies ApiErrorCode,
@@ -89,6 +98,8 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     return;
   }
 
+  res.locals.logErrorCode = 'INTERNAL_ERROR';
+  res.locals.logErrorReason = 'INTERNAL_ERROR';
   logger.error({ err, requestId }, 'Unhandled error');
 
   res.status(500).json({

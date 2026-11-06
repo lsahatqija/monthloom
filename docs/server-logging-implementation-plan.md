@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase: implementation in progress; Tasks 1-4 complete
+- Phase: implementation in progress; Tasks 1-5 complete
 - Approved: 2026-11-06
 - Scope: durable server, HTTP, and selected audit logging for the Express API
 - Implementation rule: complete and verify one task before starting the next
@@ -412,14 +412,14 @@ authorization header.
 
 ### Task 5: Audit infrastructure
 
-- [ ] Define the closed audit event-name and safe-field types.
-- [ ] Add route-level audit metadata middleware.
-- [ ] Add narrowly scoped controller helpers for safe result fields.
-- [ ] Map response status/error metadata to `success`, `failure`, or `denied`.
-- [ ] Support opt-in IP/user-agent recording for security events only.
-- [ ] Integrate rate-limit audit records.
-- [ ] Test success, expected failure, denial, and field allowlisting.
-- [ ] Prove that arbitrary bodies/DTOs cannot be passed through the audit API.
+- [x] Define the closed audit event-name and safe-field types.
+- [x] Add route-level audit metadata middleware.
+- [x] Add narrowly scoped controller helpers for safe result fields.
+- [x] Map response status/error metadata to `success`, `failure`, or `denied`.
+- [x] Support opt-in IP/user-agent recording for security events only.
+- [x] Integrate rate-limit audit records.
+- [x] Test success, expected failure, denial, and field allowlisting.
+- [x] Prove that arbitrary bodies/DTOs cannot be passed through the audit API.
 
 Completion condition: audit plumbing works on a representative test route without instrumenting
 the full event list yet.
