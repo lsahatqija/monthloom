@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase: implementation in progress; Tasks 1-3 complete
+- Phase: implementation in progress; Tasks 1-4 complete
 - Approved: 2026-11-06
 - Scope: durable server, HTTP, and selected audit logging for the Express API
 - Implementation rule: complete and verify one task before starting the next
@@ -398,14 +398,14 @@ schema and no secrets.
 
 ### Task 4: HTTP logging and sanitization
 
-- [ ] Replace raw URL storage with route-template storage.
-- [ ] Strip query strings and avoid raw parameter values for unmatched routes.
-- [ ] Add authenticated user ID when available.
-- [ ] Implement approved severity mapping.
-- [ ] Suppress successful liveness/readiness records while retaining failures.
-- [ ] Remove duplicate expected-4xx warnings from the central error handler.
-- [ ] Test tokenized invitation routes, query strings, unmatched routes, health checks, and levels.
-- [ ] Run system integration tests, typecheck, and lint.
+- [x] Replace raw URL storage with route-template storage.
+- [x] Strip query strings and avoid raw parameter values for unmatched routes.
+- [x] Add authenticated user ID when available.
+- [x] Implement approved severity mapping.
+- [x] Suppress successful liveness/readiness records while retaining failures.
+- [x] Remove duplicate expected-4xx warnings from the central error handler.
+- [x] Test tokenized invitation routes, query strings, unmatched routes, health checks, and levels.
+- [x] Run focused HTTP tests, the system integration tests, typecheck, and lint.
 
 Completion condition: no HTTP record can expose an invitation token, query value, body, cookie, or
 authorization header.

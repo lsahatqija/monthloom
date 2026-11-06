@@ -24,10 +24,11 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   const requestId = req.id;
 
   if (err instanceof AppError) {
+    res.locals.logErrorCode = err.code;
+    res.locals.logErrorReason = err.reason;
+
     if (err.statusCode >= 500) {
       logger.error({ err, requestId }, 'Request failed with an internal error');
-    } else {
-      logger.warn({ err: err.message, requestId, code: err.code }, 'Request failed');
     }
 
     res.status(err.statusCode).json({
