@@ -101,6 +101,7 @@ export class AuthService {
     }
 
     const sessionToken = await this.createSession(user.id);
+    await this.userRepository.recordActivity(user.id, new Date());
     return { user: toPublicUser(user), sessionToken };
   }
 
@@ -199,11 +200,12 @@ export class AuthService {
     const tokenHash = hashSessionToken(sessionToken);
     const session = await this.sessionRepository.findByTokenHash(tokenHash);
 
-    if (!session || session.revokedAt || session.expiresAt.getTime() < Date.now()) {
+    if (!session || session.revokedAt || session.expiresAt.getTime() <= Date.now()) {
       return null;
     }
 
     const user = await this.userRepository.findById(session.userId);
+    if (user) await this.userRepository.recordActivity(user.id, new Date());
     return user ? toPublicUser(user) : null;
   }
 

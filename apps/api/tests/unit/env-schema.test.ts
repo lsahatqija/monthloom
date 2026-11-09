@@ -46,4 +46,18 @@ describe('API environment schema', () => {
 
     expect(result.success).toBe(false);
   });
+
+  it('requires complete administrator bootstrap credentials', () => {
+    expect(
+      apiEnvSchema.safeParse({ ...validProductionEnv, ADMIN_BOOTSTRAP_EMAIL: 'admin@example.com' })
+        .success,
+    ).toBe(false);
+    expect(
+      apiEnvSchema.safeParse({
+        ...validProductionEnv,
+        ADMIN_BOOTSTRAP_EMAIL: 'admin@example.com',
+        ADMIN_BOOTSTRAP_PASSWORD: 'Bootstrap-password-123!',
+      }).success,
+    ).toBe(true);
+  });
 });

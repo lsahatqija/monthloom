@@ -5,6 +5,7 @@ import {
 } from '@asteasolutions/zod-to-openapi';
 import { z } from 'zod';
 
+import { registerAdminOpenApi } from '../../modules/admin/admin.openapi.js';
 import { registerAuthOpenApi } from '../../modules/auth/auth.openapi.js';
 import { registerFilesOpenApi } from '../../modules/files/files.openapi.js';
 import { registerFinanceOpenApi } from '../../modules/finance/finance.openapi.js';
@@ -27,6 +28,7 @@ export function generateOpenApiDocument() {
   registerUsersOpenApi(registry);
   registerFilesOpenApi(registry);
   registerFinanceOpenApi(registry);
+  registerAdminOpenApi(registry);
 
   return new OpenApiGeneratorV3(registry.definitions).generateDocument({
     openapi: '3.0.3',
@@ -42,6 +44,7 @@ export function generateOpenApiDocument() {
       { name: 'Users', description: 'Profile and credential management.' },
       { name: 'Files', description: 'Authenticated file storage.' },
       { name: 'Households', description: 'Households, sources, and transactions.' },
+      { name: 'Administration', description: 'Administrator-only application oversight.' },
       { name: 'System', description: 'Operational health endpoints.' },
     ],
   });

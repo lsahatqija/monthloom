@@ -8,6 +8,7 @@ import {
   Download,
   House,
   Palette,
+  ShieldCheck,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -235,6 +236,16 @@ export function Header({ user }: { user: PublicUser | null }) {
                     <Palette aria-hidden="true" />
                     {t('appearance')}
                   </Link>
+                  {user.role === 'admin' ? (
+                    <Link
+                      href="/admin"
+                      className="accountMenuItem"
+                      aria-current={pathname.startsWith('/admin') ? 'page' : undefined}
+                    >
+                      <ShieldCheck aria-hidden="true" />
+                      {t('admin')}
+                    </Link>
+                  ) : null}
                   {canOfferInstall ? (
                     <button
                       type="button"

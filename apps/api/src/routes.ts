@@ -5,6 +5,7 @@ import type { AppDependencies } from './composition.js';
 import { config } from './config/index.js';
 import { generateOpenApiDocument } from './infrastructure/openapi/document.js';
 import { verifyRequestOrigin } from './middleware/verify-origin.middleware.js';
+import { createAdminRouter } from './modules/admin/admin.routes.js';
 import { createAuthRouter } from './modules/auth/auth.routes.js';
 import { createFeedbackRouter } from './modules/feedback/feedback.routes.js';
 import { createFileRouter } from './modules/files/file.routes.js';
@@ -40,6 +41,14 @@ export function registerRoutes(app: Express, deps: AppDependencies): void {
   app.use(
     `${API_BASE_PATH}/households`,
     createFinanceRouter(controllers.financeController, middleware.requireAuth),
+  );
+  app.use(
+    `${API_BASE_PATH}/admin`,
+    createAdminRouter(
+      controllers.adminController,
+      middleware.requireAuth,
+      middleware.requireRole('admin'),
+    ),
   );
 
   const openApiDocument = generateOpenApiDocument();

@@ -10,3 +10,4 @@ export * from './files/file.schemas.js';
 export * from './feedback/feedback.schemas.js';
 export * from './finance/household.schemas.js';
 export * from './finance/currencies.js';
+export * from './admin/admin.schemas.js';

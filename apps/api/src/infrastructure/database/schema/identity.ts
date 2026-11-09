@@ -25,11 +25,13 @@ export const users = pgTable(
     desiredColor: desiredColorEnum('desired_color').notNull().default(Defaults.USER_DESIRED_COLOR),
     locale: varchar('locale', { length: 35 }).notNull().default(Defaults.USER_LOCALE),
     role: userRoleEnum('role').notNull().default('user'),
+    lastActiveAt: timestamp('last_active_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
     emailUniqueIdx: uniqueIndex('users_email_unique_idx').on(table.email),
+    lastActiveAtIdx: index('users_last_active_at_idx').on(table.lastActiveAt),
   }),
 );
 

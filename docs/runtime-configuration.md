@@ -70,6 +70,14 @@ All five templates are retained and synchronized by `pnpm email:templates:sync`:
 The synchronization-only `RESEND_ADMIN_KEY` is an operational option, not an application runtime
 secret. Keep it out of `.env.production`; production delivery only receives `RESEND_API_KEY`.
 
+## Administrator bootstrap
+
+Set `ADMIN_BOOTSTRAP_EMAIL` and `ADMIN_BOOTSTRAP_PASSWORD` together in the deployment-local `.env`
+to create the first administrator when the API starts. The bootstrap is safe to rerun: it only
+creates a missing email and never changes an existing account. Remove the password after successful
+provisioning; use the normal password-reset flow or database-backed operational recovery for later
+credential rotation.
+
 ## Production durability
 
 `postgres_data`, `uploads_data`, `api_logs`, `caddy_data`, and `caddy_config` are named Docker

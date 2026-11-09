@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
 import type { Logger } from '../../src/infrastructure/logging/logger.js';
+import { hashPassword } from '../../src/infrastructure/security/password.js';
 import { hashSessionToken } from '../../src/infrastructure/security/tokens.js';
 import type { SessionRepository } from '../../src/modules/auth/auth.repository.js';
 import { AuthService } from '../../src/modules/auth/auth.service.js';
@@ -51,6 +52,26 @@ describe('authentication service', () => {
     expect(await service.validateSession('raw-token')).toBeNull();
     expect(sessions.findByTokenHash).toHaveBeenCalledWith(hashSessionToken('raw-token'));
     expect(users.findById).not.toHaveBeenCalled();
+    expect(users.recordActivity).not.toHaveBeenCalled();
+  });
+
+  it('records successful login and authenticated use as activity', async () => {
+    const authenticatedUser = { ...user, passwordHash: await hashPassword('Valid-password-123!') };
+    users.findByEmail.mockResolvedValue(authenticatedUser);
+    await service.login({ email: user.email, password: 'Valid-password-123!' });
+    expect(users.recordActivity).toHaveBeenCalledWith(user.id, expect.any(Date));
+
+    users.findById.mockResolvedValue(authenticatedUser);
+    sessions.findByTokenHash.mockResolvedValue({
+      id: 'session',
+      userId: user.id,
+      tokenHash: hashSessionToken('raw-token'),
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 60_000),
+      revokedAt: null,
+    });
+    await service.validateSession('raw-token');
+    expect(users.recordActivity).toHaveBeenCalledTimes(2);
   });
 
   it('does not send reset emails to an unverified account', async () => {

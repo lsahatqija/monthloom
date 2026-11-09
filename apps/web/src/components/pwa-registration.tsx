@@ -2,6 +2,7 @@
 
 import { Download, MoreVertical, Pin, Plus, Share2 } from 'lucide-react';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   createContext,
@@ -151,6 +152,7 @@ export function usePwaInstall() {
 
 export function PwaRegistration({ children }: { children: ReactNode }) {
   const t = useTranslations('Pwa');
+  const pathname = usePathname();
   const [mobileBrowser, setMobileBrowser] = useState(false);
   const [eligibleSession, setEligibleSession] = useState(false);
   const [platform, setPlatform] = useState<InstallPlatform>('desktop');
@@ -237,7 +239,7 @@ export function PwaRegistration({ children }: { children: ReactNode }) {
   return (
     <PwaInstallContext.Provider value={value}>
       {children}
-      {promptOpen && eligibleSession && !installed ? (
+      {promptOpen && eligibleSession && !installed && !pathname?.startsWith('/admin') ? (
         <aside
           className={`installPrompt${desktopBrowser ? ' installPromptDesktop' : ''}`}
           role="dialog"

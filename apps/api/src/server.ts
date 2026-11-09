@@ -3,6 +3,7 @@ import type { Server } from 'node:http';
 import { createApp } from './app.js';
 import { buildAppDependencies } from './composition.js';
 import { config } from './config/index.js';
+import { bootstrapAdministrator } from './infrastructure/database/admin-bootstrap.js';
 import { closeDatabaseConnection } from './infrastructure/database/client.js';
 import { runDatabaseMigrations } from './infrastructure/database/migration-runner.js';
 import { closeLogger, logger } from './infrastructure/logging/logger.js';
@@ -11,6 +12,7 @@ import { createShutdownHandler, handleStartupFailure } from './server-lifecycle.
 /** Loads configuration, connects infrastructure, starts listening and handles shutdown. */
 async function start(): Promise<void> {
   await runDatabaseMigrations();
+  await bootstrapAdministrator();
 
   const deps = buildAppDependencies();
   const app = createApp(deps);

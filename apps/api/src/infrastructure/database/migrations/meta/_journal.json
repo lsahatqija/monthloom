@@ -155,6 +155,13 @@
       "when": 1793794674220,
       "tag": "0021_melodic_agent_brand",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794218082836,
+      "tag": "0022_thick_major_mapleleaf",
+      "breakpoints": true
     }
   ]
 }
