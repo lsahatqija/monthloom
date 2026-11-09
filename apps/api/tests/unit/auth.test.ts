@@ -58,7 +58,6 @@ describe('authentication service', () => {
   it('records successful login and authenticated use as activity', async () => {
     const authenticatedUser = { ...user, passwordHash: await hashPassword('Valid-password-123!') };
     users.findByEmail.mockResolvedValue(authenticatedUser);
-    sessions.create.mockResolvedValue();
     await service.login({ email: user.email, password: 'Valid-password-123!' });
     expect(users.recordActivity).toHaveBeenCalledWith(user.id, expect.any(Date));
 
