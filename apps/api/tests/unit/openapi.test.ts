@@ -10,6 +10,7 @@ const modules = [
   { name: 'users', file: 'users/user.routes.ts', base: '/api/v1/users' },
   { name: 'files', file: 'files/file.routes.ts', base: '/api/v1/files' },
   { name: 'finance', file: 'finance/finance.routes.ts', base: '/api/v1/households' },
+  { name: 'admin', file: 'admin/admin.routes.ts', base: '/api/v1/admin' },
   { name: 'system', file: 'system/system.routes.ts', base: '/health' },
 ] as const;
 
@@ -50,5 +51,13 @@ describe('OpenAPI document', () => {
         expect(Object.keys(operation.responses)).not.toHaveLength(0);
       }
     }
+  });
+
+  it('documents the administrator security boundary', () => {
+    const operation = generateOpenApiDocument().paths['/api/v1/admin/dashboard']?.get;
+
+    expect(operation?.security).toEqual([{ sessionCookie: [] }]);
+    expect(operation?.responses).toHaveProperty('401');
+    expect(operation?.responses).toHaveProperty('403');
   });
 });

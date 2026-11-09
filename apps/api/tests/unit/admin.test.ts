@@ -88,4 +88,44 @@ describe('admin dashboard', () => {
 
     expect((await service.getDashboard()).health.status).toBe('unavailable');
   });
+
+  it('uses only the last 24 hours to derive critical health', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'monthloom-admin-'));
+    temporaryDirectories.push(directory);
+    await writeFile(
+      path.join(directory, 'server.2026-11-06.log'),
+      [
+        JSON.stringify({
+          time: '2026-11-05T11:59:59.000Z',
+          level: 'fatal',
+          category: 'system',
+          msg: 'Old process failure',
+        }),
+        JSON.stringify({
+          time: '2026-11-06T11:00:00.000Z',
+          level: 'fatal',
+          category: 'system',
+          msg: 'Recent process failure',
+        }),
+      ].join('\n'),
+    );
+    const repository: AdminRepository = {
+      getMetrics: vi.fn().mockResolvedValue({
+        totalUsers: 0,
+        activeUsers: 0,
+        households: 0,
+        incomes: 0,
+        expenses: 0,
+      }),
+    };
+
+    const result = await new AdminService(
+      repository,
+      new FileAdminLogReader(directory),
+    ).getDashboard(new Date('2026-11-06T12:00:00.000Z'));
+
+    expect(result.health.status).toBe('critical');
+    expect(result.health.counts.fatal).toBe(2);
+    expect(result.health.last24Hours.fatal).toBe(1);
+  });
 });

@@ -1,10 +1,13 @@
 import { adminDashboardResponseSchema } from '@monthloom/contracts';
+import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
-import { api, register } from '../http.js';
+import { api, app, register } from '../http.js';
 
 describe('admin dashboard HTTP + PostgreSQL', () => {
   it('rejects regular users and returns application metrics to admins', async () => {
+    await request(app).get(`${api}/admin/dashboard`).expect(401);
+
     const { agent, user } = await register();
     await agent.get(`${api}/admin/dashboard`).expect(403);
 
