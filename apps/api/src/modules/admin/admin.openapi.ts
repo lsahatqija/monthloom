@@ -31,6 +31,28 @@ export function registerAdminOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
+  registry.registerPath({
+    method: 'get',
+    path: '/api/v1/admin/adoption',
+    summary: 'Get administration adoption analytics',
+    tags: ['Administration'],
+    security: [{ sessionCookie: [] }],
+    request: { query: contracts.adminAnalyticsRangeQuerySchema },
+    responses: {
+      200: {
+        description: 'Registration, onboarding, and invitation conversion analytics.',
+        content: { 'application/json': { schema: contracts.adminAdoptionResponseSchema } },
+      },
+      401: {
+        description: 'Authentication required.',
+        content: { 'application/json': { schema: contracts.apiErrorResponseSchema } },
+      },
+      403: {
+        description: 'Administrator role required.',
+        content: { 'application/json': { schema: contracts.apiErrorResponseSchema } },
+      },
+    },
+  });
   registerAdminPath(
     registry,
     '/api/v1/admin/health',

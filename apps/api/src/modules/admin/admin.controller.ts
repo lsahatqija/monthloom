@@ -22,4 +22,9 @@ export class AdminController {
     const query = adminAnalyticsRangeQuerySchema.parse(req.query);
     res.status(200).json(await this.adminService.getUsage(query));
   };
+
+  getAdoption = async (req: Request, res: Response): Promise<void> => {
+    const query = adminAnalyticsRangeQuerySchema.parse(req.query);
+    res.status(200).json(await this.adminService.getAdoption(query));
+  };
 }

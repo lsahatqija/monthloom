@@ -145,6 +145,35 @@ export const adminUsageResponseSchema = adminAnalyticsContextSchema.extend({
 });
 export type AdminUsageResponse = z.infer<typeof adminUsageResponseSchema>;
 
+const durationDistributionSchema = z.object({
+  medianHours: z.number().nonnegative().nullable(),
+  p75Hours: z.number().nonnegative().nullable(),
+  converted: z.number().int().nonnegative(),
+  notConverted: z.number().int().nonnegative(),
+});
+
+export const adminAdoptionResponseSchema = adminAnalyticsContextSchema.extend({
+  registrations: comparedNumberSchema,
+  registrationSeries: z.array(
+    z.object({
+      from: calendarDateSchema,
+      to: calendarDateSchema,
+      registrations: z.number().int().nonnegative(),
+    }),
+  ),
+  usersWithoutHousehold: z.number().int().nonnegative(),
+  timeToFirstHousehold: durationDistributionSchema,
+  timeToFirstTransaction: durationDistributionSchema,
+  invitations: z.object({
+    sent: z.number().int().nonnegative(),
+    accepted: z.number().int().nonnegative(),
+    expired: z.number().int().nonnegative(),
+    open: z.number().int().nonnegative(),
+    conversionRate: nullableRatioSchema,
+  }),
+});
+export type AdminAdoptionResponse = z.infer<typeof adminAdoptionResponseSchema>;
+
 export const adminLogLevelSchema = z.enum(['warn', 'error', 'fatal']);
 export type AdminLogLevel = z.infer<typeof adminLogLevelSchema>;
 

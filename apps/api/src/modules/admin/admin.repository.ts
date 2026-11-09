@@ -1,3 +1,9 @@
+import type {
+  AdminAdoptionResponse,
+  AdminResolvedRange,
+  AdminUsageResponse,
+} from '@monthloom/contracts';
+
 export interface AdminMetrics {
   totalUsers: number;
   dailyActiveUsers: number;
@@ -15,5 +21,8 @@ export interface AdminRepository {
     range: AdminResolvedRange,
     comparisonRange: AdminResolvedRange,
   ): Promise<Omit<AdminUsageResponse, 'generatedAt' | 'range' | 'comparisonRange'>>;
+  getAdoption?(
+    range: AdminResolvedRange,
+    comparisonRange: AdminResolvedRange,
+  ): Promise<Omit<AdminAdoptionResponse, 'generatedAt' | 'range' | 'comparisonRange'>>;
 }
-import type { AdminResolvedRange, AdminUsageResponse } from '@monthloom/contracts';

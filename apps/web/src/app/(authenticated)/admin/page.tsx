@@ -1,8 +1,10 @@
 import {
+  adminAdoptionResponseSchema,
   adminHealthResponseSchema,
   adminOverviewResponseSchema,
   adminUsageResponseSchema,
   type AdminDashboardResponse,
+  type AdminAdoptionResponse,
   type AdminHealthResponse,
   type AdminLogEntry,
   type AdminOverviewResponse,
@@ -19,7 +21,7 @@ import { getServerUser } from '../../../lib/auth/get-server-user';
 import './admin.css';
 import { UsageChart } from './usage-chart';
 
-type AdminView = 'overview' | 'health' | 'usage';
+type AdminView = 'overview' | 'health' | 'usage' | 'adoption';
 
 type AdminSearchParams = {
   view?: string;
@@ -33,7 +35,7 @@ export default async function AdminPage({ searchParams }: { searchParams: AdminS
   const user = await getServerUser();
   if (!user || user.role !== 'admin') redirect('/');
 
-  const view: AdminView = ['health', 'usage'].includes(searchParams.view ?? '')
+  const view: AdminView = ['health', 'usage', 'adoption'].includes(searchParams.view ?? '')
     ? (searchParams.view as AdminView)
     : 'overview';
   const cookieHeader = cookies().toString();
@@ -59,6 +61,15 @@ export default async function AdminPage({ searchParams }: { searchParams: AdminS
           }),
         )
       : null;
+  const adoption =
+    view === 'adoption'
+      ? adminAdoptionResponseSchema.parse(
+          await apiClient.get<AdminAdoptionResponse>('admin/adoption', {
+            cookieHeader,
+            query: usageQuery,
+          }),
+        )
+      : null;
   const t = await getTranslations('Admin');
   const numbers = new Intl.NumberFormat(user.locale);
   const dates = new Intl.DateTimeFormat(user.locale, { dateStyle: 'medium', timeStyle: 'short' });
@@ -73,6 +84,7 @@ export default async function AdminPage({ searchParams }: { searchParams: AdminS
     { view: 'overview', label: t('overview') },
     { view: 'health', label: t('health') },
     { view: 'usage', label: t('usage') },
+    { view: 'adoption', label: t('adoption') },
   ];
   const preservedQuery = new URLSearchParams();
   for (const [key, value] of Object.entries(usageQuery)) if (value) preservedQuery.set(key, value);
@@ -109,6 +121,160 @@ export default async function AdminPage({ searchParams }: { searchParams: AdminS
       ) : null}
       {view === 'health' ? <Health data={data} dates={dates} statusLabel={statusLabel} /> : null}
       {view === 'usage' && usage ? <Usage data={usage} numbers={numbers} /> : null}
+      {view === 'adoption' && adoption ? <Adoption data={adoption} numbers={numbers} /> : null}
+    </div>
+  );
+}
+
+async function Adoption({
+  data,
+  numbers,
+}: {
+  data: AdminAdoptionResponse;
+  numbers: Intl.NumberFormat;
+}) {
+  const t = await getTranslations('Admin');
+  const decimal = new Intl.NumberFormat(numbers.resolvedOptions().locale, {
+    maximumFractionDigits: 1,
+  });
+  const maxRegistrations = Math.max(
+    1,
+    ...data.registrationSeries.map((point) => point.registrations),
+  );
+  const distributions = [
+    [t('firstHousehold'), data.timeToFirstHousehold],
+    [t('firstTransaction'), data.timeToFirstTransaction],
+  ] as const;
+
+  return (
+    <div className="adminView">
+      <section className="adminPanel">
+        <nav className="adminRangePresets" aria-label={t('rangePresets')}>
+          <a href={`/admin?view=adoption&timezone=${encodeURIComponent(data.range.timezone)}`}>
+            {t('currentMonth')}
+          </a>
+          {[7, 30, 90].map((days) => (
+            <a
+              key={days}
+              href={`/admin?view=adoption&timezone=${encodeURIComponent(data.range.timezone)}&from=${shiftDate(data.range.to, -(days - 1))}&to=${data.range.to}`}
+            >
+              {t('lastDays', { days })}
+            </a>
+          ))}
+        </nav>
+        <form className="adminRangeForm" method="get">
+          <input type="hidden" name="view" value="adoption" />
+          <input type="hidden" name="timezone" value={data.range.timezone} />
+          <label>
+            {t('from')}
+            <input type="date" name="from" defaultValue={data.range.from} />
+          </label>
+          <label>
+            {t('to')}
+            <input type="date" name="to" defaultValue={data.range.to} />
+          </label>
+          <button type="submit">{t('applyRange')}</button>
+        </form>
+      </section>
+
+      <section className="adminPanel" aria-labelledby="adoption-summary">
+        <div className="adminSectionHeading">
+          <h2 id="adoption-summary">{t('adoptionSummary')}</h2>
+        </div>
+        <div className="adminMetricStrip">
+          <div className="adminMetric">
+            <span>{t('newUsers')}</span>
+            <strong>{numbers.format(data.registrations.current)}</strong>
+            <small>
+              {data.registrations.changePercent == null
+                ? t('noComparison')
+                : t('periodChange', { value: decimal.format(data.registrations.changePercent) })}
+            </small>
+          </div>
+          <div className="adminMetric">
+            <span>{t('withoutHousehold')}</span>
+            <strong>{numbers.format(data.usersWithoutHousehold)}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section className="adminPanel" aria-labelledby="registration-trend">
+        <div className="adminSectionHeading">
+          <h2 id="registration-trend">{t('registrationTrend')}</h2>
+        </div>
+        <div className="adminTrendBars">
+          {data.registrationSeries.map((point) => (
+            <div key={point.from} className="adminTrendBar">
+              <span
+                style={{
+                  height: `${Math.max(2, (point.registrations / maxRegistrations) * 100)}%`,
+                }}
+                title={`${point.from}: ${point.registrations}`}
+              />
+              <small>{point.from.slice(5)}</small>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="adminPanel" aria-labelledby="onboarding-time">
+        <div className="adminSectionHeading">
+          <h2 id="onboarding-time">{t('onboardingTime')}</h2>
+        </div>
+        <div className="adminTableWrap">
+          <table className="adminDataTable">
+            <thead>
+              <tr>
+                <th>{t('milestone')}</th>
+                <th>{t('medianHours')}</th>
+                <th>{t('p75Hours')}</th>
+                <th>{t('converted')}</th>
+                <th>{t('notConverted')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {distributions.map(([label, item]) => (
+                <tr key={label}>
+                  <td>{label}</td>
+                  <td>{item.medianHours == null ? '—' : decimal.format(item.medianHours)}</td>
+                  <td>{item.p75Hours == null ? '—' : decimal.format(item.p75Hours)}</td>
+                  <td>{numbers.format(item.converted)}</td>
+                  <td>{numbers.format(item.notConverted)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="adminPanel" aria-labelledby="invitation-conversion">
+        <div className="adminSectionHeading">
+          <h2 id="invitation-conversion">{t('invitationConversion')}</h2>
+        </div>
+        <div className="adminMetricStrip">
+          {(
+            [
+              [t('sent'), data.invitations.sent],
+              [t('accepted'), data.invitations.accepted],
+              [t('expired'), data.invitations.expired],
+              [t('open'), data.invitations.open],
+            ] as const
+          ).map(([label, value]) => (
+            <div className="adminMetric" key={label}>
+              <span>{label}</span>
+              <strong>{numbers.format(value)}</strong>
+            </div>
+          ))}
+        </div>
+        <p className="adminCoverage">
+          {t('conversionRate', {
+            value:
+              data.invitations.conversionRate == null
+                ? '—'
+                : decimal.format(data.invitations.conversionRate),
+          })}
+        </p>
+      </section>
     </div>
   );
 }

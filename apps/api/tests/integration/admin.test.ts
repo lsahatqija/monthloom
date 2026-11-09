@@ -1,5 +1,6 @@
 import {
   adminDashboardResponseSchema,
+  adminAdoptionResponseSchema,
   adminHealthResponseSchema,
   adminOverviewResponseSchema,
   adminUsageResponseSchema,
@@ -145,5 +146,51 @@ describe('admin dashboard HTTP + PostgreSQL', () => {
     await expect(
       pool.query(`DELETE FROM product_events WHERE subject_id = $1`, [created.body.transaction.id]),
     ).rejects.toThrow('append-only');
+  });
+
+  it('reports registration, first-value, and invitation adoption cohorts', async () => {
+    const administrator = await register();
+    const householdId = await household(administrator.agent);
+    await pool.query(`UPDATE users SET role = 'admin' WHERE id = $1`, [administrator.user.id]);
+    const newcomer = await register();
+    const invitation = await administrator.agent
+      .post(`${api}/households/${householdId}/invitations`)
+      .send({ mode: 'link' })
+      .expect(201);
+    await newcomer.agent
+      .post(`${api}/households/invitations/${invitation.body.token}/accept`)
+      .expect(200);
+    const source = await administrator.agent
+      .post(`${api}/households/${householdId}/sources`)
+      .send({ displayName: 'Adoption source', aliases: [] })
+      .expect(201);
+    await administrator.agent
+      .post(`${api}/households/${householdId}/transactions`)
+      .send({
+        kind: 'income',
+        type: 'income',
+        date: '2026-11-09',
+        sourceId: source.body.source.id,
+        icon: 'banknote',
+        color: '#123456',
+        amount: '25.00',
+        userId: newcomer.user.id,
+        recurring: false,
+        expiresOn: null,
+      })
+      .expect(201);
+    await register();
+
+    const today = new Date().toISOString().slice(0, 10);
+    const response = await administrator.agent
+      .get(`${api}/admin/adoption?from=${today}&to=${today}&timezone=UTC`)
+      .expect(200);
+    const adoption = adminAdoptionResponseSchema.parse(response.body);
+
+    expect(adoption.registrations.current).toBe(2);
+    expect(adoption.usersWithoutHousehold).toBeGreaterThanOrEqual(1);
+    expect(adoption.timeToFirstHousehold).toMatchObject({ converted: 1, notConverted: 1 });
+    expect(adoption.timeToFirstTransaction).toMatchObject({ converted: 1, notConverted: 1 });
+    expect(adoption.invitations).toMatchObject({ sent: 1, accepted: 1, conversionRate: 100 });
   });
 });

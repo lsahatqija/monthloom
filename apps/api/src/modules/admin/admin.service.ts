@@ -1,10 +1,11 @@
 import type {
+  AdminAdoptionResponse,
+  AdminAnalyticsRangeQuery,
   AdminDashboardResponse,
   AdminHealthResponse,
   AdminLogLevel,
   AdminOverviewResponse,
   AdminUsageResponse,
-  AdminAnalyticsRangeQuery,
 } from '@monthloom/contracts';
 
 import type { AdminLogReader } from './admin-log-reader.js';
@@ -84,5 +85,17 @@ export class AdminService {
     const { range, comparisonRange } = resolveAdminAnalyticsRange(query, now);
     const usage = await this.repository.getUsage(range, comparisonRange);
     return { generatedAt: now.toISOString(), range, comparisonRange, ...usage };
+  }
+
+  async getAdoption(
+    query: AdminAnalyticsRangeQuery,
+    now = new Date(),
+  ): Promise<AdminAdoptionResponse> {
+    if (!this.repository.getAdoption) {
+      throw new Error('Adoption analytics repository is unavailable.');
+    }
+    const { range, comparisonRange } = resolveAdminAnalyticsRange(query, now);
+    const adoption = await this.repository.getAdoption(range, comparisonRange);
+    return { generatedAt: now.toISOString(), range, comparisonRange, ...adoption };
   }
 }

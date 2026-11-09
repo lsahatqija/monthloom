@@ -1,4 +1,8 @@
-import type { AdminResolvedRange, AdminUsageResponse } from '@monthloom/contracts';
+import type {
+  AdminAdoptionResponse,
+  AdminResolvedRange,
+  AdminUsageResponse,
+} from '@monthloom/contracts';
 import { and, count, countDistinct, gt, gte, isNull, sql } from 'drizzle-orm';
 
 import type { Database } from '../../../infrastructure/database/client.js';
@@ -71,15 +75,15 @@ export class PostgresAdminRepository implements AdminRepository {
       this.getUsageTotals(range),
       this.getUsageTotals(comparisonRange),
       this.db.execute<UsageSeriesRow>(sql`
-          SELECT floor((((occurred_at AT TIME ZONE ${range.timezone})::date - ${range.from}::date) / ${range.bucket === 'day' ? 1 : 7}))::int AS bucket_index,
-            count(DISTINCT actor_user_id) FILTER (WHERE event_name = 'user.active')::int AS active_users,
-            count(DISTINCT household_id) FILTER (WHERE household_id IS NOT NULL)::int AS active_households,
-            count(*) FILTER (WHERE event_name = 'transaction.created')::int AS transactions_created,
-            count(*) FILTER (WHERE event_name = 'transaction.updated')::int AS transactions_updated,
-            count(*) FILTER (WHERE event_name = 'transaction.deleted')::int AS transactions_deleted,
-            count(*) FILTER (WHERE event_name = 'user.registered')::int AS registrations
-          FROM product_events
-          WHERE occurred_at >= ${new Date(range.start)} AND occurred_at < ${new Date(range.endExclusive)}
+          SELECT floor((((e.occurred_at AT TIME ZONE ${range.timezone})::date - ${range.from}::date) / ${range.bucket === 'day' ? 1 : 7}))::int AS bucket_index,
+            count(DISTINCT e.actor_user_id) FILTER (WHERE e.event_name = 'user.active' AND u.role <> 'admin')::int AS active_users,
+            count(DISTINCT e.household_id) FILTER (WHERE e.household_id IS NOT NULL)::int AS active_households,
+            count(*) FILTER (WHERE e.event_name = 'transaction.created')::int AS transactions_created,
+            count(*) FILTER (WHERE e.event_name = 'transaction.updated')::int AS transactions_updated,
+            count(*) FILTER (WHERE e.event_name = 'transaction.deleted')::int AS transactions_deleted,
+            count(*) FILTER (WHERE e.event_name = 'user.registered' AND u.role <> 'admin')::int AS registrations
+          FROM product_events e LEFT JOIN users u ON u.id = e.actor_user_id
+          WHERE e.occurred_at >= ${new Date(range.start)} AND e.occurred_at < ${new Date(range.endExclusive)}
           GROUP BY bucket_index ORDER BY bucket_index
         `),
       this.db.execute<OperationRow>(sql`
@@ -119,19 +123,21 @@ export class PostgresAdminRepository implements AdminRepository {
             SELECT generate_series(${range.from}::date, ${range.to}::date, interval '1 day')::date AS day
           ), daily AS (
             SELECT d.day,
-              count(DISTINCT e.actor_user_id) FILTER (WHERE (e.occurred_at AT TIME ZONE ${range.timezone})::date = d.day) AS dau,
-              count(DISTINCT e.actor_user_id) AS mau
+              count(DISTINCT e.actor_user_id) FILTER (WHERE au.id IS NOT NULL AND (e.occurred_at AT TIME ZONE ${range.timezone})::date = d.day) AS dau,
+              count(DISTINCT e.actor_user_id) FILTER (WHERE au.id IS NOT NULL) AS mau
             FROM days d LEFT JOIN product_events e ON e.event_name = 'user.active'
               AND (e.occurred_at AT TIME ZONE ${range.timezone})::date BETWEEN d.day - 29 AND d.day
+              LEFT JOIN users au ON au.id = e.actor_user_id AND au.role <> 'admin'
             GROUP BY d.day
           ), cohort AS (
-            SELECT actor_user_id, (occurred_at AT TIME ZONE ${range.timezone})::date AS registered_date
-            FROM product_events WHERE event_name = 'user.registered'
-              AND occurred_at >= ${new Date(range.start)} AND occurred_at < ${new Date(range.endExclusive)}
+            SELECT r.actor_user_id, (r.occurred_at AT TIME ZONE ${range.timezone})::date AS registered_date
+            FROM product_events r JOIN users ru ON ru.id = r.actor_user_id AND ru.role <> 'admin'
+            WHERE r.event_name = 'user.registered'
+              AND r.occurred_at >= ${new Date(range.start)} AND r.occurred_at < ${new Date(range.endExclusive)}
           )
           SELECT
             (SELECT avg(CASE WHEN mau > 0 THEN dau::numeric / mau * 100 END)::float8 FROM daily) AS stickiness,
-            (SELECT count(*) FROM users WHERE created_at < ${new Date(range.endExclusive)})::int AS eligible_users,
+            (SELECT count(*) FROM users WHERE role <> 'admin' AND created_at < ${new Date(range.endExclusive)})::int AS eligible_users,
             (SELECT count(*) FROM households WHERE created_at < ${new Date(range.endExclusive)})::int AS eligible_households,
             count(*) FILTER (WHERE registered_date <= ${range.to}::date - 7)::int AS d7_eligible,
             count(*) FILTER (WHERE registered_date <= ${range.to}::date - 7 AND EXISTS (
@@ -233,17 +239,115 @@ export class PostgresAdminRepository implements AdminRepository {
     };
   }
 
+  async getAdoption(
+    range: AdminResolvedRange,
+    comparisonRange: AdminResolvedRange,
+  ): Promise<Omit<AdminAdoptionResponse, 'generatedAt' | 'range' | 'comparisonRange'>> {
+    const [
+      currentRegistrations,
+      previousRegistrations,
+      seriesResult,
+      noHouseholdResult,
+      firstHouseholdResult,
+      firstTransactionResult,
+      invitationsResult,
+    ] = await Promise.all([
+      this.getRegistrationCount(range),
+      this.getRegistrationCount(comparisonRange),
+      this.db.execute<RegistrationSeriesRow>(sql`
+          SELECT floor((((created_at AT TIME ZONE ${range.timezone})::date - ${range.from}::date) / ${range.bucket === 'day' ? 1 : 7}))::int AS bucket_index,
+            count(*)::int AS registrations
+          FROM users
+          WHERE role <> 'admin' AND created_at >= ${new Date(range.start)} AND created_at < ${new Date(range.endExclusive)}
+          GROUP BY bucket_index ORDER BY bucket_index
+        `),
+      this.db.execute<CountRow>(sql`
+          SELECT count(*)::int AS count FROM users u
+          WHERE u.role <> 'admin' AND u.created_at < ${new Date(range.endExclusive)}
+            AND NOT EXISTS (
+              SELECT 1 FROM household_members hm
+              WHERE hm.user_id = u.id AND hm.joined_at < ${new Date(range.endExclusive)}
+            )
+        `),
+      this.getFirstEventDistribution(range, 'household.joined'),
+      this.getFirstEventDistribution(range, 'transaction.created'),
+      this.db.execute<InvitationAdoptionRow>(sql`
+          SELECT count(*)::int AS sent,
+            count(*) FILTER (WHERE accepted_at IS NOT NULL AND accepted_at < ${new Date(range.endExclusive)})::int AS accepted,
+            count(*) FILTER (WHERE accepted_at IS NULL AND expires_at < ${new Date(range.endExclusive)})::int AS expired,
+            count(*) FILTER (WHERE accepted_at IS NULL AND expires_at >= ${new Date(range.endExclusive)})::int AS open
+          FROM household_invitations
+          WHERE created_at >= ${new Date(range.start)} AND created_at < ${new Date(range.endExclusive)}
+        `),
+    ]);
+
+    const seriesRows = seriesResult.rows;
+    const invitations = invitationsResult.rows[0] ?? { sent: 0, accepted: 0, expired: 0, open: 0 };
+    return {
+      registrations: compared(currentRegistrations, previousRegistrations),
+      registrationSeries: adminCalendarBuckets(range).map((bucket, index) => ({
+        ...bucket,
+        registrations: seriesRows.find((row) => row.bucket_index === index)?.registrations ?? 0,
+      })),
+      usersWithoutHousehold: noHouseholdResult.rows[0]?.count ?? 0,
+      timeToFirstHousehold: firstHouseholdResult,
+      timeToFirstTransaction: firstTransactionResult,
+      invitations: {
+        ...invitations,
+        conversionRate: invitations.sent ? (invitations.accepted / invitations.sent) * 100 : null,
+      },
+    };
+  }
+
+  private async getRegistrationCount(range: AdminResolvedRange): Promise<number> {
+    const result = await this.db.execute<CountRow>(sql`
+      SELECT count(*)::int AS count FROM users
+      WHERE role <> 'admin' AND created_at >= ${new Date(range.start)} AND created_at < ${new Date(range.endExclusive)}
+    `);
+    return result.rows[0]?.count ?? 0;
+  }
+
+  private async getFirstEventDistribution(
+    range: AdminResolvedRange,
+    eventName: 'household.joined' | 'transaction.created',
+  ): Promise<AdminAdoptionResponse['timeToFirstHousehold']> {
+    const result = await this.db.execute<DurationDistributionRow>(sql`
+      WITH cohort AS (
+        SELECT id, created_at FROM users
+        WHERE role <> 'admin' AND created_at >= ${new Date(range.start)} AND created_at < ${new Date(range.endExclusive)}
+      ), first_events AS (
+        SELECT c.id, c.created_at, min(e.occurred_at) AS first_at
+        FROM cohort c LEFT JOIN product_events e ON e.actor_user_id = c.id
+          AND e.event_name = ${eventName} AND e.occurred_at >= c.created_at
+        GROUP BY c.id, c.created_at
+      )
+      SELECT
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM (first_at - created_at)) / 3600)::float8 AS median_hours,
+        percentile_cont(0.75) WITHIN GROUP (ORDER BY extract(epoch FROM (first_at - created_at)) / 3600)::float8 AS p75_hours,
+        count(*) FILTER (WHERE first_at IS NOT NULL)::int AS converted,
+        count(*) FILTER (WHERE first_at IS NULL)::int AS not_converted
+      FROM first_events
+    `);
+    const row = result.rows[0];
+    return {
+      medianHours: nullableNumber(row?.median_hours),
+      p75Hours: nullableNumber(row?.p75_hours),
+      converted: row?.converted ?? 0,
+      notConverted: row?.not_converted ?? 0,
+    };
+  }
+
   private async getUsageTotals(range: AdminResolvedRange): Promise<UsageTotals> {
     const result = await this.db.execute<UsageTotals>(sql`
       SELECT
-        count(DISTINCT actor_user_id) FILTER (WHERE event_name = 'user.active')::int AS "activeUsers",
-        count(*) FILTER (WHERE event_name = 'user.registered')::int AS "newUsers",
-        count(DISTINCT household_id) FILTER (WHERE household_id IS NOT NULL)::int AS "activeHouseholds",
-        count(*) FILTER (WHERE event_name = 'transaction.created')::int AS "transactionsCreated",
-        count(*) FILTER (WHERE event_name = 'transaction.created' AND subject_kind = 'income')::int AS incomes,
-        count(*) FILTER (WHERE event_name = 'transaction.created' AND subject_kind = 'expense')::int AS expenses
-      FROM product_events
-      WHERE occurred_at >= ${new Date(range.start)} AND occurred_at < ${new Date(range.endExclusive)}
+        count(DISTINCT e.actor_user_id) FILTER (WHERE e.event_name = 'user.active' AND u.role <> 'admin')::int AS "activeUsers",
+        count(*) FILTER (WHERE e.event_name = 'user.registered' AND u.role <> 'admin')::int AS "newUsers",
+        count(DISTINCT e.household_id) FILTER (WHERE e.household_id IS NOT NULL)::int AS "activeHouseholds",
+        count(*) FILTER (WHERE e.event_name = 'transaction.created')::int AS "transactionsCreated",
+        count(*) FILTER (WHERE e.event_name = 'transaction.created' AND e.subject_kind = 'income')::int AS incomes,
+        count(*) FILTER (WHERE e.event_name = 'transaction.created' AND e.subject_kind = 'expense')::int AS expenses
+      FROM product_events e LEFT JOIN users u ON u.id = e.actor_user_id
+      WHERE e.occurred_at >= ${new Date(range.start)} AND e.occurred_at < ${new Date(range.endExclusive)}
     `);
     return (
       result.rows[0] ?? {
@@ -304,6 +408,25 @@ interface EngagementRow extends Record<string, unknown> {
   d7_returned: number;
   d30_eligible: number;
   d30_returned: number;
+}
+interface RegistrationSeriesRow extends Record<string, unknown> {
+  bucket_index: number;
+  registrations: number;
+}
+interface CountRow extends Record<string, unknown> {
+  count: number;
+}
+interface DurationDistributionRow extends Record<string, unknown> {
+  median_hours: number | null;
+  p75_hours: number | null;
+  converted: number;
+  not_converted: number;
+}
+interface InvitationAdoptionRow extends Record<string, unknown> {
+  sent: number;
+  accepted: number;
+  expired: number;
+  open: number;
 }
 
 function emptyOperations(): OperationRow {
