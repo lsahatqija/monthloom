@@ -17,7 +17,10 @@ export const adminDashboardResponseSchema = z.object({
   generatedAt: isoDateTimeSchema,
   metrics: z.object({
     totalUsers: z.number().int().nonnegative(),
-    activeUsers: z.number().int().nonnegative(),
+    dailyActiveUsers: z.number().int().nonnegative(),
+    weeklyActiveUsers: z.number().int().nonnegative(),
+    monthlyActiveUsers: z.number().int().nonnegative(),
+    currentlyLoggedInUsers: z.number().int().nonnegative(),
     households: z.number().int().nonnegative(),
     transactions: z.number().int().nonnegative(),
     incomes: z.number().int().nonnegative(),

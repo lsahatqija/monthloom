@@ -1,10 +1,12 @@
 import { localeSchema } from '@monthloom/contracts';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull, lt, or } from 'drizzle-orm';
 
 import type { Database } from '../../../infrastructure/database/client.js';
 import { users } from '../../../infrastructure/database/schema/index.js';
 import type { UserRepository } from '../user.repository.js';
 import type { CreateUserData, UpdateUserData, User } from '../user.types.js';
+
+const ACTIVITY_WRITE_INTERVAL_MS = 15 * 60 * 1_000;
 
 function toDomainUser(record: typeof users.$inferSelect): User {
   return {
@@ -68,5 +70,13 @@ export class PostgresUserRepository implements UserRepository {
     }
 
     return toDomainUser(record);
+  }
+
+  async recordActivity(id: string, now: Date): Promise<void> {
+    const cutoff = new Date(now.getTime() - ACTIVITY_WRITE_INTERVAL_MS);
+    await this.db
+      .update(users)
+      .set({ lastActiveAt: now })
+      .where(and(eq(users.id, id), or(isNull(users.lastActiveAt), lt(users.lastActiveAt, cutoff))));
   }
 }

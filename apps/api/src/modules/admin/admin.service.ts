@@ -3,8 +3,6 @@ import type { AdminDashboardResponse, AdminLogLevel } from '@monthloom/contracts
 import type { AdminLogReader } from './admin-log-reader.js';
 import type { AdminRepository } from './admin.repository.js';
 
-const WINDOW_DAYS = 7;
-
 function emptyCounts(): Record<AdminLogLevel, number> {
   return { warn: 0, error: 0, fatal: 0 };
 }
@@ -13,6 +11,7 @@ export class AdminService {
   constructor(
     private readonly repository: AdminRepository,
     private readonly logReader: AdminLogReader,
+    private readonly eventLimit = 100,
   ) {}
 
   async getDashboard(now = new Date()): Promise<AdminDashboardResponse> {
@@ -46,10 +45,10 @@ export class AdminService {
       health: {
         status,
         loggingAvailable: logs.available,
-        windowDays: WINDOW_DAYS,
+        windowDays: logs.windowDays,
         counts,
         last24Hours,
-        entries: logs.entries,
+        entries: logs.entries.slice(0, this.eventLimit),
       },
     };
   }

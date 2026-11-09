@@ -9,4 +9,5 @@ export interface UserRepository {
   findByEmail(email: string): Promise<User | null>;
   create(input: CreateUserData): Promise<User>;
   update(id: string, input: UpdateUserData): Promise<User>;
+  recordActivity(id: string, now: Date): Promise<void>;
 }

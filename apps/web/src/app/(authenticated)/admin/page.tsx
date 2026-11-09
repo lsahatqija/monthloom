@@ -91,8 +91,8 @@ async function Overview({
   const t = await getTranslations('Admin');
   const metrics = [
     [t('totalUsers'), data.metrics.totalUsers],
-    [t('activeUsers'), data.metrics.activeUsers],
-    [t('households'), data.metrics.households],
+    [t('dailyActiveUsers'), data.metrics.dailyActiveUsers],
+    [t('currentlyLoggedInUsers'), data.metrics.currentlyLoggedInUsers],
     [t('transactions'), data.metrics.transactions],
   ] as const;
 
@@ -163,7 +163,14 @@ async function Usage({
   const t = await getTranslations('Admin');
   const metrics = [
     [t('totalUsers'), data.metrics.totalUsers, undefined],
-    [t('activeUsers'), data.metrics.activeUsers, t('activeUsersHint')],
+    [t('dailyActiveUsers'), data.metrics.dailyActiveUsers, t('dailyActiveUsersHint')],
+    [t('weeklyActiveUsers'), data.metrics.weeklyActiveUsers, t('weeklyActiveUsersHint')],
+    [t('monthlyActiveUsers'), data.metrics.monthlyActiveUsers, t('monthlyActiveUsersHint')],
+    [
+      t('currentlyLoggedInUsers'),
+      data.metrics.currentlyLoggedInUsers,
+      t('currentlyLoggedInUsersHint'),
+    ],
     [t('households'), data.metrics.households, undefined],
     [t('transactions'), data.metrics.transactions, undefined],
   ] as const;

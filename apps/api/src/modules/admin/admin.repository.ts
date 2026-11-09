@@ -1,6 +1,9 @@
 export interface AdminMetrics {
   totalUsers: number;
-  activeUsers: number;
+  dailyActiveUsers: number;
+  weeklyActiveUsers: number;
+  monthlyActiveUsers: number;
+  currentlyLoggedInUsers: number;
   households: number;
   incomes: number;
   expenses: number;

@@ -8,6 +8,7 @@ const LEVELS = new Set<AdminLogLevel>(['warn', 'error', 'fatal']);
 
 export interface AdminLogResult {
   available: boolean;
+  windowDays: number;
   entries: AdminLogEntry[];
 }
 
@@ -19,7 +20,6 @@ export class FileAdminLogReader implements AdminLogReader {
   constructor(
     private readonly directory: string,
     private readonly windowDays = 7,
-    private readonly entryLimit = 100,
   ) {}
 
   async read(): Promise<AdminLogResult> {
@@ -28,20 +28,26 @@ export class FileAdminLogReader implements AdminLogReader {
         .filter((name) => LOG_FILE_PATTERN.test(name))
         .sort()
         .slice(-this.windowDays);
-      const contents = await Promise.all(
-        files.map((name) => readFile(path.join(this.directory, name), 'utf8')),
+      const results = await Promise.all(
+        files.map(async (name) => {
+          try {
+            return await readFile(path.join(this.directory, name), 'utf8');
+          } catch {
+            return null;
+          }
+        }),
       );
+      const contents = results.filter((content): content is string => content !== null);
 
       const entries = contents
         .flatMap((content) => content.split('\n'))
         .map(parseLogEntry)
         .filter((entry): entry is AdminLogEntry => entry !== null)
-        .sort((left, right) => right.timestamp.localeCompare(left.timestamp))
-        .slice(0, this.entryLimit);
+        .sort((left, right) => right.timestamp.localeCompare(left.timestamp));
 
-      return { available: true, entries };
+      return { available: contents.length === files.length, windowDays: this.windowDays, entries };
     } catch {
-      return { available: false, entries: [] };
+      return { available: false, windowDays: this.windowDays, entries: [] };
     }
   }
 }

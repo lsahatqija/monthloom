@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -47,7 +47,10 @@ describe('admin dashboard', () => {
     const repository: AdminRepository = {
       getMetrics: vi.fn().mockResolvedValue({
         totalUsers: 12,
-        activeUsers: 4,
+        dailyActiveUsers: 4,
+        weeklyActiveUsers: 5,
+        monthlyActiveUsers: 6,
+        currentlyLoggedInUsers: 3,
         households: 7,
         incomes: 20,
         expenses: 31,
@@ -57,7 +60,14 @@ describe('admin dashboard', () => {
 
     const result = await service.getDashboard(new Date('2026-11-06T12:00:00.000Z'));
 
-    expect(result.metrics).toMatchObject({ transactions: 51, totalUsers: 12, activeUsers: 4 });
+    expect(result.metrics).toMatchObject({
+      transactions: 51,
+      totalUsers: 12,
+      dailyActiveUsers: 4,
+      weeklyActiveUsers: 5,
+      monthlyActiveUsers: 6,
+      currentlyLoggedInUsers: 3,
+    });
     expect(result.health).toMatchObject({
       status: 'degraded',
       loggingAvailable: true,
@@ -78,7 +88,10 @@ describe('admin dashboard', () => {
     const repository: AdminRepository = {
       getMetrics: vi.fn().mockResolvedValue({
         totalUsers: 0,
-        activeUsers: 0,
+        dailyActiveUsers: 0,
+        weeklyActiveUsers: 0,
+        monthlyActiveUsers: 0,
+        currentlyLoggedInUsers: 0,
         households: 0,
         incomes: 0,
         expenses: 0,
@@ -112,7 +125,10 @@ describe('admin dashboard', () => {
     const repository: AdminRepository = {
       getMetrics: vi.fn().mockResolvedValue({
         totalUsers: 0,
-        activeUsers: 0,
+        dailyActiveUsers: 0,
+        weeklyActiveUsers: 0,
+        monthlyActiveUsers: 0,
+        currentlyLoggedInUsers: 0,
         households: 0,
         incomes: 0,
         expenses: 0,
@@ -127,5 +143,62 @@ describe('admin dashboard', () => {
     expect(result.health.status).toBe('critical');
     expect(result.health.counts.fatal).toBe(2);
     expect(result.health.last24Hours.fatal).toBe(1);
+  });
+
+  it('aggregates every log event before limiting the displayed list', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'monthloom-admin-'));
+    temporaryDirectories.push(directory);
+    await writeFile(
+      path.join(directory, 'server.2026-11-06.log'),
+      Array.from({ length: 101 }, (_, index) =>
+        JSON.stringify({
+          time: `2026-11-06T${String(index % 24).padStart(2, '0')}:00:00.000Z`,
+          level: 'error',
+          category: 'system',
+          msg: `Failure ${index}`,
+        }),
+      ).join('\n'),
+    );
+    const repository: AdminRepository = {
+      getMetrics: vi.fn().mockResolvedValue({
+        totalUsers: 0,
+        dailyActiveUsers: 0,
+        weeklyActiveUsers: 0,
+        monthlyActiveUsers: 0,
+        currentlyLoggedInUsers: 0,
+        households: 0,
+        incomes: 0,
+        expenses: 0,
+      }),
+    };
+
+    const result = await new AdminService(
+      repository,
+      new FileAdminLogReader(directory, 3),
+    ).getDashboard(new Date('2026-11-06T23:30:00.000Z'));
+
+    expect(result.health.windowDays).toBe(3);
+    expect(result.health.counts.error).toBe(101);
+    expect(result.health.last24Hours.error).toBe(101);
+    expect(result.health.entries).toHaveLength(100);
+  });
+
+  it('keeps readable log files when one file cannot be read', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'monthloom-admin-'));
+    temporaryDirectories.push(directory);
+    await writeFile(
+      path.join(directory, 'server.2026-11-06.log'),
+      JSON.stringify({
+        time: '2026-11-06T11:00:00.000Z',
+        level: 'warn',
+        category: 'system',
+        msg: 'Readable warning',
+      }),
+    );
+    await mkdir(path.join(directory, 'server.2026-11-05.log'));
+
+    const result = await new FileAdminLogReader(directory).read();
+
+    expect(result).toMatchObject({ available: false, entries: [{ message: 'Readable warning' }] });
   });
 });
