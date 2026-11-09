@@ -63,11 +63,17 @@ function parseLogEntry(line: string): AdminLogEntry | null {
     const error = asRecord(record.err);
     const request = asRecord(record.req);
     const response = asRecord(record.res);
+    const statusCode =
+      typeof response?.statusCode === 'number'
+        ? response.statusCode
+        : typeof record.statusCode === 'number'
+          ? record.statusCode
+          : undefined;
     const requestDetail =
       typeof request?.method === 'string' && typeof request.url === 'string'
-        ? `${request.method} ${request.url}${typeof response?.statusCode === 'number' ? ` · ${response.statusCode}` : ''}`
+        ? `${request.method} ${request.url}${statusCode ? ` · ${statusCode}` : ''}`
         : typeof record.method === 'string' && typeof record.route === 'string'
-          ? `${record.method} ${record.route}${typeof record.statusCode === 'number' ? ` · ${record.statusCode}` : ''}`
+          ? `${record.method} ${record.route}${statusCode ? ` · ${statusCode}` : ''}`
           : undefined;
 
     return {
@@ -81,6 +87,7 @@ function parseLogEntry(line: string): AdminLogEntry | null {
             ? error.message
             : 'Logged application event',
       detail: requestDetail ?? (typeof error?.message === 'string' ? error.message : undefined),
+      statusCode,
     };
   } catch {
     return null;

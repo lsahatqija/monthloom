@@ -11,6 +11,7 @@ export const adminLogEntrySchema = z.object({
   category: z.string(),
   message: z.string(),
   detail: z.string().optional(),
+  statusCode: z.number().int().optional(),
 });
 
 export const adminDashboardResponseSchema = z.object({

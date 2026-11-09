@@ -2,13 +2,34 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
+import type { AdminLogEntry } from '@monthloom/contracts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { FileAdminLogReader } from '../../src/modules/admin/admin-log-reader.js';
+import type { AdminLogReader } from '../../src/modules/admin/admin-log-reader.js';
 import type { AdminRepository } from '../../src/modules/admin/admin.repository.js';
 import { AdminService } from '../../src/modules/admin/admin.service.js';
 
 const temporaryDirectories: string[] = [];
+
+function repository(): AdminRepository {
+  return {
+    getMetrics: vi.fn().mockResolvedValue({
+      totalUsers: 0,
+      dailyActiveUsers: 0,
+      weeklyActiveUsers: 0,
+      monthlyActiveUsers: 0,
+      currentlyLoggedInUsers: 0,
+      households: 0,
+      incomes: 0,
+      expenses: 0,
+    }),
+  };
+}
+
+function logReader(entries: AdminLogEntry[], available = true): AdminLogReader {
+  return { read: async () => ({ available, windowDays: 7, entries }) };
+}
 
 afterEach(async () => {
   await Promise.all(
@@ -80,8 +101,49 @@ describe('admin dashboard', () => {
     });
     expect(result.health.entries[1]).toMatchObject({
       level: 'warn',
+      statusCode: 429,
       detail: 'POST /api/v1/auth/login · 429',
     });
+  });
+
+  it('does not degrade health for expected client and security warnings', async () => {
+    const now = new Date('2026-11-06T12:00:00.000Z');
+    const entries = [401, 403, 409, 429].map((statusCode) => ({
+      timestamp: now.toISOString(),
+      level: 'warn' as const,
+      category: 'http',
+      message: 'Expected request warning',
+      statusCode,
+    }));
+
+    const result = await new AdminService(repository(), logReader(entries)).getDashboard(now);
+
+    expect(result.health).toMatchObject({ status: 'healthy', last24Hours: { warn: 4 } });
+    expect(result.health.entries).toHaveLength(4);
+  });
+
+  it('degrades health only after five actionable warnings in 24 hours', async () => {
+    const now = new Date('2026-11-06T12:00:00.000Z');
+    const warning = (index: number): AdminLogEntry => ({
+      timestamp: now.toISOString(),
+      level: 'warn',
+      category: 'system',
+      message: `Actionable warning ${index}`,
+      statusCode: 400,
+    });
+
+    await expect(
+      new AdminService(
+        repository(),
+        logReader(Array.from({ length: 4 }, (_, index) => warning(index))),
+      ).getDashboard(now),
+    ).resolves.toMatchObject({ health: { status: 'healthy' } });
+    await expect(
+      new AdminService(
+        repository(),
+        logReader(Array.from({ length: 5 }, (_, index) => warning(index))),
+      ).getDashboard(now),
+    ).resolves.toMatchObject({ health: { status: 'degraded' } });
   });
 
   it('reports logging as unavailable when the log directory cannot be read', async () => {
