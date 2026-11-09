@@ -74,6 +74,77 @@ export const adminAnalyticsContextSchema = z.object({
 });
 export type AdminAnalyticsContext = z.infer<typeof adminAnalyticsContextSchema>;
 
+const comparedNumberSchema = z.object({
+  current: z.number().nonnegative(),
+  previous: z.number().nonnegative(),
+  changePercent: z.number().nullable(),
+});
+
+const nullableRatioSchema = z.number().min(0).nullable();
+
+export const adminUsageResponseSchema = adminAnalyticsContextSchema.extend({
+  summary: z.object({
+    activeUsers: comparedNumberSchema,
+    newUsers: comparedNumberSchema,
+    activeHouseholds: comparedNumberSchema,
+    transactionsCreated: comparedNumberSchema,
+    transactionsPerActiveHousehold: comparedNumberSchema,
+  }),
+  series: z.array(
+    z.object({
+      from: calendarDateSchema,
+      to: calendarDateSchema,
+      activeUsers: z.number().int().nonnegative(),
+      activeHouseholds: z.number().int().nonnegative(),
+      transactionsCreated: z.number().int().nonnegative(),
+      transactionsUpdated: z.number().int().nonnegative(),
+      transactionsDeleted: z.number().int().nonnegative(),
+      registrations: z.number().int().nonnegative(),
+    }),
+  ),
+  transactionMix: z.object({
+    operations: z.object({
+      created: z.number().int().nonnegative(),
+      updated: z.number().int().nonnegative(),
+      deleted: z.number().int().nonnegative(),
+    }),
+    kinds: z.array(
+      z.object({
+        kind: z.enum(['income', 'expense']),
+        count: z.number().int().nonnegative(),
+        percentage: z.number().min(0).max(100),
+        previousCount: z.number().int().nonnegative(),
+        changePercent: z.number().nullable(),
+      }),
+    ),
+    currencies: z.array(
+      z.object({
+        currency: z.string().length(3),
+        kind: z.enum(['income', 'expense']),
+        count: z.number().int().nonnegative(),
+        amount: z.string(),
+        average: z.string(),
+        median: z.string(),
+      }),
+    ),
+    recurrence: z.object({
+      recurring: z.number().int().nonnegative(),
+      oneOff: z.number().int().nonnegative(),
+    }),
+    expenseTypes: z.array(z.object({ type: z.string(), count: z.number().int().nonnegative() })),
+  }),
+  engagement: z.object({
+    stickiness: nullableRatioSchema,
+    transactionsPerActiveUser: nullableRatioSchema,
+    registeredUserActivityRate: nullableRatioSchema,
+    activeHouseholdRate: nullableRatioSchema,
+    returningAfter7Days: nullableRatioSchema,
+    returningAfter30Days: nullableRatioSchema,
+  }),
+  coverageStartedAt: isoDateTimeSchema,
+});
+export type AdminUsageResponse = z.infer<typeof adminUsageResponseSchema>;
+
 export const adminLogLevelSchema = z.enum(['warn', 'error', 'fatal']);
 export type AdminLogLevel = z.infer<typeof adminLogLevelSchema>;
 

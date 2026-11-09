@@ -11,4 +11,9 @@ export interface AdminMetrics {
 
 export interface AdminRepository {
   getMetrics(now: Date): Promise<AdminMetrics>;
+  getUsage?(
+    range: AdminResolvedRange,
+    comparisonRange: AdminResolvedRange,
+  ): Promise<Omit<AdminUsageResponse, 'generatedAt' | 'range' | 'comparisonRange'>>;
 }
+import type { AdminResolvedRange, AdminUsageResponse } from '@monthloom/contracts';

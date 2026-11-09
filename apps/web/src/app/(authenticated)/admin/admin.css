@@ -280,6 +280,106 @@
   background: var(--ml-primary);
 }
 
+.adminRangePresets,
+.adminRangeForm,
+.adminSeriesPicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.adminRangePresets {
+  margin-bottom: 1rem;
+}
+
+.adminRangePresets a,
+.adminRangeForm button {
+  min-height: 2.5rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--ml-border);
+  border-radius: 6px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.adminRangeForm label {
+  display: grid;
+  gap: 0.3rem;
+  color: var(--ml-text-muted);
+}
+
+.adminRangeForm input {
+  min-height: 2.5rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--ml-border);
+  border-radius: 6px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  font: inherit;
+}
+
+.adminCoverage {
+  margin: 0.75rem 0 0;
+  color: var(--ml-text-muted);
+}
+
+.adminUsageChart svg {
+  display: block;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.adminUsageChart svg line {
+  stroke: var(--ml-border);
+}
+
+.adminSeriesPicker {
+  margin-top: 1rem;
+  border: 0;
+  padding: 0;
+}
+
+.adminSeriesPicker legend {
+  width: 100%;
+  margin-bottom: 0.4rem;
+  color: var(--ml-text-muted);
+}
+
+.adminSeriesPicker label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.adminSeriesPicker label span {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+}
+
+.adminDataTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.adminDataTable th,
+.adminDataTable td {
+  padding: 0.65rem;
+  border-bottom: 1px solid var(--ml-divider);
+  text-align: right;
+}
+
+.adminDataTable th:first-child,
+.adminDataTable td:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+
 @media (max-width: 700px) {
   .adminPage {
     width: min(100% - 2rem, 75rem);

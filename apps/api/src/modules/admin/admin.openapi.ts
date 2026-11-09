@@ -9,6 +9,28 @@ export function registerAdminOpenApi(registry: OpenAPIRegistry): void {
     'Current application metrics.',
     contracts.adminOverviewResponseSchema,
   );
+  registry.registerPath({
+    method: 'get',
+    path: '/api/v1/admin/usage',
+    summary: 'Get administration usage analytics',
+    tags: ['Administration'],
+    security: [{ sessionCookie: [] }],
+    request: { query: contracts.adminAnalyticsRangeQuerySchema },
+    responses: {
+      200: {
+        description: 'Range-aware usage, transaction, and engagement analytics.',
+        content: { 'application/json': { schema: contracts.adminUsageResponseSchema } },
+      },
+      401: {
+        description: 'Authentication required.',
+        content: { 'application/json': { schema: contracts.apiErrorResponseSchema } },
+      },
+      403: {
+        description: 'Administrator role required.',
+        content: { 'application/json': { schema: contracts.apiErrorResponseSchema } },
+      },
+    },
+  });
   registerAdminPath(
     registry,
     '/api/v1/admin/health',

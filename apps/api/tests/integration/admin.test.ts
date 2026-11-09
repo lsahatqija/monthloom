@@ -2,13 +2,15 @@ import {
   adminDashboardResponseSchema,
   adminHealthResponseSchema,
   adminOverviewResponseSchema,
+  adminUsageResponseSchema,
 } from '@monthloom/contracts';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
 import { db, pool } from '../../src/infrastructure/database/client.js';
 import { PostgresAdminRepository } from '../../src/modules/admin/adapters/postgres-admin.repository.js';
-import { api, app, register } from '../http.js';
+import { resolveAdminAnalyticsRange } from '../../src/modules/admin/admin-range.js';
+import { api, app, household, register } from '../http.js';
 
 describe('admin dashboard HTTP + PostgreSQL', () => {
   it('rejects regular users and returns application metrics to admins', async () => {
@@ -95,5 +97,53 @@ describe('admin dashboard HTTP + PostgreSQL', () => {
       monthlyActiveUsers: 4,
       currentlyLoggedInUsers: 2,
     });
+  });
+
+  it('records append-only product events and returns range-aware usage', async () => {
+    const owner = await register();
+    const householdId = await household(owner.agent);
+    const source = await owner.agent
+      .post(`${api}/households/${householdId}/sources`)
+      .send({ displayName: 'Usage source', aliases: [] })
+      .expect(201);
+    const created = await owner.agent
+      .post(`${api}/households/${householdId}/transactions`)
+      .send({
+        kind: 'expense',
+        type: 'groceries',
+        date: '2026-11-09',
+        sourceId: source.body.source.id,
+        icon: 'shopping-cart',
+        color: '#123456',
+        amount: '12.34',
+        userId: owner.user.id,
+        recurring: false,
+        expiresOn: null,
+      })
+      .expect(201);
+
+    await pool.query(`UPDATE users SET role = 'admin' WHERE id = $1`, [owner.user.id]);
+    const today = new Date().toISOString().slice(0, 10);
+    const ranges = resolveAdminAnalyticsRange({ from: today, to: today, timezone: 'UTC' });
+    await new PostgresAdminRepository(db).getUsage(ranges.range, ranges.comparisonRange);
+    const response = await owner.agent
+      .get(`${api}/admin/usage?from=${today}&to=${today}&timezone=UTC`)
+      .expect(200);
+    const usage = adminUsageResponseSchema.parse(response.body);
+
+    expect(usage.summary.transactionsCreated.current).toBe(1);
+    expect(usage.transactionMix.operations.created).toBe(1);
+    expect(usage.transactionMix.kinds).toEqual(
+      expect.arrayContaining([expect.objectContaining({ kind: 'expense', count: 1 })]),
+    );
+    expect(usage.transactionMix.currencies).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ currency: 'EUR', kind: 'expense', amount: '12.34' }),
+      ]),
+    );
+
+    await expect(
+      pool.query(`DELETE FROM product_events WHERE subject_id = $1`, [created.body.transaction.id]),
+    ).rejects.toThrow('append-only');
   });
 });

@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-- Status: in progress — Phase 0 complete
+- Status: in progress — Phases 0–2 complete
 - Updated: 2026-11-09
 - Goal: extend the administrator area with historical product usage, adoption, retention,
   reliability, performance, and security reporting.

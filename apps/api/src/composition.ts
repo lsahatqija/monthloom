@@ -1,6 +1,10 @@
 import path from 'node:path';
 
 import { config } from './config/index.js';
+import {
+  configureProductEventRecorder,
+  ProductEventRecorder,
+} from './infrastructure/analytics/product-events.js';
 import { db } from './infrastructure/database/client.js';
 import { LogEmailSender, ResendEmailSender } from './infrastructure/email/index.js';
 import { logger } from './infrastructure/logging/logger.js';
@@ -42,6 +46,8 @@ import { UserService } from './modules/users/user.service.js';
  */
 export function buildAppDependencies() {
   const userRepository = new PostgresUserRepository(db);
+  const productEvents = new ProductEventRecorder(db, logger);
+  configureProductEventRecorder(productEvents);
   const sessionRepository = new PostgresSessionRepository(db);
   const fileRepository = new PostgresFileRepository(db);
   const financeRepositories = {
@@ -88,7 +94,13 @@ export function buildAppDependencies() {
       financeRepositories.transactions,
     ),
   };
-  const authService = new AuthService(userRepository, sessionRepository, emailService, logger);
+  const authService = new AuthService(
+    userRepository,
+    sessionRepository,
+    emailService,
+    logger,
+    productEvents,
+  );
   const fileService = new FileService(fileRepository, fileStorage);
   const systemService = new SystemService();
 

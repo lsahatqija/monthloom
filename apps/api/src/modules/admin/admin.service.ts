@@ -3,9 +3,12 @@ import type {
   AdminHealthResponse,
   AdminLogLevel,
   AdminOverviewResponse,
+  AdminUsageResponse,
+  AdminAnalyticsRangeQuery,
 } from '@monthloom/contracts';
 
 import type { AdminLogReader } from './admin-log-reader.js';
+import { resolveAdminAnalyticsRange } from './admin-range.js';
 import type { AdminRepository } from './admin.repository.js';
 
 const EXPECTED_WARNING_STATUS_CODES = new Set([401, 403, 409, 429]);
@@ -74,5 +77,12 @@ export class AdminService {
         entries: logs.entries.slice(0, this.eventLimit),
       },
     };
+  }
+
+  async getUsage(query: AdminAnalyticsRangeQuery, now = new Date()): Promise<AdminUsageResponse> {
+    if (!this.repository.getUsage) throw new Error('Usage analytics repository is unavailable.');
+    const { range, comparisonRange } = resolveAdminAnalyticsRange(query, now);
+    const usage = await this.repository.getUsage(range, comparisonRange);
+    return { generatedAt: now.toISOString(), range, comparisonRange, ...usage };
   }
 }

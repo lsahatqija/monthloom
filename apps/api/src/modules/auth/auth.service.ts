@@ -10,6 +10,7 @@ import {
 } from '@monthloom/contracts';
 
 import { config } from '../../config/index.js';
+import type { ProductEventRecorder } from '../../infrastructure/analytics/product-events.js';
 import type { Logger } from '../../infrastructure/logging/logger.js';
 import { hashPassword, verifyPassword } from '../../infrastructure/security/password.js';
 import { generateSessionToken, hashSessionToken } from '../../infrastructure/security/tokens.js';
@@ -40,6 +41,7 @@ export class AuthService {
     private readonly sessionRepository: SessionRepository,
     private readonly emailService: AutomatedEmailService,
     private readonly logger: Logger,
+    private readonly productEvents?: ProductEventRecorder,
   ) {}
 
   async register(input: RegisterRequest): Promise<AuthResult> {
@@ -64,6 +66,7 @@ export class AuthService {
     });
 
     const sessionToken = await this.createSession(user.id);
+    await this.productEvents?.recordActivity(user.id);
     let verification: { tokenHash: string; url: string; expiresAt: Date } | undefined;
     try {
       verification = await this.createEmailVerificationToken(user.id);
@@ -92,16 +95,22 @@ export class AuthService {
 
     // Generic message on purpose: never reveal whether the email exists.
     if (!user) {
+      await this.productEvents?.record({ eventName: 'auth.login.failed' });
       throw new AuthenticationError('Invalid email or password.');
     }
 
     const isValid = await verifyPassword(user.passwordHash, input.password);
     if (!isValid) {
+      await this.productEvents?.record({ eventName: 'auth.login.failed' });
       throw new AuthenticationError('Invalid email or password.');
     }
 
     const sessionToken = await this.createSession(user.id);
     await this.userRepository.recordActivity(user.id, new Date());
+    await Promise.all([
+      this.productEvents?.record({ eventName: 'auth.login.succeeded', actorUserId: user.id }),
+      this.productEvents?.recordActivity(user.id),
+    ]);
     return { user: toPublicUser(user), sessionToken };
   }
 
@@ -205,7 +214,13 @@ export class AuthService {
     }
 
     const user = await this.userRepository.findById(session.userId);
-    if (user) await this.userRepository.recordActivity(user.id, new Date());
+    if (user) {
+      const now = new Date();
+      await Promise.all([
+        this.userRepository.recordActivity(user.id, now),
+        this.productEvents?.recordActivity(user.id, now),
+      ]);
+    }
     return user ? toPublicUser(user) : null;
   }
 

@@ -1,10 +1,12 @@
 import {
   adminHealthResponseSchema,
   adminOverviewResponseSchema,
+  adminUsageResponseSchema,
   type AdminDashboardResponse,
   type AdminHealthResponse,
   type AdminLogEntry,
   type AdminOverviewResponse,
+  type AdminUsageResponse,
 } from '@monthloom/contracts';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
@@ -15,10 +17,19 @@ import { apiClient } from '../../../lib/api/client';
 import { getServerUser } from '../../../lib/auth/get-server-user';
 
 import './admin.css';
+import { UsageChart } from './usage-chart';
 
 type AdminView = 'overview' | 'health' | 'usage';
 
-export default async function AdminPage({ searchParams }: { searchParams: { view?: string } }) {
+type AdminSearchParams = {
+  view?: string;
+  from?: string;
+  to?: string;
+  timezone?: string;
+  bucket?: string;
+};
+
+export default async function AdminPage({ searchParams }: { searchParams: AdminSearchParams }) {
   const user = await getServerUser();
   if (!user || user.role !== 'admin') redirect('/');
 
@@ -33,6 +44,21 @@ export default async function AdminPage({ searchParams }: { searchParams: { view
   const overview = adminOverviewResponseSchema.parse(overviewResponse);
   const health = adminHealthResponseSchema.parse(healthResponse);
   const data: AdminDashboardResponse = { ...overview, health: health.health };
+  const usageQuery = {
+    from: searchParams.from,
+    to: searchParams.to,
+    timezone: searchParams.timezone ?? 'UTC',
+    bucket: searchParams.bucket,
+  };
+  const usage =
+    view === 'usage'
+      ? adminUsageResponseSchema.parse(
+          await apiClient.get<AdminUsageResponse>('admin/usage', {
+            cookieHeader,
+            query: usageQuery,
+          }),
+        )
+      : null;
   const t = await getTranslations('Admin');
   const numbers = new Intl.NumberFormat(user.locale);
   const dates = new Intl.DateTimeFormat(user.locale, { dateStyle: 'medium', timeStyle: 'short' });
@@ -48,6 +74,8 @@ export default async function AdminPage({ searchParams }: { searchParams: { view
     { view: 'health', label: t('health') },
     { view: 'usage', label: t('usage') },
   ];
+  const preservedQuery = new URLSearchParams();
+  for (const [key, value] of Object.entries(usageQuery)) if (value) preservedQuery.set(key, value);
 
   return (
     <div className="adminPage">
@@ -68,7 +96,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { view
         {tabs.map((tab) => (
           <Link
             key={tab.view}
-            href={`/admin?view=${tab.view}`}
+            href={`/admin?view=${tab.view}${preservedQuery.size ? `&${preservedQuery}` : ''}`}
             aria-current={view === tab.view ? 'page' : undefined}
           >
             {tab.label}
@@ -80,7 +108,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { view
         <Overview data={data} numbers={numbers} dates={dates} statusLabel={statusLabel} />
       ) : null}
       {view === 'health' ? <Health data={data} dates={dates} statusLabel={statusLabel} /> : null}
-      {view === 'usage' ? <Usage data={data} numbers={numbers} /> : null}
+      {view === 'usage' && usage ? <Usage data={usage} numbers={numbers} /> : null}
     </div>
   );
 }
@@ -161,48 +189,88 @@ async function Health({
   );
 }
 
-async function Usage({
-  data,
-  numbers,
-}: {
-  data: AdminDashboardResponse;
-  numbers: Intl.NumberFormat;
-}) {
+async function Usage({ data, numbers }: { data: AdminUsageResponse; numbers: Intl.NumberFormat }) {
   const t = await getTranslations('Admin');
   const metrics = [
-    [t('totalUsers'), data.metrics.totalUsers, undefined],
-    [t('dailyActiveUsers'), data.metrics.dailyActiveUsers, t('dailyActiveUsersHint')],
-    [t('weeklyActiveUsers'), data.metrics.weeklyActiveUsers, t('weeklyActiveUsersHint')],
-    [t('monthlyActiveUsers'), data.metrics.monthlyActiveUsers, t('monthlyActiveUsersHint')],
-    [
-      t('currentlyLoggedInUsers'),
-      data.metrics.currentlyLoggedInUsers,
-      t('currentlyLoggedInUsersHint'),
-    ],
-    [t('households'), data.metrics.households, undefined],
-    [t('transactions'), data.metrics.transactions, undefined],
+    [t('activeUsers'), data.summary.activeUsers],
+    [t('newUsers'), data.summary.newUsers],
+    [t('activeHouseholds'), data.summary.activeHouseholds],
+    [t('transactionsCreated'), data.summary.transactionsCreated],
+    [t('transactionsPerHousehold'), data.summary.transactionsPerActiveHousehold],
   ] as const;
-  const total = Math.max(data.metrics.transactions, 1);
-  const transactionTypes = [
-    [t('incomes'), data.metrics.incomes],
-    [t('expenses'), data.metrics.expenses],
-  ] as const;
+  const percent = new Intl.NumberFormat(numbers.resolvedOptions().locale, {
+    maximumFractionDigits: 1,
+  });
 
   return (
     <div className="adminView">
+      <section className="adminPanel">
+        <nav className="adminRangePresets" aria-label={t('rangePresets')}>
+          <a href={`/admin?view=usage&timezone=${encodeURIComponent(data.range.timezone)}`}>
+            {t('currentMonth')}
+          </a>
+          {[7, 30, 90].map((days) => (
+            <a
+              key={days}
+              href={`/admin?view=usage&timezone=${encodeURIComponent(data.range.timezone)}&from=${shiftDate(data.range.to, -(days - 1))}&to=${data.range.to}`}
+            >
+              {t('lastDays', { days })}
+            </a>
+          ))}
+        </nav>
+        <form className="adminRangeForm" method="get">
+          <input type="hidden" name="view" value="usage" />
+          <input type="hidden" name="timezone" value={data.range.timezone} />
+          <label>
+            {t('from')}
+            <input type="date" name="from" defaultValue={data.range.from} />
+          </label>
+          <label>
+            {t('to')}
+            <input type="date" name="to" defaultValue={data.range.to} />
+          </label>
+          <button type="submit">{t('applyRange')}</button>
+        </form>
+        <p className="adminCoverage">
+          {t('coverageStarted', { date: data.coverageStartedAt.slice(0, 10) })}
+        </p>
+      </section>
       <section className="adminPanel" aria-labelledby="usage-summary">
         <div className="adminSectionHeading">
           <h2 id="usage-summary">{t('usageSummary')}</h2>
         </div>
         <div className="adminMetricStrip">
-          {metrics.map(([label, value, hint]) => (
-            <div key={label} className="adminMetric" title={hint}>
+          {metrics.map(([label, metric]) => (
+            <div key={label} className="adminMetric">
               <span>{label}</span>
-              <strong>{numbers.format(value)}</strong>
-              {hint ? <small>{hint}</small> : null}
+              <strong>{numbers.format(metric.current)}</strong>
+              <small>
+                {metric.changePercent == null
+                  ? t('noComparison')
+                  : t('periodChange', { value: percent.format(metric.changePercent) })}
+              </small>
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="adminPanel" aria-labelledby="daily-usage">
+        <div className="adminSectionHeading">
+          <h2 id="daily-usage">{t('dailyUsage')}</h2>
+        </div>
+        <UsageChart
+          data={data.series}
+          title={t('selectSeries')}
+          periodLabel={t('period')}
+          labels={{
+            activeUsers: t('activeUsers'),
+            activeHouseholds: t('activeHouseholds'),
+            transactionsCreated: t('transactionsCreated'),
+            transactionsUpdated: t('transactionsUpdated'),
+            transactionsDeleted: t('transactionsDeleted'),
+            registrations: t('newUsers'),
+          }}
+        />
       </section>
 
       <section className="adminPanel" aria-labelledby="transaction-mix">
@@ -210,21 +278,113 @@ async function Usage({
           <h2 id="transaction-mix">{t('transactionMix')}</h2>
         </div>
         <div className="adminBars">
-          {transactionTypes.map(([label, value]) => (
-            <div className="adminBarRow" key={label}>
+          {data.transactionMix.kinds.map((item) => (
+            <div className="adminBarRow" key={item.kind}>
               <div>
-                <span>{label}</span>
-                <strong>{numbers.format(value)}</strong>
+                <span>{item.kind === 'income' ? t('incomes') : t('expenses')}</span>
+                <strong>
+                  {numbers.format(item.count)} · {percent.format(item.percentage)}%
+                </strong>
+                <small>
+                  {item.changePercent == null
+                    ? t('noComparison')
+                    : t('periodChange', { value: percent.format(item.changePercent) })}
+                </small>
               </div>
               <div className="adminBarTrack" aria-hidden="true">
-                <span style={{ width: `${(value / total) * 100}%` }} />
+                <span style={{ width: `${item.percentage}%` }} />
               </div>
+            </div>
+          ))}
+        </div>
+        <div className="adminMetricStrip">
+          {(
+            [
+              [t('transactionsCreated'), data.transactionMix.operations.created],
+              [t('transactionsUpdated'), data.transactionMix.operations.updated],
+              [t('transactionsDeleted'), data.transactionMix.operations.deleted],
+              [t('recurring'), data.transactionMix.recurrence.recurring],
+              [t('oneOff'), data.transactionMix.recurrence.oneOff],
+            ] as const
+          ).map(([label, value]) => (
+            <div className="adminMetric" key={label}>
+              <span>{label}</span>
+              <strong>{numbers.format(value)}</strong>
+            </div>
+          ))}
+        </div>
+        <div className="adminTableWrap">
+          <table className="adminDataTable">
+            <thead>
+              <tr>
+                <th>{t('currency')}</th>
+                <th>{t('type')}</th>
+                <th>{t('count')}</th>
+                <th>{t('amount')}</th>
+                <th>{t('average')}</th>
+                <th>{t('median')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.transactionMix.currencies.map((item) => (
+                <tr key={`${item.currency}-${item.kind}`}>
+                  <td>{item.currency}</td>
+                  <td>{item.kind === 'income' ? t('incomes') : t('expenses')}</td>
+                  <td>{item.count}</td>
+                  <td>{item.amount}</td>
+                  <td>{item.average}</td>
+                  <td>{item.median}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="adminCoverage">{t('amountCoverageNote')}</p>
+        {data.transactionMix.expenseTypes.length ? (
+          <div className="adminBars">
+            <h3>{t('expenseTypes')}</h3>
+            {data.transactionMix.expenseTypes.map((item) => (
+              <div className="adminBarRow" key={item.type}>
+                <div>
+                  <span>{item.type}</span>
+                  <strong>{numbers.format(item.count)}</strong>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="adminPanel" aria-labelledby="engagement">
+        <div className="adminSectionHeading">
+          <h2 id="engagement">{t('engagement')}</h2>
+        </div>
+        <div className="adminMetricStrip">
+          {(
+            [
+              [t('stickiness'), data.engagement.stickiness],
+              [t('transactionsPerUser'), data.engagement.transactionsPerActiveUser],
+              [t('userActivityRate'), data.engagement.registeredUserActivityRate],
+              [t('householdActivityRate'), data.engagement.activeHouseholdRate],
+              [t('returning7'), data.engagement.returningAfter7Days],
+              [t('returning30'), data.engagement.returningAfter30Days],
+            ] as const
+          ).map(([label, value]) => (
+            <div className="adminMetric" key={label}>
+              <span>{label}</span>
+              <strong>{value == null ? '—' : percent.format(value)}</strong>
             </div>
           ))}
         </div>
       </section>
     </div>
   );
+}
+
+function shiftDate(value: string, days: number): string {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 async function SeverityLedger({ data }: { data: AdminDashboardResponse }) {
