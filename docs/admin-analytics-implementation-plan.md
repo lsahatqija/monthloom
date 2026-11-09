@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-- Status: proposed
+- Status: in progress — Phase 0 complete
 - Updated: 2026-11-09
 - Goal: extend the administrator area with historical product usage, adoption, retention,
   reliability, performance, and security reporting.
@@ -137,16 +137,16 @@ addresses, credential input, or user-agent strings.
 
 Add a `product_events` table:
 
-| Column | Purpose |
-| --- | --- |
-| `id` UUID | Primary key |
-| `event_name` varchar/enum | Stable event taxonomy |
-| `occurred_at` timestamptz | Successful operation time |
-| `actor_user_id` UUID nullable | Pseudonymous actor identifier |
-| `household_id` UUID nullable | Pseudonymous household identifier |
-| `subject_id` UUID nullable | Transaction, invitation, or other subject identifier |
-| `subject_kind` varchar nullable | Income, expense, invitation, etc. |
-| `metadata` jsonb | Small allow-listed, non-sensitive dimensions |
+| Column                          | Purpose                                              |
+| ------------------------------- | ---------------------------------------------------- |
+| `id` UUID                       | Primary key                                          |
+| `event_name` varchar/enum       | Stable event taxonomy                                |
+| `occurred_at` timestamptz       | Successful operation time                            |
+| `actor_user_id` UUID nullable   | Pseudonymous actor identifier                        |
+| `household_id` UUID nullable    | Pseudonymous household identifier                    |
+| `subject_id` UUID nullable      | Transaction, invitation, or other subject identifier |
+| `subject_kind` varchar nullable | Income, expense, invitation, etc.                    |
+| `metadata` jsonb                | Small allow-listed, non-sensitive dimensions         |
 
 Do not add foreign keys from events to mutable product rows: deleting an account, household, or
 transaction must not cascade-delete history. Index `(event_name, occurred_at)`,
@@ -363,4 +363,3 @@ data.
 - Arbitrary event metadata and a generic analytics query builder.
 - External observability vendors, OpenTelemetry, alerts, and p99 latency.
 - Configurable dormancy thresholds and custom cohort definitions.
-

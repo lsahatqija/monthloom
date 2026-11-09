@@ -1,4 +1,8 @@
-import { adminDashboardResponseSchema } from '@monthloom/contracts';
+import {
+  adminDashboardResponseSchema,
+  adminHealthResponseSchema,
+  adminOverviewResponseSchema,
+} from '@monthloom/contracts';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
@@ -18,6 +22,12 @@ describe('admin dashboard HTTP + PostgreSQL', () => {
 
     const response = await agent.get(`${api}/admin/dashboard`).expect(200);
     const dashboard = adminDashboardResponseSchema.parse(response.body);
+    const overview = adminOverviewResponseSchema.parse(
+      (await agent.get(`${api}/admin/overview`).expect(200)).body,
+    );
+    const health = adminHealthResponseSchema.parse(
+      (await agent.get(`${api}/admin/health`).expect(200)).body,
+    );
 
     expect(dashboard.metrics).toMatchObject({
       totalUsers: 1,
@@ -29,6 +39,8 @@ describe('admin dashboard HTTP + PostgreSQL', () => {
       transactions: 0,
     });
     expect(dashboard.health.status).toBe('unavailable');
+    expect(overview.metrics).toEqual(dashboard.metrics);
+    expect(health.health.status).toBe(dashboard.health.status);
   });
 
   it('counts distinct activity windows separately from valid sessions', async () => {

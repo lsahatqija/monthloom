@@ -1,4 +1,9 @@
-import type { AdminDashboardResponse, AdminLogLevel } from '@monthloom/contracts';
+import type {
+  AdminDashboardResponse,
+  AdminHealthResponse,
+  AdminLogLevel,
+  AdminOverviewResponse,
+} from '@monthloom/contracts';
 
 import type { AdminLogReader } from './admin-log-reader.js';
 import type { AdminRepository } from './admin.repository.js';
@@ -18,10 +23,23 @@ export class AdminService {
   ) {}
 
   async getDashboard(now = new Date()): Promise<AdminDashboardResponse> {
-    const [metrics, logs] = await Promise.all([
-      this.repository.getMetrics(now),
-      this.logReader.read(),
-    ]);
+    const [overview, health] = await Promise.all([this.getOverview(now), this.getHealth(now)]);
+    return { ...overview, health: health.health };
+  }
+
+  async getOverview(now = new Date()): Promise<AdminOverviewResponse> {
+    const metrics = await this.repository.getMetrics(now);
+    return {
+      generatedAt: now.toISOString(),
+      metrics: {
+        ...metrics,
+        transactions: metrics.incomes + metrics.expenses,
+      },
+    };
+  }
+
+  async getHealth(now = new Date()): Promise<AdminHealthResponse> {
+    const logs = await this.logReader.read();
     const counts = emptyCounts();
     const last24Hours = emptyCounts();
     let actionableWarnings = 0;
@@ -47,10 +65,6 @@ export class AdminService {
 
     return {
       generatedAt: now.toISOString(),
-      metrics: {
-        ...metrics,
-        transactions: metrics.incomes + metrics.expenses,
-      },
       health: {
         status,
         loggingAvailable: logs.available,

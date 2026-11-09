@@ -1,7 +1,10 @@
 import {
-  adminDashboardResponseSchema,
+  adminHealthResponseSchema,
+  adminOverviewResponseSchema,
   type AdminDashboardResponse,
+  type AdminHealthResponse,
   type AdminLogEntry,
+  type AdminOverviewResponse,
 } from '@monthloom/contracts';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
@@ -23,8 +26,13 @@ export default async function AdminPage({ searchParams }: { searchParams: { view
     ? (searchParams.view as AdminView)
     : 'overview';
   const cookieHeader = cookies().toString();
-  const response = await apiClient.get<AdminDashboardResponse>('admin/dashboard', { cookieHeader });
-  const data = adminDashboardResponseSchema.parse(response);
+  const [overviewResponse, healthResponse] = await Promise.all([
+    apiClient.get<AdminOverviewResponse>('admin/overview', { cookieHeader }),
+    apiClient.get<AdminHealthResponse>('admin/health', { cookieHeader }),
+  ]);
+  const overview = adminOverviewResponseSchema.parse(overviewResponse);
+  const health = adminHealthResponseSchema.parse(healthResponse);
+  const data: AdminDashboardResponse = { ...overview, health: health.health };
   const t = await getTranslations('Admin');
   const numbers = new Intl.NumberFormat(user.locale);
   const dates = new Intl.DateTimeFormat(user.locale, { dateStyle: 'medium', timeStyle: 'short' });
