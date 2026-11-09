@@ -239,7 +239,7 @@ export function PwaRegistration({ children }: { children: ReactNode }) {
   return (
     <PwaInstallContext.Provider value={value}>
       {children}
-      {promptOpen && eligibleSession && !installed && !pathname.startsWith('/admin') ? (
+      {promptOpen && eligibleSession && !installed && !pathname?.startsWith('/admin') ? (
         <aside
           className={`installPrompt${desktopBrowser ? ' installPromptDesktop' : ''}`}
           role="dialog"
