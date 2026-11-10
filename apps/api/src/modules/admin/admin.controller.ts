@@ -27,4 +27,18 @@ export class AdminController {
     const query = adminAnalyticsRangeQuerySchema.parse(req.query);
     res.status(200).json(await this.adminService.getAdoption(query));
   };
+
+  getRetention = async (req: Request, res: Response): Promise<void> => {
+    res
+      .status(200)
+      .json(await this.adminService.getRetention(adminAnalyticsRangeQuerySchema.parse(req.query)));
+  };
+
+  getReliability = async (req: Request, res: Response): Promise<void> => {
+    res
+      .status(200)
+      .json(
+        await this.adminService.getReliability(adminAnalyticsRangeQuerySchema.parse(req.query)),
+      );
+  };
 }

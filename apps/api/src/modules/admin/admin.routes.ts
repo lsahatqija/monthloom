@@ -14,6 +14,13 @@ export function createAdminRouter(
   router.get('/health', requireAuth, requireAdmin, asyncHandler(adminController.getHealth));
   router.get('/usage', requireAuth, requireAdmin, asyncHandler(adminController.getUsage));
   router.get('/adoption', requireAuth, requireAdmin, asyncHandler(adminController.getAdoption));
+  router.get('/retention', requireAuth, requireAdmin, asyncHandler(adminController.getRetention));
+  router.get(
+    '/reliability',
+    requireAuth,
+    requireAdmin,
+    asyncHandler(adminController.getReliability),
+  );
   router.get('/dashboard', requireAuth, requireAdmin, asyncHandler(adminController.getDashboard));
   return router;
 }

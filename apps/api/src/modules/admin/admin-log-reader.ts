@@ -87,6 +87,14 @@ function parseLogEntry(line: string): AdminLogEntry | null {
             ? error.message
             : 'Logged application event',
       detail: requestDetail ?? (typeof error?.message === 'string' ? error.message : undefined),
+      fullMessage:
+        typeof error?.stack === 'string'
+          ? error.stack
+          : typeof error?.message === 'string'
+            ? error.message
+            : typeof record.msg === 'string'
+              ? record.msg
+              : undefined,
       statusCode,
     };
   } catch {

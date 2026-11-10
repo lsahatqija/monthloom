@@ -5,6 +5,8 @@ import type {
   AdminHealthResponse,
   AdminLogLevel,
   AdminOverviewResponse,
+  AdminReliabilityResponse,
+  AdminRetentionResponse,
   AdminUsageResponse,
 } from '@monthloom/contracts';
 
@@ -97,5 +99,35 @@ export class AdminService {
     const { range, comparisonRange } = resolveAdminAnalyticsRange(query, now);
     const adoption = await this.repository.getAdoption(range, comparisonRange);
     return { generatedAt: now.toISOString(), range, comparisonRange, ...adoption };
+  }
+
+  async getRetention(
+    query: AdminAnalyticsRangeQuery,
+    now = new Date(),
+  ): Promise<AdminRetentionResponse> {
+    if (!this.repository.getRetention)
+      throw new Error('Retention analytics repository is unavailable.');
+    const { range, comparisonRange } = resolveAdminAnalyticsRange(query, now);
+    return {
+      generatedAt: now.toISOString(),
+      range,
+      comparisonRange,
+      ...(await this.repository.getRetention(range, comparisonRange)),
+    };
+  }
+
+  async getReliability(
+    query: AdminAnalyticsRangeQuery,
+    now = new Date(),
+  ): Promise<AdminReliabilityResponse> {
+    if (!this.repository.getReliability)
+      throw new Error('Reliability analytics repository is unavailable.');
+    const { range, comparisonRange } = resolveAdminAnalyticsRange(query, now);
+    return {
+      generatedAt: now.toISOString(),
+      range,
+      comparisonRange,
+      ...(await this.repository.getReliability(range, comparisonRange)),
+    };
   }
 }

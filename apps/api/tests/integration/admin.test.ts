@@ -3,6 +3,8 @@ import {
   adminAdoptionResponseSchema,
   adminHealthResponseSchema,
   adminOverviewResponseSchema,
+  adminReliabilityResponseSchema,
+  adminRetentionResponseSchema,
   adminUsageResponseSchema,
 } from '@monthloom/contracts';
 import request from 'supertest';
@@ -192,5 +194,28 @@ describe('admin dashboard HTTP + PostgreSQL', () => {
     expect(adoption.timeToFirstHousehold).toMatchObject({ converted: 1, notConverted: 1 });
     expect(adoption.timeToFirstTransaction).toMatchObject({ converted: 1, notConverted: 1 });
     expect(adoption.invitations).toMatchObject({ sent: 1, accepted: 1, conversionRate: 100 });
+
+    const retentionRanges = resolveAdminAnalyticsRange({ from: today, to: today, timezone: 'UTC' });
+    await new PostgresAdminRepository(db).getRetention!(
+      retentionRanges.range,
+      retentionRanges.comparisonRange,
+    );
+    const retention = adminRetentionResponseSchema.parse(
+      (
+        await administrator.agent
+          .get(`${api}/admin/retention?from=${today}&to=${today}&timezone=UTC`)
+          .expect(200)
+      ).body,
+    );
+    expect(retention.retention).toHaveLength(3);
+
+    const reliability = adminReliabilityResponseSchema.parse(
+      (
+        await administrator.agent
+          .get(`${api}/admin/reliability?from=${today}&to=${today}&timezone=UTC`)
+          .expect(200)
+      ).body,
+    );
+    expect(reliability.summary.requests.current).toBeGreaterThanOrEqual(0);
   });
 });

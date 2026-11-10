@@ -18,6 +18,8 @@ const API_BASE_PATH = '/api/v1';
 export function registerRoutes(app: Express, deps: AppDependencies): void {
   const { controllers, middleware } = deps;
 
+  app.use(middleware.requestTelemetry);
+
   app.use('/health', createSystemRouter(controllers.systemController));
 
   app.use(API_BASE_PATH, verifyRequestOrigin);

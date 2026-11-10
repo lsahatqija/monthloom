@@ -169,6 +169,13 @@
       "when": 1794228228778,
       "tag": "0023_uneven_husk",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794326400000,
+      "tag": "0024_admin_reliability_rollups",
+      "breakpoints": true
     }
   ]
 }

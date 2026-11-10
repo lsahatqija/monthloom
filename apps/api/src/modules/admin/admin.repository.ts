@@ -1,6 +1,8 @@
 import type {
   AdminAdoptionResponse,
   AdminResolvedRange,
+  AdminReliabilityResponse,
+  AdminRetentionResponse,
   AdminUsageResponse,
 } from '@monthloom/contracts';
 
@@ -25,4 +27,12 @@ export interface AdminRepository {
     range: AdminResolvedRange,
     comparisonRange: AdminResolvedRange,
   ): Promise<Omit<AdminAdoptionResponse, 'generatedAt' | 'range' | 'comparisonRange'>>;
+  getRetention?(
+    range: AdminResolvedRange,
+    comparisonRange: AdminResolvedRange,
+  ): Promise<Omit<AdminRetentionResponse, 'generatedAt' | 'range' | 'comparisonRange'>>;
+  getReliability?(
+    range: AdminResolvedRange,
+    comparisonRange: AdminResolvedRange,
+  ): Promise<Omit<AdminReliabilityResponse, 'generatedAt' | 'range' | 'comparisonRange'>>;
 }

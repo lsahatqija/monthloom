@@ -1,6 +1,8 @@
 import type {
   AdminAdoptionResponse,
   AdminResolvedRange,
+  AdminReliabilityResponse,
+  AdminRetentionResponse,
   AdminUsageResponse,
 } from '@monthloom/contracts';
 import { and, count, countDistinct, gt, gte, isNull, sql } from 'drizzle-orm';
@@ -75,16 +77,28 @@ export class PostgresAdminRepository implements AdminRepository {
       this.getUsageTotals(range),
       this.getUsageTotals(comparisonRange),
       this.db.execute<UsageSeriesRow>(sql`
-          SELECT floor((((e.occurred_at AT TIME ZONE ${range.timezone})::date - ${range.from}::date) / ${range.bucket === 'day' ? 1 : 7}))::int AS bucket_index,
+          WITH buckets AS (
+            SELECT bucket_index,
+              ${range.from}::date + bucket_index * ${range.bucket === 'day' ? 1 : 7} AS bucket_start,
+              least(${range.to}::date, ${range.from}::date + (bucket_index + 1) * ${range.bucket === 'day' ? 1 : 7} - 1) AS bucket_end
+            FROM generate_series(0, floor((${range.to}::date - ${range.from}::date) / ${range.bucket === 'day' ? 1 : 7})::int) AS bucket_index
+          )
+          SELECT b.bucket_index,
             count(DISTINCT e.actor_user_id) FILTER (WHERE e.event_name = 'user.active' AND u.role <> 'admin')::int AS active_users,
+            (SELECT count(DISTINCT a.actor_user_id)::int FROM product_events a JOIN users au ON au.id = a.actor_user_id AND au.role <> 'admin'
+              WHERE a.event_name = 'user.active' AND (a.occurred_at AT TIME ZONE ${range.timezone})::date = b.bucket_end) AS daily_active_users,
+            (SELECT count(DISTINCT a.actor_user_id)::int FROM product_events a JOIN users au ON au.id = a.actor_user_id AND au.role <> 'admin'
+              WHERE a.event_name = 'user.active' AND (a.occurred_at AT TIME ZONE ${range.timezone})::date BETWEEN b.bucket_end - 6 AND b.bucket_end) AS weekly_active_users,
+            (SELECT count(DISTINCT a.actor_user_id)::int FROM product_events a JOIN users au ON au.id = a.actor_user_id AND au.role <> 'admin'
+              WHERE a.event_name = 'user.active' AND (a.occurred_at AT TIME ZONE ${range.timezone})::date BETWEEN b.bucket_end - 29 AND b.bucket_end) AS monthly_active_users,
             count(DISTINCT e.household_id) FILTER (WHERE e.household_id IS NOT NULL)::int AS active_households,
             count(*) FILTER (WHERE e.event_name = 'transaction.created')::int AS transactions_created,
             count(*) FILTER (WHERE e.event_name = 'transaction.updated')::int AS transactions_updated,
             count(*) FILTER (WHERE e.event_name = 'transaction.deleted')::int AS transactions_deleted,
             count(*) FILTER (WHERE e.event_name = 'user.registered' AND u.role <> 'admin')::int AS registrations
-          FROM product_events e LEFT JOIN users u ON u.id = e.actor_user_id
-          WHERE e.occurred_at >= ${new Date(range.start)} AND e.occurred_at < ${new Date(range.endExclusive)}
-          GROUP BY bucket_index ORDER BY bucket_index
+          FROM buckets b LEFT JOIN product_events e ON (e.occurred_at AT TIME ZONE ${range.timezone})::date BETWEEN b.bucket_start AND b.bucket_end
+          LEFT JOIN users u ON u.id = e.actor_user_id
+          GROUP BY b.bucket_index, b.bucket_end ORDER BY b.bucket_index
         `),
       this.db.execute<OperationRow>(sql`
           SELECT
@@ -178,6 +192,9 @@ export class PostgresAdminRepository implements AdminRepository {
         return {
           ...bucket,
           activeUsers: row?.active_users ?? 0,
+          dailyActiveUsers: row?.daily_active_users ?? 0,
+          weeklyActiveUsers: row?.weekly_active_users ?? 0,
+          monthlyActiveUsers: row?.monthly_active_users ?? 0,
           activeHouseholds: row?.active_households ?? 0,
           transactionsCreated: row?.transactions_created ?? 0,
           transactionsUpdated: row?.transactions_updated ?? 0,
@@ -299,6 +316,189 @@ export class PostgresAdminRepository implements AdminRepository {
     };
   }
 
+  async getRetention(
+    range: AdminResolvedRange,
+    _comparisonRange: AdminResolvedRange,
+  ): Promise<Omit<AdminRetentionResponse, 'generatedAt' | 'range' | 'comparisonRange'>> {
+    const [retentionResult, cohortResult, dormantResult, reactivationResult, coverageResult] =
+      await Promise.all([
+        this.db.execute<RetentionRow>(sql`
+        WITH cohort AS (
+          SELECT u.id, (u.created_at AT TIME ZONE ${range.timezone})::date AS joined
+          FROM users u WHERE u.role <> 'admin'
+            AND u.created_at >= ${new Date(range.start)} AND u.created_at < ${new Date(range.endExclusive)}
+        ), days(day) AS (VALUES (1), (7), (30))
+        SELECT day,
+          count(*) FILTER (WHERE joined <= ${range.to}::date - day)::int AS eligible,
+          count(*) FILTER (WHERE joined <= ${range.to}::date - day AND EXISTS (
+            SELECT 1 FROM product_events e WHERE e.event_name = 'user.active' AND e.actor_user_id = cohort.id
+              AND (e.occurred_at AT TIME ZONE ${range.timezone})::date = joined + day
+          ))::int AS retained
+        FROM cohort CROSS JOIN days GROUP BY day ORDER BY day
+      `),
+        this.db.execute<CohortRow>(sql`
+        WITH cohorts AS (
+          SELECT u.id, date_trunc('week', u.created_at AT TIME ZONE ${range.timezone})::date AS week
+          FROM users u WHERE u.role <> 'admin'
+            AND u.created_at >= ${new Date(range.start)} AND u.created_at < ${new Date(range.endExclusive)}
+        ), weeks(week_offset) AS (SELECT generate_series(0, 7))
+        SELECT c.week, w.week_offset, count(DISTINCT c.id)::int AS size,
+          count(DISTINCT c.id) FILTER (WHERE EXISTS (
+            SELECT 1 FROM product_events e WHERE e.event_name = 'user.active' AND e.actor_user_id = c.id
+              AND (e.occurred_at AT TIME ZONE ${range.timezone})::date >= c.week + w.week_offset * 7
+              AND (e.occurred_at AT TIME ZONE ${range.timezone})::date < c.week + (w.week_offset + 1) * 7
+          ))::int AS retained
+        FROM cohorts c CROSS JOIN weeks w GROUP BY c.week, w.week_offset ORDER BY c.week, w.week_offset
+      `),
+        this.db.execute<DormantRow>(sql`
+        SELECT
+          count(*) FILTER (WHERE last_active < ${new Date(new Date(range.endExclusive).getTime() - 30 * 86_400_000)})::int AS users_30,
+          count(*) FILTER (WHERE last_active < ${new Date(new Date(range.endExclusive).getTime() - 90 * 86_400_000)})::int AS users_90,
+          (SELECT count(*) FROM (
+            SELECT household_id, max(occurred_at) AS last_active FROM product_events
+            WHERE household_id IS NOT NULL AND occurred_at < ${new Date(range.endExclusive)} GROUP BY household_id
+          ) active_households WHERE last_active < ${new Date(new Date(range.endExclusive).getTime() - 30 * 86_400_000)})::int AS households_30
+        FROM (
+          SELECT u.id, max(e.occurred_at) AS last_active FROM users u
+          JOIN product_events e ON e.actor_user_id = u.id AND e.event_name = 'user.active'
+          WHERE u.role <> 'admin' AND e.occurred_at < ${new Date(range.endExclusive)} GROUP BY u.id
+        ) active_users
+      `),
+        this.db.execute<ReactivationRow>(sql`
+        WITH candidates AS (
+          SELECT e.actor_user_id, min(e.occurred_at) AS reactivated_at
+          FROM product_events e JOIN users u ON u.id = e.actor_user_id AND u.role <> 'admin'
+          WHERE e.event_name = 'user.active' AND e.occurred_at >= ${new Date(range.start)} AND e.occurred_at < ${new Date(range.endExclusive)}
+            AND EXISTS (SELECT 1 FROM product_events old WHERE old.event_name = 'user.active' AND old.actor_user_id = e.actor_user_id
+              AND old.occurred_at < e.occurred_at - interval '30 days')
+            AND NOT EXISTS (SELECT 1 FROM product_events recent WHERE recent.event_name = 'user.active' AND recent.actor_user_id = e.actor_user_id
+              AND recent.occurred_at >= e.occurred_at - interval '30 days' AND recent.occurred_at < e.occurred_at)
+          GROUP BY e.actor_user_id
+        )
+        SELECT floor((((reactivated_at AT TIME ZONE ${range.timezone})::date - ${range.from}::date) / ${range.bucket === 'day' ? 1 : 7}))::int AS bucket_index,
+          count(*)::int AS users FROM candidates GROUP BY bucket_index ORDER BY bucket_index
+      `),
+        this.db.execute<{ occurred_at: Date }>(
+          sql`SELECT occurred_at FROM product_events WHERE event_name = 'analytics.collection_started' ORDER BY occurred_at LIMIT 1`,
+        ),
+      ]);
+    const cohorts = new Map<string, { week: string; size: number; weeks: Array<number | null> }>();
+    for (const row of cohortResult.rows) {
+      const key = String(row.week);
+      const item = cohorts.get(key) ?? { week: key, size: row.size, weeks: [] };
+      const matured =
+        new Date(`${key}T00:00:00Z`).getTime() + (row.week_offset + 1) * 7 * 86_400_000 <=
+        new Date(range.endExclusive).getTime();
+      item.weeks[row.week_offset] = matured ? percent(row.retained, row.size) : null;
+      cohorts.set(key, item);
+    }
+    const dormant = dormantResult.rows[0];
+    return {
+      retention: ([1, 7, 30] as const).map((day) => {
+        const row = retentionResult.rows.find((item) => item.day === day);
+        return {
+          day: `d${day}` as 'd1' | 'd7' | 'd30',
+          retained: row?.retained ?? 0,
+          eligible: row?.eligible ?? 0,
+          rate: nullablePercent(row?.retained, row?.eligible),
+        };
+      }),
+      cohorts: [...cohorts.values()],
+      dormant: {
+        users30Days: dormant?.users_30 ?? 0,
+        users90Days: dormant?.users_90 ?? 0,
+        households30Days: dormant?.households_30 ?? 0,
+      },
+      reactivations: adminCalendarBuckets(range).map((bucket, index) => ({
+        ...bucket,
+        users: reactivationResult.rows.find((row) => row.bucket_index === index)?.users ?? 0,
+      })),
+      coverageStartedAt: new Date(coverageResult.rows[0]?.occurred_at ?? Date.now()).toISOString(),
+    };
+  }
+
+  async getReliability(
+    range: AdminResolvedRange,
+    comparisonRange: AdminResolvedRange,
+  ): Promise<Omit<AdminReliabilityResponse, 'generatedAt' | 'range' | 'comparisonRange'>> {
+    const [current, previous, seriesResult, routesResult, versionsResult] = await Promise.all([
+      this.getReliabilityTotals(range),
+      this.getReliabilityTotals(comparisonRange),
+      this.db.execute<ReliabilitySeriesRow>(sql`
+        SELECT floor((((hour AT TIME ZONE ${range.timezone})::date - ${range.from}::date) / ${range.bucket === 'day' ? 1 : 7}))::int AS bucket_index,
+          sum(request_count)::int AS requests, sum(request_count) FILTER (WHERE status_class = 5)::int AS errors,
+          coalesce(sum(duration_total_ms)::float8 / nullif(sum(request_count), 0), 0) AS average_latency_ms
+        FROM request_hourly_rollups WHERE hour >= ${new Date(range.start)} AND hour < ${new Date(range.endExclusive)} GROUP BY bucket_index ORDER BY bucket_index
+      `),
+      this.db.execute<SlowRouteRow>(sql`
+        SELECT method, route, sum(request_count)::int AS requests,
+          coalesce(sum(request_count) FILTER (WHERE status_class = 5)::float8 / nullif(sum(request_count), 0) * 100, 0) AS error_rate,
+          coalesce(sum(duration_total_ms)::float8 / nullif(sum(request_count), 0), 0) AS average_latency_ms,
+          max(duration_max_ms)::float8 AS max_latency_ms
+        FROM request_hourly_rollups WHERE hour >= ${new Date(range.start)} AND hour < ${new Date(range.endExclusive)}
+        GROUP BY method, route ORDER BY average_latency_ms DESC LIMIT 10
+      `),
+      this.db.execute<{ version: string; requests: number }>(sql`
+        SELECT client_version AS version, sum(request_count)::int AS requests FROM request_hourly_rollups
+        WHERE hour >= ${new Date(range.start)} AND hour < ${new Date(range.endExclusive)} GROUP BY client_version ORDER BY requests DESC LIMIT 10
+      `),
+    ]);
+    const unknown = (detail: string) => ({
+      status: 'unknown' as const,
+      lastObservedAt: null,
+      detail,
+    });
+    return {
+      summary: {
+        requests: compared(current.requests, previous.requests),
+        errorRate: compared(current.errorRate, previous.errorRate),
+        averageLatencyMs: compared(current.averageLatencyMs, previous.averageLatencyMs),
+        p95LatencyMs: compared(current.maxLatencyMs, previous.maxLatencyMs),
+        databaseAverageMs: compared(current.databaseAverageMs, previous.databaseAverageMs),
+      },
+      series: adminCalendarBuckets(range).map((bucket, index) => ({
+        ...bucket,
+        requests: seriesResult.rows.find((row) => row.bucket_index === index)?.requests ?? 0,
+        errors: seriesResult.rows.find((row) => row.bucket_index === index)?.errors ?? 0,
+        averageLatencyMs: Number(
+          seriesResult.rows.find((row) => row.bucket_index === index)?.average_latency_ms ?? 0,
+        ),
+      })),
+      slowRoutes: routesResult.rows.map((row) => ({
+        method: row.method,
+        route: row.route,
+        requests: row.requests,
+        errorRate: Number(row.error_rate),
+        averageLatencyMs: Number(row.average_latency_ms),
+        maxLatencyMs: Number(row.max_latency_ms),
+      })),
+      email: unknown('Email delivery telemetry is not connected.'),
+      readiness: unknown('Dependency probes are not persisted.'),
+      backgroundJobs: unknown('Background-job telemetry is not connected.'),
+      backups: unknown('Backup reporting is not connected.'),
+      deployment: { applicationVersion: '0.1.0', clientVersions: versionsResult.rows },
+    };
+  }
+
+  private async getReliabilityTotals(range: AdminResolvedRange): Promise<ReliabilityTotals> {
+    const result = await this.db.execute<ReliabilityTotals>(sql`
+      SELECT coalesce(sum(request_count), 0)::int AS requests,
+        coalesce(sum(request_count) FILTER (WHERE status_class = 5)::float8 / nullif(sum(request_count), 0) * 100, 0) AS "errorRate",
+        coalesce(sum(duration_total_ms)::float8 / nullif(sum(request_count), 0), 0) AS "averageLatencyMs",
+        coalesce(max(duration_max_ms), 0)::float8 AS "maxLatencyMs",
+        coalesce(sum(database_total_ms)::float8 / nullif(sum(request_count), 0), 0) AS "databaseAverageMs"
+      FROM request_hourly_rollups WHERE hour >= ${new Date(range.start)} AND hour < ${new Date(range.endExclusive)}
+    `);
+    const row = result.rows[0];
+    return {
+      requests: row?.requests ?? 0,
+      errorRate: Number(row?.errorRate ?? 0),
+      averageLatencyMs: Number(row?.averageLatencyMs ?? 0),
+      maxLatencyMs: Number(row?.maxLatencyMs ?? 0),
+      databaseAverageMs: Number(row?.databaseAverageMs ?? 0),
+    };
+  }
+
   private async getRegistrationCount(range: AdminResolvedRange): Promise<number> {
     const result = await this.db.execute<CountRow>(sql`
       SELECT count(*)::int AS count FROM users
@@ -373,6 +573,9 @@ interface UsageTotals extends Record<string, unknown> {
 interface UsageSeriesRow extends Record<string, unknown> {
   bucket_index: number;
   active_users: number;
+  daily_active_users: number;
+  weekly_active_users: number;
+  monthly_active_users: number;
   active_households: number;
   transactions_created: number;
   transactions_updated: number;
@@ -427,6 +630,47 @@ interface InvitationAdoptionRow extends Record<string, unknown> {
   accepted: number;
   expired: number;
   open: number;
+}
+interface RetentionRow extends Record<string, unknown> {
+  day: 1 | 7 | 30;
+  eligible: number;
+  retained: number;
+}
+interface CohortRow extends Record<string, unknown> {
+  week: string;
+  week_offset: number;
+  size: number;
+  retained: number;
+}
+interface DormantRow extends Record<string, unknown> {
+  users_30: number;
+  users_90: number;
+  households_30: number;
+}
+interface ReactivationRow extends Record<string, unknown> {
+  bucket_index: number;
+  users: number;
+}
+interface ReliabilityTotals extends Record<string, unknown> {
+  requests: number;
+  errorRate: number;
+  averageLatencyMs: number;
+  maxLatencyMs: number;
+  databaseAverageMs: number;
+}
+interface ReliabilitySeriesRow extends Record<string, unknown> {
+  bucket_index: number;
+  requests: number;
+  errors: number;
+  average_latency_ms: number;
+}
+interface SlowRouteRow extends Record<string, unknown> {
+  method: string;
+  route: string;
+  requests: number;
+  error_rate: number;
+  average_latency_ms: number;
+  max_latency_ms: number;
 }
 
 function emptyOperations(): OperationRow {

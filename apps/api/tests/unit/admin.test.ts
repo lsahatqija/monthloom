@@ -38,6 +38,53 @@ afterEach(async () => {
 });
 
 describe('admin dashboard', () => {
+  it('resolves ranges and delegates retention and reliability independently', async () => {
+    const retention = {
+      retention: [],
+      cohorts: [],
+      dormant: { users30Days: 0, users90Days: 0, households30Days: 0 },
+      reactivations: [],
+      coverageStartedAt: '2026-01-01T00:00:00.000Z',
+    };
+    const operational = {
+      status: 'unknown' as const,
+      lastObservedAt: null,
+      detail: 'Not connected',
+    };
+    const compared = { current: 0, previous: 0, changePercent: 0 };
+    const reliability = {
+      summary: {
+        requests: compared,
+        errorRate: compared,
+        averageLatencyMs: compared,
+        p95LatencyMs: compared,
+        databaseAverageMs: compared,
+      },
+      series: [],
+      slowRoutes: [],
+      email: operational,
+      readiness: operational,
+      backgroundJobs: operational,
+      backups: operational,
+      deployment: { applicationVersion: '0.1.0', clientVersions: [] },
+    };
+    const analyticsRepository: AdminRepository = {
+      ...repository(),
+      getRetention: vi.fn().mockResolvedValue(retention),
+      getReliability: vi.fn().mockResolvedValue(reliability),
+    };
+    const service = new AdminService(analyticsRepository, logReader([]));
+    const query = { from: '2026-10-01', to: '2026-10-31', timezone: 'UTC' };
+
+    await expect(
+      service.getRetention(query, new Date('2026-11-01T00:00:00Z')),
+    ).resolves.toMatchObject(retention);
+    await expect(
+      service.getReliability(query, new Date('2026-11-01T00:00:00Z')),
+    ).resolves.toMatchObject(reliability);
+    expect(analyticsRepository.getRetention).toHaveBeenCalledOnce();
+    expect(analyticsRepository.getReliability).toHaveBeenCalledOnce();
+  });
   it('aggregates real metrics and derives health from recent severe logs', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'monthloom-admin-'));
     temporaryDirectories.push(directory);

@@ -5,6 +5,7 @@ import {
   configureProductEventRecorder,
   ProductEventRecorder,
 } from './infrastructure/analytics/product-events.js';
+import { createRequestTelemetry } from './infrastructure/analytics/request-telemetry.js';
 import { db } from './infrastructure/database/client.js';
 import { LogEmailSender, ResendEmailSender } from './infrastructure/email/index.js';
 import { logger } from './infrastructure/logging/logger.js';
@@ -124,7 +125,12 @@ export function buildAppDependencies() {
       feedbackController,
       adminController,
     },
-    middleware: { requireAuth, optionalAuth, requireRole },
+    middleware: {
+      requireAuth,
+      optionalAuth,
+      requireRole,
+      requestTelemetry: createRequestTelemetry(db, logger),
+    },
   };
 }
 

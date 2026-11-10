@@ -2,26 +2,32 @@ import {
   adminAdoptionResponseSchema,
   adminHealthResponseSchema,
   adminOverviewResponseSchema,
+  adminReliabilityResponseSchema,
+  adminRetentionResponseSchema,
   adminUsageResponseSchema,
   type AdminDashboardResponse,
   type AdminAdoptionResponse,
   type AdminHealthResponse,
   type AdminLogEntry,
   type AdminOverviewResponse,
+  type AdminReliabilityResponse,
+  type AdminRetentionResponse,
   type AdminUsageResponse,
 } from '@monthloom/contracts';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
+import React from 'react';
 
 import { apiClient } from '../../../lib/api/client';
 import { getServerUser } from '../../../lib/auth/get-server-user';
 
 import './admin.css';
+import { HealthEventTable } from './health-event-table';
 import { UsageChart } from './usage-chart';
 
-type AdminView = 'overview' | 'health' | 'usage' | 'adoption';
+type AdminView = 'overview' | 'health' | 'usage' | 'adoption' | 'retention' | 'reliability';
 
 type AdminSearchParams = {
   view?: string;
@@ -35,7 +41,9 @@ export default async function AdminPage({ searchParams }: { searchParams: AdminS
   const user = await getServerUser();
   if (!user || user.role !== 'admin') redirect('/');
 
-  const view: AdminView = ['health', 'usage', 'adoption'].includes(searchParams.view ?? '')
+  const view: AdminView = ['health', 'usage', 'adoption', 'retention', 'reliability'].includes(
+    searchParams.view ?? '',
+  )
     ? (searchParams.view as AdminView)
     : 'overview';
   const cookieHeader = cookies().toString();
@@ -70,6 +78,24 @@ export default async function AdminPage({ searchParams }: { searchParams: AdminS
           }),
         )
       : null;
+  const retention =
+    view === 'retention'
+      ? adminRetentionResponseSchema.parse(
+          await apiClient.get<AdminRetentionResponse>('admin/retention', {
+            cookieHeader,
+            query: usageQuery,
+          }),
+        )
+      : null;
+  const reliability =
+    view === 'reliability'
+      ? adminReliabilityResponseSchema.parse(
+          await apiClient.get<AdminReliabilityResponse>('admin/reliability', {
+            cookieHeader,
+            query: usageQuery,
+          }),
+        )
+      : null;
   const t = await getTranslations('Admin');
   const numbers = new Intl.NumberFormat(user.locale);
   const dates = new Intl.DateTimeFormat(user.locale, { dateStyle: 'medium', timeStyle: 'short' });
@@ -85,6 +111,8 @@ export default async function AdminPage({ searchParams }: { searchParams: AdminS
     { view: 'health', label: t('health') },
     { view: 'usage', label: t('usage') },
     { view: 'adoption', label: t('adoption') },
+    { view: 'retention', label: t('retention') },
+    { view: 'reliability', label: t('reliability') },
   ];
   const preservedQuery = new URLSearchParams();
   for (const [key, value] of Object.entries(usageQuery)) if (value) preservedQuery.set(key, value);
@@ -122,7 +150,275 @@ export default async function AdminPage({ searchParams }: { searchParams: AdminS
       {view === 'health' ? <Health data={data} dates={dates} statusLabel={statusLabel} /> : null}
       {view === 'usage' && usage ? <Usage data={usage} numbers={numbers} /> : null}
       {view === 'adoption' && adoption ? <Adoption data={adoption} numbers={numbers} /> : null}
+      {view === 'retention' && retention ? <Retention data={retention} numbers={numbers} /> : null}
+      {view === 'reliability' && reliability ? (
+        <Reliability data={reliability} numbers={numbers} />
+      ) : null}
     </div>
+  );
+}
+
+async function Retention({
+  data,
+  numbers,
+}: {
+  data: AdminRetentionResponse;
+  numbers: Intl.NumberFormat;
+}) {
+  const t = await getTranslations('Admin');
+  const decimal = new Intl.NumberFormat(numbers.resolvedOptions().locale, {
+    maximumFractionDigits: 1,
+  });
+  return (
+    <div className="adminView">
+      <AnalyticsRange view="retention" range={data.range} />
+      <section className="adminPanel" aria-labelledby="retention-summary">
+        <div className="adminSectionHeading">
+          <h2 id="retention-summary">{t('retentionSummary')}</h2>
+        </div>
+        <div className="adminMetricStrip">
+          {data.retention.map((metric) => (
+            <div className="adminMetric" key={metric.day}>
+              <span>{metric.day.toUpperCase()}</span>
+              <strong>{metric.rate == null ? '—' : `${decimal.format(metric.rate)}%`}</strong>
+              <small>
+                {t('retainedUsers', { retained: metric.retained, eligible: metric.eligible })}
+              </small>
+            </div>
+          ))}
+        </div>
+        <p className="adminCoverage">
+          {t('coverageStarted', { date: data.coverageStartedAt.slice(0, 10) })}
+        </p>
+      </section>
+      <section className="adminPanel" aria-labelledby="cohort-matrix">
+        <div className="adminSectionHeading">
+          <h2 id="cohort-matrix">{t('weeklyCohorts')}</h2>
+        </div>
+        <div className="adminTableWrap">
+          <table className="adminDataTable">
+            <thead>
+              <tr>
+                <th>{t('cohort')}</th>
+                <th>{t('users')}</th>
+                {Array.from({ length: 8 }, (_, i) => (
+                  <th key={i}>W{i}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.cohorts.map((cohort) => (
+                <tr key={cohort.week}>
+                  <td>{cohort.week}</td>
+                  <td>{cohort.size}</td>
+                  {cohort.weeks.map((rate, i) => (
+                    <td
+                      key={i}
+                      className="adminCohortCell"
+                      style={
+                        rate == null
+                          ? undefined
+                          : ({ '--cohort-strength': rate / 100 } as React.CSSProperties)
+                      }
+                    >
+                      {rate == null ? '—' : `${decimal.format(rate)}%`}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section className="adminPanel" aria-labelledby="dormancy">
+        <div className="adminSectionHeading">
+          <h2 id="dormancy">{t('dormancy')}</h2>
+        </div>
+        <div className="adminMetricStrip">
+          {[
+            [t('dormantUsers30'), data.dormant.users30Days],
+            [t('dormantUsers90'), data.dormant.users90Days],
+            [t('dormantHouseholds30'), data.dormant.households30Days],
+            [
+              t('reactivatedUsers'),
+              data.reactivations.reduce((sum, point) => sum + point.users, 0),
+            ],
+          ].map(([label, value]) => (
+            <div className="adminMetric" key={label}>
+              <span>{label}</span>
+              <strong>{numbers.format(value as number)}</strong>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className="adminPanel" aria-labelledby="reactivation-trend">
+        <div className="adminSectionHeading">
+          <h2 id="reactivation-trend">{t('reactivatedUsers')}</h2>
+        </div>
+        <div className="adminTableWrap">
+          <table className="adminDataTable">
+            <thead>
+              <tr>
+                <th>{t('period')}</th>
+                <th>{t('users')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.reactivations.map((point) => (
+                <tr key={point.from}>
+                  <td>{point.from === point.to ? point.from : `${point.from} – ${point.to}`}</td>
+                  <td>{numbers.format(point.users)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+async function Reliability({
+  data,
+  numbers,
+}: {
+  data: AdminReliabilityResponse;
+  numbers: Intl.NumberFormat;
+}) {
+  const t = await getTranslations('Admin');
+  const decimal = new Intl.NumberFormat(numbers.resolvedOptions().locale, {
+    maximumFractionDigits: 1,
+  });
+  const metrics = [
+    [t('requests'), data.summary.requests.current],
+    [t('errorRate'), `${decimal.format(data.summary.errorRate.current)}%`],
+    [t('averageLatency'), `${decimal.format(data.summary.averageLatencyMs.current)} ms`],
+    [t('maximumLatency'), `${decimal.format(data.summary.p95LatencyMs.current)} ms`],
+  ] as const;
+  return (
+    <div className="adminView">
+      <AnalyticsRange view="reliability" range={data.range} />
+      <section className="adminPanel" aria-labelledby="reliability-summary">
+        <div className="adminSectionHeading">
+          <h2 id="reliability-summary">{t('reliabilitySummary')}</h2>
+        </div>
+        <div className="adminMetricStrip">
+          {metrics.map(([label, value]) => (
+            <div className="adminMetric" key={label}>
+              <span>{label}</span>
+              <strong>{typeof value === 'number' ? numbers.format(value) : value}</strong>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className="adminPanel" aria-labelledby="slow-routes">
+        <div className="adminSectionHeading">
+          <h2 id="slow-routes">{t('slowRoutes')}</h2>
+        </div>
+        {data.slowRoutes.length ? (
+          <div className="adminTableWrap">
+            <table className="adminDataTable">
+              <thead>
+                <tr>
+                  <th>{t('route')}</th>
+                  <th>{t('requests')}</th>
+                  <th>{t('errorRate')}</th>
+                  <th>{t('averageLatency')}</th>
+                  <th>{t('maximumLatency')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.slowRoutes.map((route) => (
+                  <tr key={`${route.method}-${route.route}`}>
+                    <td>
+                      {route.method} {route.route}
+                    </td>
+                    <td>{route.requests}</td>
+                    <td>{decimal.format(route.errorRate)}%</td>
+                    <td>{decimal.format(route.averageLatencyMs)} ms</td>
+                    <td>{decimal.format(route.maxLatencyMs)} ms</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="adminEmpty">{t('noReliabilityData')}</p>
+        )}
+      </section>
+      <section className="adminPanel" aria-labelledby="request-trend">
+        <div className="adminSectionHeading">
+          <h2 id="request-trend">{t('requests')}</h2>
+        </div>
+        <div className="adminTableWrap">
+          <table className="adminDataTable">
+            <thead>
+              <tr>
+                <th>{t('period')}</th>
+                <th>{t('requests')}</th>
+                <th>{t('error')}</th>
+                <th>{t('averageLatency')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.series.map((point) => (
+                <tr key={point.from}>
+                  <td>{point.from === point.to ? point.from : `${point.from} – ${point.to}`}</td>
+                  <td>{numbers.format(point.requests)}</td>
+                  <td>{numbers.format(point.errors)}</td>
+                  <td>{decimal.format(point.averageLatencyMs)} ms</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section className="adminPanel" aria-labelledby="operations">
+        <div className="adminSectionHeading">
+          <h2 id="operations">{t('operationalSignals')}</h2>
+        </div>
+        <div className="adminSignalList">
+          {[
+            [t('emailDelivery'), data.email],
+            [t('readiness'), data.readiness],
+            [t('backgroundJobs'), data.backgroundJobs],
+            [t('backups'), data.backups],
+          ].map(([label, signal]) => (
+            <div key={label as string}>
+              <strong>{label as string}</strong>
+              <span>{(signal as AdminReliabilityResponse['email']).status}</span>
+              <small>{(signal as AdminReliabilityResponse['email']).detail}</small>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AnalyticsRange({
+  view,
+  range,
+}: {
+  view: 'retention' | 'reliability';
+  range: AdminRetentionResponse['range'];
+}) {
+  return (
+    <section className="adminPanel">
+      <form className="adminRangeForm" method="get">
+        <input type="hidden" name="view" value={view} />
+        <input type="hidden" name="timezone" value={range.timezone} />
+        <label>
+          From
+          <input type="date" name="from" defaultValue={range.from} />
+        </label>
+        <label>
+          To
+          <input type="date" name="to" defaultValue={range.to} />
+        </label>
+        <button type="submit">Apply range</button>
+      </form>
+    </section>
   );
 }
 
@@ -599,36 +895,17 @@ async function LogTable({
         <span>{entries.length}</span>
       </div>
       {entries.length ? (
-        <div className="adminTableWrap">
-          <table className="adminLogTable">
-            <thead>
-              <tr>
-                <th>{t('event')}</th>
-                <th>{t('source')}</th>
-                <th>{t('time')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry, index) => (
-                <tr key={`${entry.timestamp}-${entry.level}-${index}`}>
-                  <td>
-                    <div className="adminLogEvent">
-                      <span className="adminLevel" data-level={entry.level}>
-                        {entry.level}
-                      </span>
-                      <span>
-                        <strong>{entry.message}</strong>
-                        {entry.detail ? <small>{entry.detail}</small> : null}
-                      </span>
-                    </div>
-                  </td>
-                  <td>{entry.category}</td>
-                  <td className="adminNumeric">{dates.format(new Date(entry.timestamp))}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <HealthEventTable
+          entries={entries}
+          locale={dates.resolvedOptions().locale}
+          labels={{
+            event: t('event'),
+            source: t('source'),
+            time: t('time'),
+            details: t('errorDetails'),
+            close: t('close'),
+          }}
+        />
       ) : (
         <p className="adminEmpty">{t('noEvents')}</p>
       )}

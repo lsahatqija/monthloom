@@ -219,6 +219,94 @@
   padding-right: 1rem;
 }
 
+.adminLogButton {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.adminLogButton:hover strong {
+  text-decoration: underline;
+}
+.adminLogButton:focus-visible {
+  outline: 2px solid var(--ml-primary);
+  outline-offset: 4px;
+}
+.adminLogDialog {
+  width: min(42rem, calc(100% - 2rem));
+  max-height: min(40rem, calc(100% - 2rem));
+  padding: 0;
+  border: 1px solid var(--ml-border);
+  border-radius: 8px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+}
+.adminLogDialog::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+.adminLogDialog > div {
+  padding: 1.25rem;
+}
+.adminLogDialog header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.adminLogDialog header > div {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.adminLogDialog h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.adminLogDialog header button {
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  border: 1px solid var(--ml-border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+.adminLogDialog dl {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+.adminLogDialog dl > div {
+  display: grid;
+  grid-template-columns: 5rem 1fr;
+  gap: 1rem;
+}
+.adminLogDialog dt {
+  color: var(--ml-text-muted);
+}
+.adminLogDialog dd {
+  margin: 0;
+}
+.adminLogDialog pre {
+  max-height: 22rem;
+  margin: 0;
+  padding: 1rem;
+  overflow: auto;
+  border-radius: 6px;
+  background: var(--ml-divider);
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .adminLogEvent strong {
   display: block;
   overflow: hidden;
@@ -413,6 +501,33 @@
   writing-mode: vertical-rl;
 }
 
+.adminCohortCell {
+  background: color-mix(
+    in srgb,
+    var(--ml-primary) calc(var(--cohort-strength, 0) * 28%),
+    transparent
+  );
+}
+.adminSignalList {
+  display: grid;
+  gap: 0;
+  margin-top: 1rem;
+}
+.adminSignalList > div {
+  display: grid;
+  grid-template-columns: 10rem 6rem 1fr;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--ml-divider);
+}
+.adminSignalList span {
+  color: var(--ml-text-muted);
+  text-transform: capitalize;
+}
+.adminSignalList small {
+  color: var(--ml-text-muted);
+}
+
 @media (max-width: 700px) {
   .adminPage {
     width: min(100% - 2rem, 75rem);
@@ -489,6 +604,12 @@
 
   .adminSeverityGrid {
     grid-template-columns: 1fr;
+  }
+  .adminSignalList > div {
+    grid-template-columns: 1fr auto;
+  }
+  .adminSignalList small {
+    grid-column: 1 / -1;
   }
 
   .adminSeverity,

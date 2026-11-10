@@ -95,6 +95,9 @@ export const adminUsageResponseSchema = adminAnalyticsContextSchema.extend({
       from: calendarDateSchema,
       to: calendarDateSchema,
       activeUsers: z.number().int().nonnegative(),
+      dailyActiveUsers: z.number().int().nonnegative(),
+      weeklyActiveUsers: z.number().int().nonnegative(),
+      monthlyActiveUsers: z.number().int().nonnegative(),
       activeHouseholds: z.number().int().nonnegative(),
       transactionsCreated: z.number().int().nonnegative(),
       transactionsUpdated: z.number().int().nonnegative(),
@@ -174,6 +177,84 @@ export const adminAdoptionResponseSchema = adminAnalyticsContextSchema.extend({
 });
 export type AdminAdoptionResponse = z.infer<typeof adminAdoptionResponseSchema>;
 
+const retentionMetricSchema = z.object({
+  day: z.enum(['d1', 'd7', 'd30']),
+  retained: z.number().int().nonnegative(),
+  eligible: z.number().int().nonnegative(),
+  rate: nullableRatioSchema,
+});
+
+export const adminRetentionResponseSchema = adminAnalyticsContextSchema.extend({
+  retention: z.array(retentionMetricSchema).length(3),
+  cohorts: z.array(
+    z.object({
+      week: calendarDateSchema,
+      size: z.number().int().nonnegative(),
+      weeks: z.array(z.number().min(0).max(100).nullable()),
+    }),
+  ),
+  dormant: z.object({
+    users30Days: z.number().int().nonnegative(),
+    users90Days: z.number().int().nonnegative(),
+    households30Days: z.number().int().nonnegative(),
+  }),
+  reactivations: z.array(
+    z.object({
+      from: calendarDateSchema,
+      to: calendarDateSchema,
+      users: z.number().int().nonnegative(),
+    }),
+  ),
+  coverageStartedAt: isoDateTimeSchema,
+});
+export type AdminRetentionResponse = z.infer<typeof adminRetentionResponseSchema>;
+
+const operationalStateSchema = z.object({
+  status: z.enum(['healthy', 'degraded', 'unavailable', 'unknown']),
+  lastObservedAt: isoDateTimeSchema.nullable(),
+  detail: z.string(),
+});
+
+export const adminReliabilityResponseSchema = adminAnalyticsContextSchema.extend({
+  summary: z.object({
+    requests: comparedNumberSchema,
+    errorRate: comparedNumberSchema,
+    averageLatencyMs: comparedNumberSchema,
+    p95LatencyMs: comparedNumberSchema,
+    databaseAverageMs: comparedNumberSchema,
+  }),
+  series: z.array(
+    z.object({
+      from: calendarDateSchema,
+      to: calendarDateSchema,
+      requests: z.number().int().nonnegative(),
+      errors: z.number().int().nonnegative(),
+      averageLatencyMs: z.number().nonnegative(),
+    }),
+  ),
+  slowRoutes: z.array(
+    z.object({
+      method: z.string(),
+      route: z.string(),
+      requests: z.number().int().nonnegative(),
+      errorRate: z.number().min(0).max(100),
+      averageLatencyMs: z.number().nonnegative(),
+      maxLatencyMs: z.number().nonnegative(),
+    }),
+  ),
+  email: operationalStateSchema,
+  readiness: operationalStateSchema,
+  backgroundJobs: operationalStateSchema,
+  backups: operationalStateSchema,
+  deployment: z.object({
+    applicationVersion: z.string(),
+    clientVersions: z.array(
+      z.object({ version: z.string(), requests: z.number().int().nonnegative() }),
+    ),
+  }),
+});
+export type AdminReliabilityResponse = z.infer<typeof adminReliabilityResponseSchema>;
+
 export const adminLogLevelSchema = z.enum(['warn', 'error', 'fatal']);
 export type AdminLogLevel = z.infer<typeof adminLogLevelSchema>;
 
@@ -183,6 +264,7 @@ export const adminLogEntrySchema = z.object({
   category: z.string(),
   message: z.string(),
   detail: z.string().optional(),
+  fullMessage: z.string().optional(),
   statusCode: z.number().int().optional(),
 });
 

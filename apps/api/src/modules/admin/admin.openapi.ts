@@ -31,6 +31,20 @@ export function registerAdminOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
+  registerAnalyticsPath(
+    registry,
+    '/api/v1/admin/retention',
+    'Get administration retention analytics',
+    'Mature retention cohorts, dormancy, and reactivation analytics.',
+    contracts.adminRetentionResponseSchema,
+  );
+  registerAnalyticsPath(
+    registry,
+    '/api/v1/admin/reliability',
+    'Get administration reliability analytics',
+    'Request latency, error rate, route, version, and operational reporting.',
+    contracts.adminReliabilityResponseSchema,
+  );
   registry.registerPath({
     method: 'get',
     path: '/api/v1/admin/adoption',
@@ -73,6 +87,35 @@ export function registerAdminOpenApi(registry: OpenAPIRegistry): void {
           'application/json': { schema: contracts.adminDashboardResponseSchema },
         },
       },
+      401: {
+        description: 'Authentication required.',
+        content: { 'application/json': { schema: contracts.apiErrorResponseSchema } },
+      },
+      403: {
+        description: 'Administrator role required.',
+        content: { 'application/json': { schema: contracts.apiErrorResponseSchema } },
+      },
+    },
+  });
+}
+
+function registerAnalyticsPath(
+  registry: OpenAPIRegistry,
+  path: string,
+  summary: string,
+  description: string,
+  schema:
+    typeof contracts.adminRetentionResponseSchema | typeof contracts.adminReliabilityResponseSchema,
+): void {
+  registry.registerPath({
+    method: 'get',
+    path,
+    summary,
+    tags: ['Administration'],
+    security: [{ sessionCookie: [] }],
+    request: { query: contracts.adminAnalyticsRangeQuerySchema },
+    responses: {
+      200: { description, content: { 'application/json': { schema } } },
       401: {
         description: 'Authentication required.',
         content: { 'application/json': { schema: contracts.apiErrorResponseSchema } },

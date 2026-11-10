@@ -4,6 +4,8 @@ import {
   adminAnalyticsRangeQuerySchema,
   adminHealthResponseSchema,
   adminOverviewResponseSchema,
+  adminReliabilityResponseSchema,
+  adminRetentionResponseSchema,
 } from '../src/index.js';
 
 const generatedAt = '2026-11-09T12:00:00.000Z';
@@ -74,5 +76,53 @@ describe('admin contracts', () => {
         bucket: 'day',
       }).success,
     ).toBe(false);
+  });
+
+  it('accepts retention and reliability view responses', () => {
+    const range = {
+      from: '2026-10-01',
+      to: '2026-10-31',
+      start: '2026-10-01T00:00:00.000Z',
+      endExclusive: '2026-11-01T00:00:00.000Z',
+      timezone: 'UTC',
+      bucket: 'day',
+    };
+    const retention = adminRetentionResponseSchema.parse({
+      generatedAt,
+      range,
+      comparisonRange: range,
+      retention: [
+        { day: 'd1', retained: 2, eligible: 4, rate: 50 },
+        { day: 'd7', retained: 1, eligible: 3, rate: 33.3 },
+        { day: 'd30', retained: 0, eligible: 0, rate: null },
+      ],
+      cohorts: [],
+      dormant: { users30Days: 2, users90Days: 1, households30Days: 1 },
+      reactivations: [],
+      coverageStartedAt: generatedAt,
+    });
+    expect(retention.retention[0]).toMatchObject({ day: 'd1', eligible: 4 });
+    const compared = { current: 0, previous: 0, changePercent: 0 };
+    expect(
+      adminReliabilityResponseSchema.parse({
+        generatedAt,
+        range,
+        comparisonRange: range,
+        summary: {
+          requests: compared,
+          errorRate: compared,
+          averageLatencyMs: compared,
+          p95LatencyMs: compared,
+          databaseAverageMs: compared,
+        },
+        series: [],
+        slowRoutes: [],
+        email: { status: 'unknown', lastObservedAt: null, detail: 'Not connected' },
+        readiness: { status: 'unknown', lastObservedAt: null, detail: 'Not connected' },
+        backgroundJobs: { status: 'unknown', lastObservedAt: null, detail: 'Not connected' },
+        backups: { status: 'unknown', lastObservedAt: null, detail: 'Not connected' },
+        deployment: { applicationVersion: '0.1.0', clientVersions: [] },
+      }),
+    ).toMatchObject({ summary: { requests: { current: 0 } } });
   });
 });
