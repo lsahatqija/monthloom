@@ -11,6 +11,9 @@ export interface User {
   desiredColor: DesiredColor;
   locale: Locale;
   role: UserRole;
+  failedLoginAttempts: number;
+  lockedUntil: Date | null;
+  suspendedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

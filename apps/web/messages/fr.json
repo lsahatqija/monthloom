@@ -139,7 +139,8 @@
     "emailDelivery": "Livraison des e-mails",
     "readiness": "Disponibilité",
     "backgroundJobs": "Tâches en arrière-plan",
-    "backups": "Sauvegardes"
+    "backups": "Sauvegardes",
+    "security": "Sécurité", "securitySummary": "Sécurité de l’authentification", "failedLogins": "Connexions échouées", "successfulLogins": "Connexions réussies", "loginFailureRate": "Taux d’échec de connexion", "rateLimitedRequests": "Requêtes limitées", "affectedClients": "Clients concernés", "repeatedClients": "Clients récurrents", "accountState": "État des comptes", "unverifiedAccounts": "Comptes non vérifiés", "lockedAccounts": "Comptes verrouillés", "suspendedAccounts": "Comptes suspendus", "securityTrend": "Tendance de sécurité", "rateLimitRoutes": "Routes limitées"
   },
   "Common": {
     "loading": "Chargement...",

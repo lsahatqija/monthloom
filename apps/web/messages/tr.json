@@ -139,7 +139,8 @@
     "emailDelivery": "E-posta teslimi",
     "readiness": "Hazır olma",
     "backgroundJobs": "Arka plan işleri",
-    "backups": "Yedekler"
+    "backups": "Yedekler",
+    "security": "Güvenlik", "securitySummary": "Kimlik doğrulama güvenliği", "failedLogins": "Başarısız girişler", "successfulLogins": "Başarılı girişler", "loginFailureRate": "Giriş başarısızlık oranı", "rateLimitedRequests": "Sınırlandırılan istekler", "affectedClients": "Etkilenen istemciler", "repeatedClients": "Tekrarlanan istemciler", "accountState": "Hesap durumu", "unverifiedAccounts": "Doğrulanmamış hesaplar", "lockedAccounts": "Kilitli hesaplar", "suspendedAccounts": "Askıya alınmış hesaplar", "securityTrend": "Güvenlik eğilimi", "rateLimitRoutes": "Sınırlandırılan rotalar"
   },
   "Common": {
     "loading": "Yükleniyor...",

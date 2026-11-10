@@ -1,4 +1,7 @@
-import { adminAnalyticsRangeQuerySchema } from '@monthloom/contracts';
+import {
+  adminAnalyticsRangeQuerySchema,
+  adminSuspendAccountParamsSchema,
+} from '@monthloom/contracts';
 import type { Request, Response } from 'express';
 
 import type { AdminService } from './admin.service.js';
@@ -40,5 +43,16 @@ export class AdminController {
       .json(
         await this.adminService.getReliability(adminAnalyticsRangeQuerySchema.parse(req.query)),
       );
+  };
+
+  getSecurity = async (req: Request, res: Response): Promise<void> => {
+    res
+      .status(200)
+      .json(await this.adminService.getSecurity(adminAnalyticsRangeQuerySchema.parse(req.query)));
+  };
+
+  suspendAccount = async (req: Request, res: Response): Promise<void> => {
+    const { userId } = adminSuspendAccountParamsSchema.parse(req.params);
+    res.status(200).json(await this.adminService.suspendAccount(userId, req.authUser!.id));
   };
 }

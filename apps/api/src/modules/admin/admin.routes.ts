@@ -21,6 +21,13 @@ export function createAdminRouter(
     requireAdmin,
     asyncHandler(adminController.getReliability),
   );
+  router.get('/security', requireAuth, requireAdmin, asyncHandler(adminController.getSecurity));
+  router.post(
+    '/users/:userId/suspend',
+    requireAuth,
+    requireAdmin,
+    asyncHandler(adminController.suspendAccount),
+  );
   router.get('/dashboard', requireAuth, requireAdmin, asyncHandler(adminController.getDashboard));
   return router;
 }

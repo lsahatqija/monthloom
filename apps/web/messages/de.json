@@ -139,7 +139,8 @@
     "emailDelivery": "E-Mail-Zustellung",
     "readiness": "Bereitschaft",
     "backgroundJobs": "Hintergrundaufgaben",
-    "backups": "Sicherungen"
+    "backups": "Sicherungen",
+    "security": "Sicherheit", "securitySummary": "Anmeldesicherheit", "failedLogins": "Fehlgeschlagene Anmeldungen", "successfulLogins": "Erfolgreiche Anmeldungen", "loginFailureRate": "Anmeldefehlerrate", "rateLimitedRequests": "Begrenzte Anfragen", "affectedClients": "Betroffene Clients", "repeatedClients": "Wiederholte Clients", "accountState": "Kontostatus", "unverifiedAccounts": "Unbestätigte Konten", "lockedAccounts": "Gesperrte Konten", "suspendedAccounts": "Suspendierte Konten", "securityTrend": "Sicherheitstrend", "rateLimitRoutes": "Begrenzte Routen"
   },
   "Common": {
     "loading": "Wird geladen...",

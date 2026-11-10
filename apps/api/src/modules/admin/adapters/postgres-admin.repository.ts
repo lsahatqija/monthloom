@@ -1,11 +1,13 @@
 import type {
   AdminAdoptionResponse,
   AdminResolvedRange,
+  AdminSecurityResponse,
+  AdminSuspendAccountResponse,
   AdminReliabilityResponse,
   AdminRetentionResponse,
   AdminUsageResponse,
 } from '@monthloom/contracts';
-import { and, count, countDistinct, gt, gte, isNull, sql } from 'drizzle-orm';
+import { and, count, countDistinct, eq, gt, gte, isNull, ne, sql } from 'drizzle-orm';
 
 import { config } from '../../../config/index.js';
 import type { Database } from '../../../infrastructure/database/client.js';
@@ -13,6 +15,7 @@ import {
   expenses,
   households,
   incomes,
+  productEvents,
   sessions,
   users,
 } from '../../../infrastructure/database/schema/index.js';
@@ -494,6 +497,121 @@ export class PostgresAdminRepository implements AdminRepository {
     };
   }
 
+  async getSecurity(
+    range: AdminResolvedRange,
+    comparisonRange: AdminResolvedRange,
+  ): Promise<Omit<AdminSecurityResponse, 'generatedAt' | 'range' | 'comparisonRange'>> {
+    const [current, previous, seriesResult, routesResult, accountResult] = await Promise.all([
+      this.getSecurityTotals(range),
+      this.getSecurityTotals(comparisonRange),
+      this.db.execute<SecuritySeriesRow>(sql`
+        SELECT floor((((occurred_at AT TIME ZONE ${range.timezone})::date - ${range.from}::date)
+          / ${range.bucket === 'day' ? 1 : 7}))::int AS bucket_index,
+          count(*) FILTER (WHERE event_name = 'auth.login.succeeded')::int AS successful_logins,
+          count(*) FILTER (WHERE event_name = 'auth.login.failed')::int AS failed_logins,
+          count(*) FILTER (WHERE event_name = 'security.rate_limited')::int AS rate_limited_requests
+        FROM product_events
+        WHERE occurred_at >= ${new Date(range.start)} AND occurred_at < ${new Date(range.endExclusive)}
+          AND event_name IN ('auth.login.succeeded', 'auth.login.failed', 'security.rate_limited')
+        GROUP BY bucket_index ORDER BY bucket_index
+      `),
+      this.db.execute<RateLimitRouteRow>(sql`
+        WITH clients AS (
+          SELECT metadata->>'routeGroup' AS route, metadata->>'clientKey' AS client_key, count(*)::int AS requests
+          FROM product_events
+          WHERE event_name = 'security.rate_limited'
+            AND occurred_at >= ${new Date(range.start)} AND occurred_at < ${new Date(range.endExclusive)}
+          GROUP BY route, client_key
+        )
+        SELECT coalesce(route, 'unknown') AS route, sum(requests)::int AS requests,
+          count(*)::int AS affected_clients,
+          count(*) FILTER (WHERE requests > 1)::int AS repeated_clients
+        FROM clients GROUP BY route ORDER BY requests DESC, route
+      `),
+      this.db.execute<AccountStateRow>(sql`
+        SELECT count(*) FILTER (WHERE NOT email_verified)::int AS unverified,
+          count(*) FILTER (WHERE locked_until > ${new Date(range.endExclusive)})::int AS locked,
+          count(*) FILTER (WHERE suspended_at IS NOT NULL AND suspended_at < ${new Date(range.endExclusive)})::int AS suspended
+        FROM users WHERE role <> 'admin'
+      `),
+    ]);
+    const accounts = accountResult.rows[0] ?? { unverified: 0, locked: 0, suspended: 0 };
+    return {
+      summary: {
+        failedLogins: compared(current.failed_logins, previous.failed_logins),
+        loginFailureRate: compared(current.failure_rate, previous.failure_rate),
+        rateLimitedRequests: compared(
+          current.rate_limited_requests,
+          previous.rate_limited_requests,
+        ),
+        affectedClients: compared(current.affected_clients, previous.affected_clients),
+      },
+      accountState: accounts,
+      series: adminCalendarBuckets(range).map((bucket, index) => {
+        const row = seriesResult.rows.find((item) => item.bucket_index === index);
+        return {
+          ...bucket,
+          successfulLogins: row?.successful_logins ?? 0,
+          failedLogins: row?.failed_logins ?? 0,
+          rateLimitedRequests: row?.rate_limited_requests ?? 0,
+        };
+      }),
+      rateLimitRoutes: routesResult.rows.map((row) => ({
+        route: row.route,
+        requests: row.requests,
+        affectedClients: row.affected_clients,
+        repeatedClients: row.repeated_clients,
+      })),
+    };
+  }
+
+  async suspendAccount(
+    userId: string,
+    administratorId: string,
+    now: Date,
+  ): Promise<AdminSuspendAccountResponse | null> {
+    return this.db.transaction(async (tx) => {
+      const [account] = await tx
+        .update(users)
+        .set({ suspendedAt: now, updatedAt: now })
+        .where(and(eq(users.id, userId), ne(users.role, 'admin'), isNull(users.suspendedAt)))
+        .returning({ userId: users.id, suspendedAt: users.suspendedAt });
+      if (!account?.suspendedAt) return null;
+      await tx
+        .update(sessions)
+        .set({ revokedAt: now })
+        .where(and(eq(sessions.userId, userId), isNull(sessions.revokedAt)));
+      await tx.insert(productEvents).values({
+        eventName: 'account.suspended',
+        occurredAt: now,
+        actorUserId: administratorId,
+        subjectId: userId,
+        subjectKind: 'user',
+        metadata: {},
+      });
+      return { userId: account.userId, suspendedAt: account.suspendedAt.toISOString() };
+    });
+  }
+
+  private async getSecurityTotals(range: AdminResolvedRange): Promise<SecurityTotalsRow> {
+    const result = await this.db.execute<SecurityTotalsRow>(sql`
+      SELECT count(*) FILTER (WHERE event_name = 'auth.login.failed')::int AS failed_logins,
+        coalesce(count(*) FILTER (WHERE event_name = 'auth.login.failed')::float8 /
+          nullif(count(*) FILTER (WHERE event_name IN ('auth.login.failed', 'auth.login.succeeded')), 0) * 100, 0) AS failure_rate,
+        count(*) FILTER (WHERE event_name = 'security.rate_limited')::int AS rate_limited_requests,
+        count(DISTINCT metadata->>'clientKey') FILTER (WHERE event_name = 'security.rate_limited')::int AS affected_clients
+      FROM product_events WHERE occurred_at >= ${new Date(range.start)} AND occurred_at < ${new Date(range.endExclusive)}
+    `);
+    return (
+      result.rows[0] ?? {
+        failed_logins: 0,
+        failure_rate: 0,
+        rate_limited_requests: 0,
+        affected_clients: 0,
+      }
+    );
+  }
+
   private async getReliabilityTotals(range: AdminResolvedRange): Promise<ReliabilityTotals> {
     const result = await this.db.execute<ReliabilityTotals>(sql`
       SELECT coalesce(sum(request_count), 0)::int AS requests,
@@ -685,6 +803,29 @@ interface SlowRouteRow extends Record<string, unknown> {
   error_rate: number;
   average_latency_ms: number;
   max_latency_ms: number;
+}
+interface SecurityTotalsRow extends Record<string, unknown> {
+  failed_logins: number;
+  failure_rate: number;
+  rate_limited_requests: number;
+  affected_clients: number;
+}
+interface SecuritySeriesRow extends Record<string, unknown> {
+  bucket_index: number;
+  successful_logins: number;
+  failed_logins: number;
+  rate_limited_requests: number;
+}
+interface RateLimitRouteRow extends Record<string, unknown> {
+  route: string;
+  requests: number;
+  affected_clients: number;
+  repeated_clients: number;
+}
+interface AccountStateRow extends Record<string, unknown> {
+  unverified: number;
+  locked: number;
+  suspended: number;
 }
 
 function emptyOperations(): OperationRow {

@@ -1,6 +1,8 @@
 import type {
   AdminAdoptionResponse,
   AdminResolvedRange,
+  AdminSecurityResponse,
+  AdminSuspendAccountResponse,
   AdminReliabilityResponse,
   AdminRetentionResponse,
   AdminUsageResponse,
@@ -35,4 +37,9 @@ export interface AdminRepository {
     range: AdminResolvedRange,
     comparisonRange: AdminResolvedRange,
   ): Promise<Omit<AdminReliabilityResponse, 'generatedAt' | 'range' | 'comparisonRange'>>;
+  getSecurity?(
+    range: AdminResolvedRange,
+    comparisonRange: AdminResolvedRange,
+  ): Promise<Omit<AdminSecurityResponse, 'generatedAt' | 'range' | 'comparisonRange'>>;
+  suspendAccount?(userId: string, administratorId: string, now: Date): Promise<AdminSuspendAccountResponse | null>;
 }

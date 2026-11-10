@@ -34,6 +34,8 @@ export const PASSWORD_RESET_REQUEST_MESSAGE =
   'If an account exists for that email, a password reset link has been sent.';
 export const EMAIL_VERIFICATION_SENT_MESSAGE = 'A verification link has been sent to your email.';
 export const EMAIL_VERIFIED_MESSAGE = 'Your email address has been verified.';
+const FAILED_LOGIN_LOCK_THRESHOLD = 5;
+const FAILED_LOGIN_LOCK_MS = 15 * 60 * 1_000;
 
 export class AuthService {
   constructor(
@@ -101,12 +103,28 @@ export class AuthService {
 
     const isValid = await verifyPassword(user.passwordHash, input.password);
     if (!isValid) {
+      const now = new Date();
+      await this.userRepository.recordFailedLogin(
+        user.id,
+        now,
+        FAILED_LOGIN_LOCK_THRESHOLD,
+        new Date(now.getTime() + FAILED_LOGIN_LOCK_MS),
+      );
+      await this.productEvents?.record({ eventName: 'auth.login.failed' });
+      throw new AuthenticationError('Invalid email or password.');
+    }
+
+    const now = new Date();
+    if (user.suspendedAt || (user.lockedUntil && user.lockedUntil > now)) {
       await this.productEvents?.record({ eventName: 'auth.login.failed' });
       throw new AuthenticationError('Invalid email or password.');
     }
 
     const sessionToken = await this.createSession(user.id);
-    await this.userRepository.recordActivity(user.id, new Date());
+    await Promise.all([
+      this.userRepository.resetFailedLogins(user.id),
+      this.userRepository.recordActivity(user.id, now),
+    ]);
     await Promise.all([
       this.productEvents?.record({ eventName: 'auth.login.succeeded', actorUserId: user.id }),
       this.productEvents?.recordActivity(user.id),
@@ -214,6 +232,10 @@ export class AuthService {
     }
 
     const user = await this.userRepository.findById(session.userId);
+    if (user?.suspendedAt || (user?.lockedUntil && user.lockedUntil > new Date())) {
+      await this.sessionRepository.revoke(session.id);
+      return null;
+    }
     if (user) {
       const now = new Date();
       await Promise.all([

@@ -257,6 +257,45 @@ export const adminReliabilityResponseSchema = adminAnalyticsContextSchema.extend
 });
 export type AdminReliabilityResponse = z.infer<typeof adminReliabilityResponseSchema>;
 
+export const adminSecurityResponseSchema = adminAnalyticsContextSchema.extend({
+  summary: z.object({
+    failedLogins: comparedNumberSchema,
+    loginFailureRate: comparedNumberSchema,
+    rateLimitedRequests: comparedNumberSchema,
+    affectedClients: comparedNumberSchema,
+  }),
+  accountState: z.object({
+    unverified: z.number().int().nonnegative(),
+    locked: z.number().int().nonnegative(),
+    suspended: z.number().int().nonnegative(),
+  }),
+  series: z.array(
+    z.object({
+      from: calendarDateSchema,
+      to: calendarDateSchema,
+      successfulLogins: z.number().int().nonnegative(),
+      failedLogins: z.number().int().nonnegative(),
+      rateLimitedRequests: z.number().int().nonnegative(),
+    }),
+  ),
+  rateLimitRoutes: z.array(
+    z.object({
+      route: z.string(),
+      requests: z.number().int().nonnegative(),
+      affectedClients: z.number().int().nonnegative(),
+      repeatedClients: z.number().int().nonnegative(),
+    }),
+  ),
+});
+export type AdminSecurityResponse = z.infer<typeof adminSecurityResponseSchema>;
+
+export const adminSuspendAccountParamsSchema = z.object({ userId: z.string().uuid() });
+export const adminSuspendAccountResponseSchema = z.object({
+  userId: z.string().uuid(),
+  suspendedAt: isoDateTimeSchema,
+});
+export type AdminSuspendAccountResponse = z.infer<typeof adminSuspendAccountResponseSchema>;
+
 export const adminLogLevelSchema = z.enum(['warn', 'error', 'fatal']);
 export type AdminLogLevel = z.infer<typeof adminLogLevelSchema>;
 

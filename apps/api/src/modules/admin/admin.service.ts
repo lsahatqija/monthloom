@@ -7,8 +7,12 @@ import type {
   AdminOverviewResponse,
   AdminReliabilityResponse,
   AdminRetentionResponse,
+  AdminSecurityResponse,
+  AdminSuspendAccountResponse,
   AdminUsageResponse,
 } from '@monthloom/contracts';
+
+import { ConflictError, NotFoundError } from '../../shared/errors/index.js';
 
 import type { AdminLogReader } from './admin-log-reader.js';
 import { resolveAdminAnalyticsRange } from './admin-range.js';
@@ -129,5 +133,33 @@ export class AdminService {
       comparisonRange,
       ...(await this.repository.getReliability(range, comparisonRange)),
     };
+  }
+
+  async getSecurity(
+    query: AdminAnalyticsRangeQuery,
+    now = new Date(),
+  ): Promise<AdminSecurityResponse> {
+    if (!this.repository.getSecurity)
+      throw new Error('Security analytics repository is unavailable.');
+    const { range, comparisonRange } = resolveAdminAnalyticsRange(query, now);
+    return {
+      generatedAt: now.toISOString(),
+      range,
+      comparisonRange,
+      ...(await this.repository.getSecurity(range, comparisonRange)),
+    };
+  }
+
+  async suspendAccount(
+    userId: string,
+    administratorId: string,
+    now = new Date(),
+  ): Promise<AdminSuspendAccountResponse> {
+    if (userId === administratorId) throw new ConflictError('You cannot suspend your own account.');
+    if (!this.repository.suspendAccount)
+      throw new Error('Account suspension repository is unavailable.');
+    const result = await this.repository.suspendAccount(userId, administratorId, now);
+    if (!result) throw new NotFoundError('The account was not found or is already suspended.');
+    return result;
   }
 }

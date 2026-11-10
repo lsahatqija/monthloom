@@ -36,6 +36,37 @@ describe('authentication service', () => {
     expect(sessions.create).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['locked', { lockedUntil: new Date(Date.now() + 60_000) }],
+    ['suspended', { suspendedAt: new Date() }],
+  ])('does not reveal a %s account and creates no session', async (_state, accountState) => {
+    users.findByEmail.mockResolvedValue({
+      ...user,
+      ...accountState,
+      passwordHash: await hashPassword('Valid-password-123!'),
+    });
+    await expect(
+      service.login({ email: user.email, password: 'Valid-password-123!' }),
+    ).rejects.toMatchObject({ statusCode: 401, message: 'Invalid email or password.' });
+    expect(sessions.create).not.toHaveBeenCalled();
+  });
+
+  it('records failed attempts without changing the generic login response', async () => {
+    users.findByEmail.mockResolvedValue({
+      ...user,
+      passwordHash: await hashPassword('Valid-password-123!'),
+    });
+    await expect(
+      service.login({ email: user.email, password: 'wrong-password' }),
+    ).rejects.toMatchObject({ statusCode: 401, message: 'Invalid email or password.' });
+    expect(users.recordFailedLogin).toHaveBeenCalledWith(
+      user.id,
+      expect.any(Date),
+      5,
+      expect.any(Date),
+    );
+  });
+
   it.each(['missing', 'expired', 'revoked'] as const)('rejects a %s session', async (state) => {
     sessions.findByTokenHash.mockResolvedValue(
       state === 'missing'
@@ -60,6 +91,7 @@ describe('authentication service', () => {
     users.findByEmail.mockResolvedValue(authenticatedUser);
     await service.login({ email: user.email, password: 'Valid-password-123!' });
     expect(users.recordActivity).toHaveBeenCalledWith(user.id, expect.any(Date));
+    expect(users.resetFailedLogins).toHaveBeenCalledWith(user.id);
 
     users.findById.mockResolvedValue(authenticatedUser);
     sessions.findByTokenHash.mockResolvedValue({
@@ -72,6 +104,21 @@ describe('authentication service', () => {
     });
     await service.validateSession('raw-token');
     expect(users.recordActivity).toHaveBeenCalledTimes(2);
+  });
+
+  it('revokes an existing session when the account becomes suspended', async () => {
+    sessions.findByTokenHash.mockResolvedValue({
+      id: 'session',
+      userId: user.id,
+      tokenHash: hashSessionToken('raw-token'),
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 60_000),
+      revokedAt: null,
+    });
+    users.findById.mockResolvedValue({ ...user, suspendedAt: new Date() });
+    await expect(service.validateSession('raw-token')).resolves.toBeNull();
+    expect(sessions.revoke).toHaveBeenCalledWith('session');
+    expect(users.recordActivity).not.toHaveBeenCalled();
   });
 
   it('does not send reset emails to an unverified account', async () => {

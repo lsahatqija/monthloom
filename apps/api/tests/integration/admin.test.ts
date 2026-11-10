@@ -5,6 +5,7 @@ import {
   adminOverviewResponseSchema,
   adminReliabilityResponseSchema,
   adminRetentionResponseSchema,
+  adminSecurityResponseSchema,
   adminUsageResponseSchema,
 } from '@monthloom/contracts';
 import request from 'supertest';
@@ -229,5 +230,48 @@ describe('admin dashboard HTTP + PostgreSQL', () => {
     expect(reliability.deployment.history).toEqual(
       expect.arrayContaining([expect.objectContaining({ version: 'test-v2' })]),
     );
+  });
+
+  it('returns aggregate-only security data and suspends accounts with session revocation', async () => {
+    const administrator = await register();
+    const target = await register();
+    await pool.query(`UPDATE users SET role = 'admin' WHERE id = $1`, [administrator.user.id]);
+    const now = new Date();
+    await pool.query(
+      `INSERT INTO product_events (event_name, occurred_at, metadata) VALUES
+        ('auth.login.failed', $1, '{}'),
+        ('auth.login.succeeded', $1, '{}'),
+        ('security.rate_limited', $1, $2),
+        ('security.rate_limited', $1, $2)`,
+      [now, JSON.stringify({ clientKey: 'a'.repeat(64), routeGroup: '/auth' })],
+    );
+    const today = now.toISOString().slice(0, 10);
+    const response = await administrator.agent
+      .get(`${api}/admin/security?from=${today}&to=${today}&timezone=UTC`)
+      .expect(200);
+    const security = adminSecurityResponseSchema.parse(response.body);
+    expect(security.summary.failedLogins.current).toBe(1);
+    expect(security.summary.rateLimitedRequests.current).toBe(2);
+    expect(security.rateLimitRoutes).toContainEqual({
+      route: '/auth',
+      requests: 2,
+      affectedClients: 1,
+      repeatedClients: 1,
+    });
+    expect(JSON.stringify(response.body)).not.toContain('a'.repeat(64));
+    expect(JSON.stringify(response.body)).not.toContain('clientKey');
+
+    await administrator.agent.post(`${api}/admin/users/${target.user.id}/suspend`).expect(200);
+    await target.agent.get(`${api}/users/me`).expect(401);
+    const state = await pool.query(
+      `SELECT u.suspended_at, s.revoked_at,
+        EXISTS (SELECT 1 FROM product_events e WHERE e.event_name = 'account.suspended'
+          AND e.actor_user_id = $2 AND e.subject_id = $1) AS audited
+       FROM users u JOIN sessions s ON s.user_id = u.id WHERE u.id = $1 LIMIT 1`,
+      [target.user.id, administrator.user.id],
+    );
+    expect(state.rows[0]).toMatchObject({ audited: true });
+    expect(state.rows[0].suspended_at).toBeTruthy();
+    expect(state.rows[0].revoked_at).toBeTruthy();
   });
 });

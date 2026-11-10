@@ -40,6 +40,30 @@ export function registerAdminOpenApi(registry: OpenAPIRegistry): void {
   );
   registerAnalyticsPath(
     registry,
+    '/api/v1/admin/security',
+    'Get administration security analytics',
+    'Aggregate authentication failures, rate limiting, and account state.',
+    contracts.adminSecurityResponseSchema,
+  );
+  registry.registerPath({
+    method: 'post',
+    path: '/api/v1/admin/users/{userId}/suspend',
+    summary: 'Suspend an account and revoke its sessions',
+    tags: ['Administration'],
+    security: [{ sessionCookie: [] }],
+    request: { params: contracts.adminSuspendAccountParamsSchema },
+    responses: {
+      200: {
+        description: 'The account was suspended and its sessions were revoked.',
+        content: { 'application/json': { schema: contracts.adminSuspendAccountResponseSchema } },
+      },
+      401: { description: 'Authentication required.' },
+      403: { description: 'Administrator role required.' },
+      404: { description: 'Account not found or already suspended.' },
+    },
+  });
+  registerAnalyticsPath(
+    registry,
     '/api/v1/admin/reliability',
     'Get administration reliability analytics',
     'Request latency, error rate, route, version, and operational reporting.',
@@ -105,7 +129,9 @@ function registerAnalyticsPath(
   summary: string,
   description: string,
   schema:
-    typeof contracts.adminRetentionResponseSchema | typeof contracts.adminReliabilityResponseSchema,
+    | typeof contracts.adminRetentionResponseSchema
+    | typeof contracts.adminReliabilityResponseSchema
+    | typeof contracts.adminSecurityResponseSchema,
 ): void {
   registry.registerPath({
     method: 'get',
