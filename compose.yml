@@ -37,6 +37,9 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:-change-this-development-secret-please}
       SESSION_COOKIE_SECURE: 'false'
       UPLOAD_DIR: /app/uploads
+      LOG_DIRECTORY: /app/logs
+      APP_VERSION: ${IMAGE_TAG:-local}
+      DEPLOYED_AT: ${DEPLOYED_AT:-2026-01-01T00:00:00.000Z}
       EMAIL_TRANSPORT: ${EMAIL_TRANSPORT:-log}
       EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-no-reply@monthloom.local}
       EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-}
@@ -46,6 +49,7 @@ services:
       - '4000:4000'
     volumes:
       - uploads_data:/app/uploads
+      - api_logs:/app/logs
     healthcheck:
       test:
         [
@@ -79,3 +83,4 @@ services:
 volumes:
   postgres_data:
   uploads_data:
+  api_logs:

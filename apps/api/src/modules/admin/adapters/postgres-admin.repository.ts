@@ -7,6 +7,7 @@ import type {
 } from '@monthloom/contracts';
 import { and, count, countDistinct, gt, gte, isNull, sql } from 'drizzle-orm';
 
+import { config } from '../../../config/index.js';
 import type { Database } from '../../../infrastructure/database/client.js';
 import {
   expenses,
@@ -421,16 +422,17 @@ export class PostgresAdminRepository implements AdminRepository {
     range: AdminResolvedRange,
     comparisonRange: AdminResolvedRange,
   ): Promise<Omit<AdminReliabilityResponse, 'generatedAt' | 'range' | 'comparisonRange'>> {
-    const [current, previous, seriesResult, routesResult, versionsResult] = await Promise.all([
-      this.getReliabilityTotals(range),
-      this.getReliabilityTotals(comparisonRange),
-      this.db.execute<ReliabilitySeriesRow>(sql`
+    const [current, previous, seriesResult, routesResult, versionsResult, deploymentsResult] =
+      await Promise.all([
+        this.getReliabilityTotals(range),
+        this.getReliabilityTotals(comparisonRange),
+        this.db.execute<ReliabilitySeriesRow>(sql`
         SELECT floor((((hour AT TIME ZONE ${range.timezone})::date - ${range.from}::date) / ${range.bucket === 'day' ? 1 : 7}))::int AS bucket_index,
           sum(request_count)::int AS requests, sum(request_count) FILTER (WHERE status_class = 5)::int AS errors,
           coalesce(sum(duration_total_ms)::float8 / nullif(sum(request_count), 0), 0) AS average_latency_ms
         FROM request_hourly_rollups WHERE hour >= ${new Date(range.start)} AND hour < ${new Date(range.endExclusive)} GROUP BY bucket_index ORDER BY bucket_index
       `),
-      this.db.execute<SlowRouteRow>(sql`
+        this.db.execute<SlowRouteRow>(sql`
         SELECT method, route, sum(request_count)::int AS requests,
           coalesce(sum(request_count) FILTER (WHERE status_class = 5)::float8 / nullif(sum(request_count), 0) * 100, 0) AS error_rate,
           coalesce(sum(duration_total_ms)::float8 / nullif(sum(request_count), 0), 0) AS average_latency_ms,
@@ -438,11 +440,15 @@ export class PostgresAdminRepository implements AdminRepository {
         FROM request_hourly_rollups WHERE hour >= ${new Date(range.start)} AND hour < ${new Date(range.endExclusive)}
         GROUP BY method, route ORDER BY average_latency_ms DESC LIMIT 10
       `),
-      this.db.execute<{ version: string; requests: number }>(sql`
+        this.db.execute<{ version: string; requests: number }>(sql`
         SELECT client_version AS version, sum(request_count)::int AS requests FROM request_hourly_rollups
         WHERE hour >= ${new Date(range.start)} AND hour < ${new Date(range.endExclusive)} GROUP BY client_version ORDER BY requests DESC LIMIT 10
       `),
-    ]);
+        this.db.execute<{ version: string; deployed_at: Date }>(sql`
+        SELECT version, deployed_at FROM application_deployments
+        WHERE deployed_at < ${new Date(range.endExclusive)} ORDER BY deployed_at
+      `),
+      ]);
     const unknown = (detail: string) => ({
       status: 'unknown' as const,
       lastObservedAt: null,
@@ -476,7 +482,15 @@ export class PostgresAdminRepository implements AdminRepository {
       readiness: unknown('Dependency probes are not persisted.'),
       backgroundJobs: unknown('Background-job telemetry is not connected.'),
       backups: unknown('Backup reporting is not connected.'),
-      deployment: { applicationVersion: '0.1.0', clientVersions: versionsResult.rows },
+      deployment: {
+        applicationVersion: config.deployment.version,
+        deployedAt: config.deployment.deployedAt,
+        history: deploymentsResult.rows.map((item) => ({
+          version: item.version,
+          deployedAt: new Date(item.deployed_at).toISOString(),
+        })),
+        clientVersions: versionsResult.rows,
+      },
     };
   }
 

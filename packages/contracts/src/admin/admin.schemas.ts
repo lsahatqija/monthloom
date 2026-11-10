@@ -248,6 +248,8 @@ export const adminReliabilityResponseSchema = adminAnalyticsContextSchema.extend
   backups: operationalStateSchema,
   deployment: z.object({
     applicationVersion: z.string(),
+    deployedAt: isoDateTimeSchema,
+    history: z.array(z.object({ version: z.string(), deployedAt: isoDateTimeSchema })),
     clientVersions: z.array(
       z.object({ version: z.string(), requests: z.number().int().nonnegative() }),
     ),
@@ -265,6 +267,8 @@ export const adminLogEntrySchema = z.object({
   message: z.string(),
   detail: z.string().optional(),
   fullMessage: z.string().optional(),
+  applicationVersion: z.string().optional(),
+  deployedAt: isoDateTimeSchema.optional(),
   statusCode: z.number().int().optional(),
 });
 

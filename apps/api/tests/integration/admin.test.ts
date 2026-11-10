@@ -135,6 +135,11 @@ describe('admin dashboard HTTP + PostgreSQL', () => {
     const usage = adminUsageResponseSchema.parse(response.body);
 
     expect(usage.summary.transactionsCreated.current).toBe(1);
+    expect(usage.series[0]).toMatchObject({
+      dailyActiveUsers: expect.any(Number),
+      weeklyActiveUsers: expect.any(Number),
+      monthlyActiveUsers: expect.any(Number),
+    });
     expect(usage.transactionMix.operations.created).toBe(1);
     expect(usage.transactionMix.kinds).toEqual(
       expect.arrayContaining([expect.objectContaining({ kind: 'expense', count: 1 })]),
@@ -209,6 +214,10 @@ describe('admin dashboard HTTP + PostgreSQL', () => {
     );
     expect(retention.retention).toHaveLength(3);
 
+    await pool.query(
+      `INSERT INTO application_deployments (version, deployed_at) VALUES ('test-v2', $1) ON CONFLICT DO NOTHING`,
+      [new Date(`${today}T00:00:00.000Z`)],
+    );
     const reliability = adminReliabilityResponseSchema.parse(
       (
         await administrator.agent
@@ -217,5 +226,8 @@ describe('admin dashboard HTTP + PostgreSQL', () => {
       ).body,
     );
     expect(reliability.summary.requests.current).toBeGreaterThanOrEqual(0);
+    expect(reliability.deployment.history).toEqual(
+      expect.arrayContaining([expect.objectContaining({ version: 'test-v2' })]),
+    );
   });
 });

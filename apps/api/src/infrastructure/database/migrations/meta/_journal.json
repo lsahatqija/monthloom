@@ -176,6 +176,13 @@
       "when": 1794326400000,
       "tag": "0024_admin_reliability_rollups",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794412800000,
+      "tag": "0025_application_deployments",
+      "breakpoints": true
     }
   ]
 }

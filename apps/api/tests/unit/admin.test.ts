@@ -66,7 +66,12 @@ describe('admin dashboard', () => {
       readiness: operational,
       backgroundJobs: operational,
       backups: operational,
-      deployment: { applicationVersion: '0.1.0', clientVersions: [] },
+      deployment: {
+        applicationVersion: '0.1.0',
+        deployedAt: '2026-01-01T00:00:00.000Z',
+        history: [],
+        clientVersions: [],
+      },
     };
     const analyticsRepository: AdminRepository = {
       ...repository(),
@@ -104,6 +109,8 @@ describe('admin dashboard', () => {
           time: '2026-11-06T10:00:00.000Z',
           level: 'error',
           category: 'http',
+          applicationVersion: 'v2',
+          deployedAt: '2026-11-06T08:00:00.000Z',
           msg: 'Request failed',
           req: { method: 'GET', url: '/api/v1/households' },
           res: { statusCode: 500 },
@@ -144,6 +151,8 @@ describe('admin dashboard', () => {
     });
     expect(result.health.entries[0]).toMatchObject({
       level: 'error',
+      applicationVersion: 'v2',
+      deployedAt: '2026-11-06T08:00:00.000Z',
       detail: 'GET /api/v1/households · 500',
     });
     expect(result.health.entries[1]).toMatchObject({

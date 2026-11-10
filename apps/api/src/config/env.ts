@@ -85,6 +85,10 @@ export const config = {
     level: env.LOG_LEVEL,
     directory: env.LOG_DIRECTORY,
   },
+  deployment: {
+    version: env.APP_VERSION,
+    deployedAt: env.DEPLOYED_AT,
+  },
 
   rateLimit: {
     general: {

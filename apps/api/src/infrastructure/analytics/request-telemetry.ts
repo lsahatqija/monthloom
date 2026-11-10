@@ -1,12 +1,12 @@
 import { sql } from 'drizzle-orm';
 import type { NextFunction, Request, Response } from 'express';
 
+import { config } from '../../config/index.js';
 import type { Database } from '../database/client.js';
 import { requestHourlyRollups } from '../database/schema/index.js';
 import { safeRouteTemplate } from '../logging/http-logger.js';
 import type { Logger } from '../logging/logger.js';
 
-const VERSION = '0.1.0';
 const SAFE_VERSION = /^[A-Za-z0-9._-]{1,40}$/;
 
 export function createRequestTelemetry(db: Database, logger: Logger) {
@@ -27,7 +27,7 @@ export function createRequestTelemetry(db: Database, logger: Logger) {
           method: req.method,
           route,
           statusClass: Math.floor(res.statusCode / 100),
-          applicationVersion: VERSION,
+          applicationVersion: config.deployment.version,
           clientVersion,
           requestCount: 1,
           durationTotalMs: durationMs,

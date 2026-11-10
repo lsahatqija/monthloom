@@ -24,7 +24,9 @@ import { apiClient } from '../../../lib/api/client';
 import { getServerUser } from '../../../lib/auth/get-server-user';
 
 import './admin.css';
+import { AdoptionTrendChart } from './adoption-trend-chart';
 import { HealthEventTable } from './health-event-table';
+import { ReliabilityTables } from './reliability-tables';
 import { UsageChart } from './usage-chart';
 
 type AdminView = 'overview' | 'health' | 'usage' | 'adoption' | 'retention' | 'reliability';
@@ -195,7 +197,7 @@ async function Retention({
         <div className="adminSectionHeading">
           <h2 id="cohort-matrix">{t('weeklyCohorts')}</h2>
         </div>
-        <div className="adminTableWrap">
+        <div className="adminTableWrap adminScrollBox">
           <table className="adminDataTable">
             <thead>
               <tr>
@@ -255,7 +257,7 @@ async function Retention({
         <div className="adminSectionHeading">
           <h2 id="reactivation-trend">{t('reactivatedUsers')}</h2>
         </div>
-        <div className="adminTableWrap">
+        <div className="adminTableWrap adminScrollBox">
           <table className="adminDataTable">
             <thead>
               <tr>
@@ -311,68 +313,20 @@ async function Reliability({
           ))}
         </div>
       </section>
-      <section className="adminPanel" aria-labelledby="slow-routes">
-        <div className="adminSectionHeading">
-          <h2 id="slow-routes">{t('slowRoutes')}</h2>
-        </div>
-        {data.slowRoutes.length ? (
-          <div className="adminTableWrap">
-            <table className="adminDataTable">
-              <thead>
-                <tr>
-                  <th>{t('route')}</th>
-                  <th>{t('requests')}</th>
-                  <th>{t('errorRate')}</th>
-                  <th>{t('averageLatency')}</th>
-                  <th>{t('maximumLatency')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.slowRoutes.map((route) => (
-                  <tr key={`${route.method}-${route.route}`}>
-                    <td>
-                      {route.method} {route.route}
-                    </td>
-                    <td>{route.requests}</td>
-                    <td>{decimal.format(route.errorRate)}%</td>
-                    <td>{decimal.format(route.averageLatencyMs)} ms</td>
-                    <td>{decimal.format(route.maxLatencyMs)} ms</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="adminEmpty">{t('noReliabilityData')}</p>
-        )}
-      </section>
-      <section className="adminPanel" aria-labelledby="request-trend">
-        <div className="adminSectionHeading">
-          <h2 id="request-trend">{t('requests')}</h2>
-        </div>
-        <div className="adminTableWrap">
-          <table className="adminDataTable">
-            <thead>
-              <tr>
-                <th>{t('period')}</th>
-                <th>{t('requests')}</th>
-                <th>{t('error')}</th>
-                <th>{t('averageLatency')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.series.map((point) => (
-                <tr key={point.from}>
-                  <td>{point.from === point.to ? point.from : `${point.from} – ${point.to}`}</td>
-                  <td>{numbers.format(point.requests)}</td>
-                  <td>{numbers.format(point.errors)}</td>
-                  <td>{decimal.format(point.averageLatencyMs)} ms</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <ReliabilityTables
+        data={data}
+        locale={numbers.resolvedOptions().locale}
+        labels={{
+          routes: t('slowRoutes'),
+          requests: t('requests'),
+          errorRate: t('errorRate'),
+          averageLatency: t('averageLatency'),
+          maximumLatency: t('maximumLatency'),
+          period: t('period'),
+          errors: t('error'),
+          empty: t('noReliabilityData'),
+        }}
+      />
       <section className="adminPanel" aria-labelledby="operations">
         <div className="adminSectionHeading">
           <h2 id="operations">{t('operationalSignals')}</h2>
@@ -433,10 +387,6 @@ async function Adoption({
   const decimal = new Intl.NumberFormat(numbers.resolvedOptions().locale, {
     maximumFractionDigits: 1,
   });
-  const maxRegistrations = Math.max(
-    1,
-    ...data.registrationSeries.map((point) => point.registrations),
-  );
   const distributions = [
     [t('firstHousehold'), data.timeToFirstHousehold],
     [t('firstTransaction'), data.timeToFirstTransaction],
@@ -498,19 +448,7 @@ async function Adoption({
         <div className="adminSectionHeading">
           <h2 id="registration-trend">{t('registrationTrend')}</h2>
         </div>
-        <div className="adminTrendBars">
-          {data.registrationSeries.map((point) => (
-            <div key={point.from} className="adminTrendBar">
-              <span
-                style={{
-                  height: `${Math.max(2, (point.registrations / maxRegistrations) * 100)}%`,
-                }}
-                title={`${point.from}: ${point.registrations}`}
-              />
-              <small>{point.from.slice(5)}</small>
-            </div>
-          ))}
-        </div>
+        <AdoptionTrendChart data={data.registrationSeries} registrationsLabel={t('newUsers')} />
       </section>
 
       <section className="adminPanel" aria-labelledby="onboarding-time">
@@ -724,8 +662,12 @@ async function Usage({ data, numbers }: { data: AdminUsageResponse; numbers: Int
           data={data.series}
           title={t('selectSeries')}
           periodLabel={t('period')}
+          deselectAllLabel={t('deselectAll')}
           labels={{
             activeUsers: t('activeUsers'),
+            dailyActiveUsers: t('dailyActiveUsers'),
+            weeklyActiveUsers: t('weeklyActiveUsers'),
+            monthlyActiveUsers: t('monthlyActiveUsers'),
             activeHouseholds: t('activeHouseholds'),
             transactionsCreated: t('transactionsCreated'),
             transactionsUpdated: t('transactionsUpdated'),
@@ -740,24 +682,32 @@ async function Usage({ data, numbers }: { data: AdminUsageResponse; numbers: Int
           <h2 id="transaction-mix">{t('transactionMix')}</h2>
         </div>
         <div className="adminBars">
-          {data.transactionMix.kinds.map((item) => (
-            <div className="adminBarRow" key={item.kind}>
-              <div>
-                <span>{item.kind === 'income' ? t('incomes') : t('expenses')}</span>
-                <strong>
-                  {numbers.format(item.count)} · {percent.format(item.percentage)}%
-                </strong>
-                <small>
-                  {item.changePercent == null
-                    ? t('noComparison')
-                    : t('periodChange', { value: percent.format(item.changePercent) })}
-                </small>
-              </div>
-              <div className="adminBarTrack" aria-hidden="true">
-                <span style={{ width: `${item.percentage}%` }} />
-              </div>
+          <div className="adminBarRow">
+            <div className="adminMixLegend">
+              {data.transactionMix.kinds.map((item) => (
+                <span key={item.kind}>
+                  {item.kind === 'income' ? t('incomes') : t('expenses')}:{' '}
+                  <strong>
+                    {numbers.format(item.count)} · {percent.format(item.percentage)}%
+                  </strong>
+                </span>
+              ))}
             </div>
-          ))}
+            <div
+              className="adminBarTrack adminBarTrackStacked"
+              aria-label={data.transactionMix.kinds
+                .map((item) => `${item.kind}: ${percent.format(item.percentage)}%`)
+                .join(', ')}
+            >
+              {data.transactionMix.kinds.map((item) => (
+                <span
+                  key={item.kind}
+                  data-kind={item.kind}
+                  style={{ width: `${item.percentage}%` }}
+                />
+              ))}
+            </div>
+          </div>
         </div>
         <div className="adminMetricStrip">
           {(
@@ -803,7 +753,7 @@ async function Usage({ data, numbers }: { data: AdminUsageResponse; numbers: Int
         </div>
         <p className="adminCoverage">{t('amountCoverageNote')}</p>
         {data.transactionMix.expenseTypes.length ? (
-          <div className="adminBars">
+          <div className="adminBars adminScrollBox">
             <h3>{t('expenseTypes')}</h3>
             {data.transactionMix.expenseTypes.map((item) => (
               <div className="adminBarRow" key={item.type}>
@@ -904,6 +854,7 @@ async function LogTable({
             time: t('time'),
             details: t('errorDetails'),
             close: t('close'),
+            version: t('version'),
           }}
         />
       ) : (

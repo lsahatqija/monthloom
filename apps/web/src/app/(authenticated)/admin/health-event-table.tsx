@@ -10,7 +10,14 @@ export function HealthEventTable({
 }: {
   entries: AdminLogEntry[];
   locale: string;
-  labels: { event: string; source: string; time: string; details: string; close: string };
+  labels: {
+    event: string;
+    source: string;
+    time: string;
+    details: string;
+    close: string;
+    version: string;
+  };
 }) {
   const [selected, setSelected] = useState<AdminLogEntry>();
   const dialog = useRef<HTMLDialogElement>(null);
@@ -52,6 +59,9 @@ export function HealthEventTable({
                       <span>
                         <strong>{entry.message}</strong>
                         {entry.detail ? <small>{entry.detail}</small> : null}
+                        {entry.applicationVersion ? (
+                          <small>{entry.applicationVersion}</small>
+                        ) : null}
                       </span>
                     </span>
                   </button>
@@ -86,6 +96,15 @@ export function HealthEventTable({
                 <dt>{labels.source}</dt>
                 <dd>{selected.category}</dd>
               </div>
+              {selected.applicationVersion ? (
+                <div>
+                  <dt>{labels.version}</dt>
+                  <dd>
+                    {selected.applicationVersion}
+                    {selected.deployedAt ? ` · ${dates.format(new Date(selected.deployedAt))}` : ''}
+                  </dd>
+                </div>
+              ) : null}
             </dl>
             <pre>{selected.fullMessage ?? selected.detail ?? selected.message}</pre>
           </div>

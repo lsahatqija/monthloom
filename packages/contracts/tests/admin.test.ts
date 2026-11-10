@@ -121,7 +121,12 @@ describe('admin contracts', () => {
         readiness: { status: 'unknown', lastObservedAt: null, detail: 'Not connected' },
         backgroundJobs: { status: 'unknown', lastObservedAt: null, detail: 'Not connected' },
         backups: { status: 'unknown', lastObservedAt: null, detail: 'Not connected' },
-        deployment: { applicationVersion: '0.1.0', clientVersions: [] },
+        deployment: {
+          applicationVersion: '0.1.0',
+          deployedAt: generatedAt,
+          history: [],
+          clientVersions: [],
+        },
       }),
     ).toMatchObject({ summary: { requests: { current: 0 } } });
   });

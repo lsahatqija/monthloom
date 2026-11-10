@@ -73,3 +73,17 @@ export const requestHourlyRollups = pgTable(
     range: index('request_hourly_rollups_range_idx').on(table.hour),
   }),
 );
+
+export const applicationDeployments = pgTable(
+  'application_deployments',
+  {
+    version: varchar('version', { length: 40 }).notNull(),
+    deployedAt: timestamp('deployed_at', { withTimezone: true }).notNull(),
+  },
+  (table) => ({
+    identity: uniqueIndex('application_deployments_identity_idx').on(
+      table.version,
+      table.deployedAt,
+    ),
+  }),
+);

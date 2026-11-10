@@ -93,11 +93,15 @@ services:
       FEEDBACK_EMAIL_ADDRESS: ${FEEDBACK_EMAIL_ADDRESS:?Set FEEDBACK_EMAIL_ADDRESS in .env.production}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_DIRECTORY: /app/logs
+      APP_VERSION: ${IMAGE_TAG}
+      DEPLOYED_AT: ${DEPLOYED_AT:?Set DEPLOYED_AT through the deployment script}
       TRUSTED_PROXY_HOPS: 1
     expose:
       - '4000'
     volumes:
       - uploads_data:/app/uploads
+      - api_logs:/app/logs
     networks:
       - frontend
       - backend
@@ -143,5 +147,6 @@ networks:
 volumes:
   postgres_data:
   uploads_data:
+  api_logs:
   caddy_data:
   caddy_config:

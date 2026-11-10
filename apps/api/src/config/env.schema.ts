@@ -38,6 +38,8 @@ export const apiEnvShape = {
   ADMIN_BOOTSTRAP_DISPLAY_NAME: z.string().min(1).default('Administrator'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   LOG_DIRECTORY: z.string().min(1).default('logs'),
+  APP_VERSION: z.string().min(1).max(40).default('development'),
+  DEPLOYED_AT: z.string().datetime().default('2026-01-01T00:00:00.000Z'),
   RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().min(1).default(15),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().min(1).default(300),
   AUTH_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().min(1).default(15),

@@ -95,6 +95,12 @@ function parseLogEntry(line: string): AdminLogEntry | null {
             : typeof record.msg === 'string'
               ? record.msg
               : undefined,
+      applicationVersion:
+        typeof record.applicationVersion === 'string' ? record.applicationVersion : undefined,
+      deployedAt:
+        typeof record.deployedAt === 'string' && !Number.isNaN(Date.parse(record.deployedAt))
+          ? new Date(record.deployedAt).toISOString()
+          : undefined,
       statusCode,
     };
   } catch {

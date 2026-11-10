@@ -25,6 +25,7 @@ describe('health event table', () => {
           time: 'Time',
           details: 'Error details',
           close: 'Close',
+          version: 'Version',
         }}
         entries={[
           {

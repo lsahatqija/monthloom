@@ -3,6 +3,8 @@
   margin: 0 auto;
   padding: 2rem 0 4rem;
   font-size: 0.875rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .adminTitleRow,
@@ -69,6 +71,7 @@
   display: grid;
   gap: 1.5rem;
   margin-top: 1.5rem;
+  min-width: 0;
 }
 
 .adminPanel {
@@ -76,6 +79,9 @@
   border: 1px solid var(--ml-border);
   border-radius: 8px;
   background: var(--ml-surface);
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .adminSectionHeading h2 {
@@ -179,6 +185,17 @@
 .adminTableWrap {
   margin-top: 0.75rem;
   overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
+}
+
+.adminScrollBox {
+  max-height: 20rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.adminScrollBox .adminDataTable {
+  min-width: 36rem;
 }
 
 .adminLogTable {
@@ -421,6 +438,129 @@
   margin-top: 1rem;
 }
 
+.adminChartFrame {
+  position: relative;
+  width: 100%;
+  max-width: 56.25rem;
+  margin-top: 1rem;
+}
+.adminChartBounded {
+  max-width: 47.5rem;
+}
+.adminChartFrame svg {
+  display: block;
+  width: 100%;
+  max-height: 18.75rem;
+}
+.adminChartFrame text {
+  fill: var(--ml-text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.adminChartGrid {
+  stroke: var(--ml-divider);
+  stroke-width: 1;
+}
+
+.adminHoverGuide {
+  stroke: var(--ml-text-muted);
+  stroke-width: 1;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.adminSeriesAction {
+  min-height: 2rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--ml-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ml-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.adminSeriesAction:disabled {
+  color: var(--ml-text-muted);
+  cursor: default;
+  opacity: 0.6;
+}
+
+.adminDeploymentMarker {
+  stroke: #a86600;
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+.adminChartBar {
+  fill: var(--ml-primary);
+}
+.adminChartTooltip {
+  position: absolute;
+  z-index: 2;
+  top: 0.5rem;
+  display: grid;
+  gap: 0.25rem;
+  min-width: 10rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--ml-border);
+  border-radius: 6px;
+  background: var(--ml-surface);
+  color: var(--ml-text);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+.adminChartTooltip strong {
+  font-size: 0.8rem;
+}
+.adminChartTooltip span {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+.adminChartTooltip i {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+}
+.adminSortButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.adminSortButton:hover {
+  color: var(--ml-text);
+}
+.adminSortButton:focus-visible {
+  outline: 2px solid var(--ml-primary);
+  outline-offset: 3px;
+}
+.adminMixLegend {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+.adminBarTrackStacked {
+  display: flex;
+}
+.adminBarTrackStacked span {
+  flex: 0 0 auto;
+  border-radius: 0;
+}
+.adminBarTrackStacked span[data-kind='income'] {
+  background: var(--ml-primary);
+}
+.adminBarTrackStacked span[data-kind='expense'] {
+  background: #a86600;
+}
+
 .adminUsageChart svg line {
   stroke: var(--ml-border);
 }
@@ -532,6 +672,25 @@
   .adminPage {
     width: min(100% - 2rem, 75rem);
     padding-top: 1.25rem;
+  }
+
+  .adminPanel {
+    padding: 1rem;
+  }
+
+  .adminRangeForm,
+  .adminSectionHeading,
+  .adminRangeForm label {
+    min-width: 0;
+  }
+
+  .adminRangeForm label,
+  .adminRangeForm input {
+    max-width: 100%;
+  }
+
+  .adminRangeForm input {
+    width: 100%;
   }
 
   .adminTitleRow {
