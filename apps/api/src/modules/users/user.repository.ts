@@ -10,4 +10,6 @@ export interface UserRepository {
   create(input: CreateUserData): Promise<User>;
   update(id: string, input: UpdateUserData): Promise<User>;
   recordActivity(id: string, now: Date): Promise<void>;
+  recordFailedLogin(id: string, now: Date, threshold: number, lockedUntil: Date): Promise<void>;
+  resetFailedLogins(id: string): Promise<void>;
 }

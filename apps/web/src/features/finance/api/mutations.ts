@@ -39,8 +39,10 @@ export function useTransactionMutations() {
   const invalidate = useFinanceInvalidation();
   return {
     create: useMutation({
-      mutationFn: (input: { householdId: string; transaction: CreateHouseholdTransactionRequest }) =>
-        createHouseholdTransaction(input.householdId, input.transaction),
+      mutationFn: (input: {
+        householdId: string;
+        transaction: CreateHouseholdTransactionRequest;
+      }) => createHouseholdTransaction(input.householdId, input.transaction),
       onSuccess: invalidate,
     }),
     update: useMutation({
@@ -65,7 +67,10 @@ export function useTransactionMutations() {
 export function useHouseholdMutations() {
   const invalidate = useFinanceInvalidation();
   return {
-    create: useMutation({ mutationFn: (input: CreateHouseholdRequest) => createHousehold(input), onSuccess: invalidate }),
+    create: useMutation({
+      mutationFn: (input: CreateHouseholdRequest) => createHousehold(input),
+      onSuccess: invalidate,
+    }),
     update: useMutation({
       mutationFn: (input: { householdId: string; household: UpdateHouseholdRequest }) =>
         updateHousehold(input.householdId, input.household),

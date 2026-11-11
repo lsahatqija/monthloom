@@ -32,7 +32,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
     onSuccess: async (data) => {
       setLocaleCookie(data.user.locale);
       await queryClient.invalidateQueries({ queryKey: authKeys.me });
-      router.push(redirectTo);
+      router.push(data.user.mustChangePassword ? '/change-password' : redirectTo);
       router.refresh();
     },
     onError: (error) => setError('root', { message: errorMessage(error, t('genericError')) }),

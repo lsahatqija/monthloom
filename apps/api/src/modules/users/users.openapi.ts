@@ -49,7 +49,7 @@ export function registerUsersOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'get',
     path: '/api/v1/users/me',
@@ -68,4 +68,3 @@ export function registerUsersOpenApi(registry: OpenAPIRegistry): void {
     },
   });
 }
-

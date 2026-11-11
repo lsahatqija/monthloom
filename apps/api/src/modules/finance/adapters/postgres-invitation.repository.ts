@@ -106,4 +106,3 @@ export class PostgresInvitationRepository implements InvitationRepository {
     });
   }
 }
-

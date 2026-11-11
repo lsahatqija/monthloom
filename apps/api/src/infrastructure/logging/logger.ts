@@ -59,7 +59,13 @@ export function createCategoryLogger(
         paths: redactPaths,
         censor: '[REDACTED]',
       },
-      base: { schemaVersion: 1, service: 'api', category },
+      base: {
+        schemaVersion: 1,
+        service: 'api',
+        category,
+        applicationVersion: config.deployment.version,
+        deployedAt: config.deployment.deployedAt,
+      },
     },
     destination,
   );

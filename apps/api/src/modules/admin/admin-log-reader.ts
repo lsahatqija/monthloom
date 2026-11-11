@@ -87,6 +87,20 @@ function parseLogEntry(line: string): AdminLogEntry | null {
             ? error.message
             : 'Logged application event',
       detail: requestDetail ?? (typeof error?.message === 'string' ? error.message : undefined),
+      fullMessage:
+        typeof error?.stack === 'string'
+          ? error.stack
+          : typeof error?.message === 'string'
+            ? error.message
+            : typeof record.msg === 'string'
+              ? record.msg
+              : undefined,
+      applicationVersion:
+        typeof record.applicationVersion === 'string' ? record.applicationVersion : undefined,
+      deployedAt:
+        typeof record.deployedAt === 'string' && !Number.isNaN(Date.parse(record.deployedAt))
+          ? new Date(record.deployedAt).toISOString()
+          : undefined,
       statusCode,
     };
   } catch {

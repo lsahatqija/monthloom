@@ -31,6 +31,28 @@ export async function checkDatabaseConnection(): Promise<boolean> {
   }
 }
 
+export async function recordOperationalStatus(
+  key: string,
+  status: 'healthy' | 'degraded' | 'unavailable',
+  durationMs: number | null,
+  detail: string,
+): Promise<void> {
+  const now = new Date();
+  await pool.query(
+    `INSERT INTO operational_status
+      (key, status, last_attempt_at, last_success_at, duration_ms, detail)
+     VALUES ($1, $2, $3, CASE WHEN $2 = 'healthy' THEN $3 ELSE NULL END, $4, $5)
+     ON CONFLICT (key) DO UPDATE SET
+       status = EXCLUDED.status,
+       last_attempt_at = EXCLUDED.last_attempt_at,
+       last_success_at = CASE WHEN EXCLUDED.status = 'healthy' THEN EXCLUDED.last_attempt_at
+         ELSE operational_status.last_success_at END,
+       duration_ms = EXCLUDED.duration_ms,
+       detail = EXCLUDED.detail`,
+    [key, status, now, durationMs, detail],
+  );
+}
+
 export async function closeDatabaseConnection(): Promise<void> {
   await pool.end();
   logger.info('Database connection pool closed');

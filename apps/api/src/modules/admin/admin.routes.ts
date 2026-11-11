@@ -10,6 +10,24 @@ export function createAdminRouter(
   requireAdmin: RequestHandler,
 ): Router {
   const router = Router();
+  router.get('/overview', requireAuth, requireAdmin, asyncHandler(adminController.getOverview));
+  router.get('/health', requireAuth, requireAdmin, asyncHandler(adminController.getHealth));
+  router.get('/usage', requireAuth, requireAdmin, asyncHandler(adminController.getUsage));
+  router.get('/adoption', requireAuth, requireAdmin, asyncHandler(adminController.getAdoption));
+  router.get('/retention', requireAuth, requireAdmin, asyncHandler(adminController.getRetention));
+  router.get(
+    '/reliability',
+    requireAuth,
+    requireAdmin,
+    asyncHandler(adminController.getReliability),
+  );
+  router.get('/security', requireAuth, requireAdmin, asyncHandler(adminController.getSecurity));
+  router.post(
+    '/users/:userId/suspend',
+    requireAuth,
+    requireAdmin,
+    asyncHandler(adminController.suspendAccount),
+  );
   router.get('/dashboard', requireAuth, requireAdmin, asyncHandler(adminController.getDashboard));
   return router;
 }

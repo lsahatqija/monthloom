@@ -3,7 +3,10 @@ import { Router, type RequestHandler } from 'express';
 import type { FileController } from './file.controller.js';
 import { uploadMiddleware } from './file.upload.middleware.js';
 
-export function createFileRouter(fileController: FileController, requireAuth: RequestHandler): Router {
+export function createFileRouter(
+  fileController: FileController,
+  requireAuth: RequestHandler,
+): Router {
   const router = Router();
 
   router.use(requireAuth);

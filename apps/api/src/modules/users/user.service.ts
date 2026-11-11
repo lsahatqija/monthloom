@@ -16,6 +16,7 @@ export function toPublicUser(user: User): PublicUser {
     desiredColor: user.desiredColor,
     locale: user.locale,
     role: user.role,
+    mustChangePassword: user.mustChangePassword,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   };
@@ -53,6 +54,6 @@ export class UserService {
     }
 
     const passwordHash = await hashPassword(input.newPassword);
-    await this.userRepository.update(id, { passwordHash });
+    await this.userRepository.update(id, { passwordHash, mustChangePassword: false });
   }
 }

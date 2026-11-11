@@ -38,6 +38,58 @@ afterEach(async () => {
 });
 
 describe('admin dashboard', () => {
+  it('resolves ranges and delegates retention and reliability independently', async () => {
+    const retention = {
+      retention: [],
+      cohorts: [],
+      dormant: { users30Days: 0, users90Days: 0, households30Days: 0 },
+      reactivations: [],
+      coverageStartedAt: '2026-01-01T00:00:00.000Z',
+    };
+    const operational = {
+      status: 'unknown' as const,
+      lastObservedAt: null,
+      detail: 'Not connected',
+    };
+    const compared = { current: 0, previous: 0, changePercent: 0 };
+    const reliability = {
+      summary: {
+        requests: compared,
+        errorRate: compared,
+        averageLatencyMs: compared,
+        p95LatencyMs: compared,
+        databaseAverageMs: compared,
+      },
+      series: [],
+      slowRoutes: [],
+      email: operational,
+      readiness: operational,
+      backgroundJobs: operational,
+      backups: operational,
+      deployment: {
+        applicationVersion: '0.1.0',
+        deployedAt: '2026-01-01T00:00:00.000Z',
+        history: [],
+        clientVersions: [],
+      },
+    };
+    const analyticsRepository: AdminRepository = {
+      ...repository(),
+      getRetention: vi.fn().mockResolvedValue(retention),
+      getReliability: vi.fn().mockResolvedValue(reliability),
+    };
+    const service = new AdminService(analyticsRepository, logReader([]));
+    const query = { from: '2026-10-01', to: '2026-10-31', timezone: 'UTC' };
+
+    await expect(
+      service.getRetention(query, new Date('2026-11-01T00:00:00Z')),
+    ).resolves.toMatchObject(retention);
+    await expect(
+      service.getReliability(query, new Date('2026-11-01T00:00:00Z')),
+    ).resolves.toMatchObject(reliability);
+    expect(analyticsRepository.getRetention).toHaveBeenCalledOnce();
+    expect(analyticsRepository.getReliability).toHaveBeenCalledOnce();
+  });
   it('aggregates real metrics and derives health from recent severe logs', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'monthloom-admin-'));
     temporaryDirectories.push(directory);
@@ -57,6 +109,8 @@ describe('admin dashboard', () => {
           time: '2026-11-06T10:00:00.000Z',
           level: 'error',
           category: 'http',
+          applicationVersion: 'v2',
+          deployedAt: '2026-11-06T08:00:00.000Z',
           msg: 'Request failed',
           req: { method: 'GET', url: '/api/v1/households' },
           res: { statusCode: 500 },
@@ -97,6 +151,8 @@ describe('admin dashboard', () => {
     });
     expect(result.health.entries[0]).toMatchObject({
       level: 'error',
+      applicationVersion: 'v2',
+      deployedAt: '2026-11-06T08:00:00.000Z',
       detail: 'GET /api/v1/households · 500',
     });
     expect(result.health.entries[1]).toMatchObject({

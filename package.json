@@ -24,6 +24,7 @@
     "docker:logs": "docker compose -f compose.yml logs -f",
     "db:migrate": "pnpm --filter @monthloom/api run db:migrate",
     "db:seed": "pnpm --filter @monthloom/api run db:seed",
+    "admin:provision": "pnpm --filter @monthloom/api run admin:provision --",
     "email:templates:sync": "pnpm --filter @monthloom/api run email:templates:sync",
     "clean": "pnpm --recursive run clean",
     "test": "vitest run",

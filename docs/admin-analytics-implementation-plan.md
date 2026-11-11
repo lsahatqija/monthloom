@@ -2,8 +2,8 @@
 
 ## Status and scope
 
-- Status: proposed
-- Updated: 2026-11-09
+- Status: complete — Phases 0–7 implemented
+- Updated: 2026-11-11
 - Goal: extend the administrator area with historical product usage, adoption, retention,
   reliability, performance, and security reporting.
 - Constraint: analytics must not expose transaction descriptions, email addresses, IP addresses,
@@ -59,8 +59,8 @@ Definitions must be fixed before implementation so later queries and labels do n
   using a one-day window and only mature cohorts in the denominator.
 
 The daily chart supports DAU, transaction creations, updates, deletions, registrations, and active
-households. Default enabled series are DAU and transaction creations; no more than three series
-may be selected simultaneously.
+households. Default enabled series are DAU and transaction creations; administrators may select
+any number of available series simultaneously.
 
 The transaction-mix panel shows, for the selected period:
 
@@ -137,16 +137,16 @@ addresses, credential input, or user-agent strings.
 
 Add a `product_events` table:
 
-| Column | Purpose |
-| --- | --- |
-| `id` UUID | Primary key |
-| `event_name` varchar/enum | Stable event taxonomy |
-| `occurred_at` timestamptz | Successful operation time |
-| `actor_user_id` UUID nullable | Pseudonymous actor identifier |
-| `household_id` UUID nullable | Pseudonymous household identifier |
-| `subject_id` UUID nullable | Transaction, invitation, or other subject identifier |
-| `subject_kind` varchar nullable | Income, expense, invitation, etc. |
-| `metadata` jsonb | Small allow-listed, non-sensitive dimensions |
+| Column                          | Purpose                                              |
+| ------------------------------- | ---------------------------------------------------- |
+| `id` UUID                       | Primary key                                          |
+| `event_name` varchar/enum       | Stable event taxonomy                                |
+| `occurred_at` timestamptz       | Successful operation time                            |
+| `actor_user_id` UUID nullable   | Pseudonymous actor identifier                        |
+| `household_id` UUID nullable    | Pseudonymous household identifier                    |
+| `subject_id` UUID nullable      | Transaction, invitation, or other subject identifier |
+| `subject_kind` varchar nullable | Income, expense, invitation, etc.                    |
+| `metadata` jsonb                | Small allow-listed, non-sensitive dimensions         |
 
 Do not add foreign keys from events to mutable product rows: deleting an account, household, or
 transaction must not cascade-delete history. Index `(event_name, occurred_at)`,
@@ -363,4 +363,3 @@ data.
 - Arbitrary event metadata and a generic analytics query builder.
 - External observability vendors, OpenTelemetry, alerts, and p99 latency.
 - Configurable dormancy thresholds and custom cohort definitions.
-

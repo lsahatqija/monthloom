@@ -56,6 +56,13 @@ export class PostgresSessionRepository implements SessionRepository {
     await this.db.update(sessions).set({ revokedAt: new Date() }).where(eq(sessions.id, id));
   }
 
+  async revokeAllForUser(userId: string, now: Date): Promise<void> {
+    await this.db
+      .update(sessions)
+      .set({ revokedAt: now })
+      .where(and(eq(sessions.userId, userId), isNull(sessions.revokedAt)));
+  }
+
   async createPasswordResetToken(input: CreatePasswordResetTokenData): Promise<void> {
     await this.db.insert(passwordResetTokens).values(input);
   }

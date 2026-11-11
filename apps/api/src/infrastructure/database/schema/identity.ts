@@ -2,6 +2,7 @@ import { Constants, Defaults } from '@monthloom/contracts';
 import {
   boolean,
   index,
+  integer,
   pgEnum,
   pgTable,
   timestamp,
@@ -25,6 +26,10 @@ export const users = pgTable(
     desiredColor: desiredColorEnum('desired_color').notNull().default(Defaults.USER_DESIRED_COLOR),
     locale: varchar('locale', { length: 35 }).notNull().default(Defaults.USER_LOCALE),
     role: userRoleEnum('role').notNull().default('user'),
+    mustChangePassword: boolean('must_change_password').notNull().default(false),
+    failedLoginAttempts: integer('failed_login_attempts').notNull().default(0),
+    lockedUntil: timestamp('locked_until', { withTimezone: true }),
+    suspendedAt: timestamp('suspended_at', { withTimezone: true }),
     lastActiveAt: timestamp('last_active_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -32,6 +37,8 @@ export const users = pgTable(
   (table) => ({
     emailUniqueIdx: uniqueIndex('users_email_unique_idx').on(table.email),
     lastActiveAtIdx: index('users_last_active_at_idx').on(table.lastActiveAt),
+    lockedUntilIdx: index('users_locked_until_idx').on(table.lockedUntil),
+    suspendedAtIdx: index('users_suspended_at_idx').on(table.suspendedAt),
   }),
 );
 

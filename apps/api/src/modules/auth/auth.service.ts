@@ -6,10 +6,12 @@ import {
   type PublicUser,
   type RegisterRequest,
   type ResetPasswordRequest,
+  type ChangePasswordRequest,
   type VerifyEmailRequest,
 } from '@monthloom/contracts';
 
 import { config } from '../../config/index.js';
+import type { ProductEventRecorder } from '../../infrastructure/analytics/product-events.js';
 import type { Logger } from '../../infrastructure/logging/logger.js';
 import { hashPassword, verifyPassword } from '../../infrastructure/security/password.js';
 import { generateSessionToken, hashSessionToken } from '../../infrastructure/security/tokens.js';
@@ -33,6 +35,8 @@ export const PASSWORD_RESET_REQUEST_MESSAGE =
   'If an account exists for that email, a password reset link has been sent.';
 export const EMAIL_VERIFICATION_SENT_MESSAGE = 'A verification link has been sent to your email.';
 export const EMAIL_VERIFIED_MESSAGE = 'Your email address has been verified.';
+const FAILED_LOGIN_LOCK_THRESHOLD = 5;
+const FAILED_LOGIN_LOCK_MS = 15 * 60 * 1_000;
 
 export class AuthService {
   constructor(
@@ -40,6 +44,7 @@ export class AuthService {
     private readonly sessionRepository: SessionRepository,
     private readonly emailService: AutomatedEmailService,
     private readonly logger: Logger,
+    private readonly productEvents?: ProductEventRecorder,
   ) {}
 
   async register(input: RegisterRequest): Promise<AuthResult> {
@@ -64,6 +69,7 @@ export class AuthService {
     });
 
     const sessionToken = await this.createSession(user.id);
+    await this.productEvents?.recordActivity(user.id);
     let verification: { tokenHash: string; url: string; expiresAt: Date } | undefined;
     try {
       verification = await this.createEmailVerificationToken(user.id);
@@ -92,16 +98,38 @@ export class AuthService {
 
     // Generic message on purpose: never reveal whether the email exists.
     if (!user) {
+      await this.productEvents?.record({ eventName: 'auth.login.failed' });
       throw new AuthenticationError('Invalid email or password.');
     }
 
     const isValid = await verifyPassword(user.passwordHash, input.password);
     if (!isValid) {
+      const now = new Date();
+      await this.userRepository.recordFailedLogin(
+        user.id,
+        now,
+        FAILED_LOGIN_LOCK_THRESHOLD,
+        new Date(now.getTime() + FAILED_LOGIN_LOCK_MS),
+      );
+      await this.productEvents?.record({ eventName: 'auth.login.failed' });
+      throw new AuthenticationError('Invalid email or password.');
+    }
+
+    const now = new Date();
+    if (user.suspendedAt || (user.lockedUntil && user.lockedUntil > now)) {
+      await this.productEvents?.record({ eventName: 'auth.login.failed' });
       throw new AuthenticationError('Invalid email or password.');
     }
 
     const sessionToken = await this.createSession(user.id);
-    await this.userRepository.recordActivity(user.id, new Date());
+    await Promise.all([
+      this.userRepository.resetFailedLogins(user.id),
+      this.userRepository.recordActivity(user.id, now),
+    ]);
+    await Promise.all([
+      this.productEvents?.record({ eventName: 'auth.login.succeeded', actorUserId: user.id }),
+      this.productEvents?.recordActivity(user.id),
+    ]);
     return { user: toPublicUser(user), sessionToken };
   }
 
@@ -196,6 +224,27 @@ export class AuthService {
     }
   }
 
+  async changeInitialAdministratorPassword(
+    userId: string,
+    input: ChangePasswordRequest,
+  ): Promise<void> {
+    const user = await this.userRepository.findById(userId);
+    if (!user || user.role !== 'admin' || !user.mustChangePassword) {
+      throw new ValidationError('An initial administrator password change is not required.');
+    }
+    if (!(await verifyPassword(user.passwordHash, input.currentPassword))) {
+      throw new ValidationError(
+        'Current password is incorrect.',
+        { currentPassword: ['Current password is incorrect.'] },
+        'CURRENT_PASSWORD_INCORRECT',
+      );
+    }
+    await this.userRepository.update(user.id, {
+      passwordHash: await hashPassword(input.newPassword),
+      mustChangePassword: false,
+    });
+  }
+
   async validateSession(sessionToken: string): Promise<PublicUser | null> {
     const tokenHash = hashSessionToken(sessionToken);
     const session = await this.sessionRepository.findByTokenHash(tokenHash);
@@ -205,7 +254,17 @@ export class AuthService {
     }
 
     const user = await this.userRepository.findById(session.userId);
-    if (user) await this.userRepository.recordActivity(user.id, new Date());
+    if (user?.suspendedAt || (user?.lockedUntil && user.lockedUntil > new Date())) {
+      await this.sessionRepository.revoke(session.id);
+      return null;
+    }
+    if (user) {
+      const now = new Date();
+      await Promise.all([
+        this.userRepository.recordActivity(user.id, now),
+        this.productEvents?.recordActivity(user.id, now),
+      ]);
+    }
     return user ? toPublicUser(user) : null;
   }
 

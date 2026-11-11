@@ -1,8 +1,16 @@
-import type { CreateHouseholdRequest, HouseholdMonthResponse, UpdateHouseholdRequest } from '@monthloom/contracts';
+import type {
+  CreateHouseholdRequest,
+  HouseholdMonthResponse,
+  UpdateHouseholdRequest,
+} from '@monthloom/contracts';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 
 import type { Database } from '../../../infrastructure/database/client.js';
-import { householdMembers, households, users } from '../../../infrastructure/database/schema/index.js';
+import {
+  householdMembers,
+  households,
+  users,
+} from '../../../infrastructure/database/schema/index.js';
 import type { HouseholdRepository } from '../finance.repository.js';
 import type { HouseholdRecord, ManagedHouseholdRecord } from '../finance.types.js';
 
@@ -255,4 +263,3 @@ export class PostgresHouseholdRepository implements HouseholdRepository {
     });
   }
 }
-

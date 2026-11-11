@@ -29,6 +29,7 @@ export const publicUserSchema = z.object({
   desiredColor: desiredColorSchema,
   locale: localeSchema,
   role: userRoleSchema,
+  mustChangePassword: z.boolean().default(false),
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema,
 });

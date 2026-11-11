@@ -1,6 +1,9 @@
 import type { Request, RequestHandler, Response } from 'express';
 import type { RateLimitExceededEventHandler } from 'express-rate-limit';
 
+import { config } from '../../config/index.js';
+import { recordRateLimitEvent } from '../analytics/product-events.js';
+
 import { createCategoryLogger, type Logger } from './logger.js';
 
 export type AuditEventName =
@@ -8,6 +11,7 @@ export type AuditEventName =
   | 'auth.login'
   | 'auth.logout'
   | 'auth.password_changed'
+  | 'auth.initial_password_changed'
   | 'auth.password_reset_requested'
   | 'auth.password_reset_completed'
   | 'auth.email_verification_requested'
@@ -121,6 +125,11 @@ export function createAuditRateLimitHandler(
     res.locals.logErrorCode = 'RATE_LIMITED';
     res.locals.logErrorReason = 'RATE_LIMITED';
     res.status(options.statusCode);
+    recordRateLimitEvent({
+      ip: req.ip,
+      routeGroup: req.baseUrl || req.path || 'api',
+      secret: config.session.secret,
+    });
 
     if (!res[auditContextKey]) {
       logger.warn(

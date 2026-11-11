@@ -42,7 +42,9 @@ export function registerFilesOpenApi(registry: OpenAPIRegistry): void {
     responses: {
       201: {
         description: 'File uploaded.',
-        content: { 'application/json': { schema: z.object({ file: contracts.fileMetadataSchema }) } },
+        content: {
+          'application/json': { schema: z.object({ file: contracts.fileMetadataSchema }) },
+        },
       },
       400: {
         description: 'Invalid file.',
@@ -50,7 +52,7 @@ export function registerFilesOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'get',
     path: '/api/v1/files',
@@ -64,7 +66,7 @@ export function registerFilesOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'get',
     path: '/api/v1/files/{id}/content',
@@ -80,7 +82,7 @@ export function registerFilesOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'delete',
     path: '/api/v1/files/{id}',
@@ -91,4 +93,3 @@ export function registerFilesOpenApi(registry: OpenAPIRegistry): void {
     responses: { 204: { description: 'File deleted.' } },
   });
 }
-

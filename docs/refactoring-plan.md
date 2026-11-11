@@ -135,19 +135,19 @@ The baseline was captured on Windows with Node 22 and pnpm 9.7.0. PostgreSQL 16 
 isolated `compose.test.yml` container. Production images were built in Linux containers, which is
 the deployed build environment.
 
-| Measurement | Result |
-|---|---:|
-| Lint | Passed in 7.64 s; 0 errors and 3 pre-existing web warnings |
-| Production type check | Passed in 4.31 s |
-| Test type check | Passed in 5.41 s |
-| Full test suite with coverage | 106 tests in 19 files passed; command completed in 7.30 s |
-| Statement coverage | 63.40% |
-| Branch coverage | 79.69% |
-| Function coverage | 74.38% |
-| Line coverage | 63.40% |
-| API production build | Passed locally in 3.41 s |
-| API and web Docker production builds | Passed together in 69.77 s from a cold dependency layer |
-| Unique direct dependencies | 61 total: 32 production and 29 development |
+| Measurement                          |                                                     Result |
+| ------------------------------------ | ---------------------------------------------------------: |
+| Lint                                 | Passed in 7.64 s; 0 errors and 3 pre-existing web warnings |
+| Production type check                |                                           Passed in 4.31 s |
+| Test type check                      |                                           Passed in 5.41 s |
+| Full test suite with coverage        |  106 tests in 19 files passed; command completed in 7.30 s |
+| Statement coverage                   |                                                     63.40% |
+| Branch coverage                      |                                                     79.69% |
+| Function coverage                    |                                                     74.38% |
+| Line coverage                        |                                                     63.40% |
+| API production build                 |                                   Passed locally in 3.41 s |
+| API and web Docker production builds |    Passed together in 69.77 s from a cold dependency layer |
+| Unique direct dependencies           |                 61 total: 32 production and 29 development |
 
 The native Windows Next.js build compiled, type-checked, and generated all 17 routes, but its
 standalone-output copy failed because the host did not permit pnpm symlink creation (`EPERM`). The
@@ -156,18 +156,18 @@ host-environment limitation rather than an application build failure.
 
 The ten largest TypeScript production files at baseline were:
 
-| Lines | File |
-|---:|---|
+| Lines | File                                                                   |
+| ----: | ---------------------------------------------------------------------- |
 | 1,021 | `apps/api/src/modules/finance/adapters/postgres-finance.repository.ts` |
-| 773 | `apps/web/src/features/finance/household-dashboard.tsx` |
-| 641 | `apps/api/src/infrastructure/openapi/document.ts` |
-| 584 | `apps/web/src/features/finance/transaction-form.tsx` |
-| 577 | `apps/web/src/features/finance/household-settings.tsx` |
-| 439 | `apps/web/src/components/onboarding/onboarding-tour.tsx` |
-| 432 | `apps/api/src/modules/finance/finance.service.ts` |
-| 393 | `apps/api/src/infrastructure/database/schema.ts` |
-| 373 | `apps/web/src/features/finance/source-settings.tsx` |
-| 296 | `packages/contracts/src/finance/household.schemas.ts` |
+|   773 | `apps/web/src/features/finance/household-dashboard.tsx`                |
+|   641 | `apps/api/src/infrastructure/openapi/document.ts`                      |
+|   584 | `apps/web/src/features/finance/transaction-form.tsx`                   |
+|   577 | `apps/web/src/features/finance/household-settings.tsx`                 |
+|   439 | `apps/web/src/components/onboarding/onboarding-tour.tsx`               |
+|   432 | `apps/api/src/modules/finance/finance.service.ts`                      |
+|   393 | `apps/api/src/infrastructure/database/schema.ts`                       |
+|   373 | `apps/web/src/features/finance/source-settings.tsx`                    |
+|   296 | `packages/contracts/src/finance/household.schemas.ts`                  |
 
 Invitation tokens are intentionally bearer tokens in the current implementation: invitations do
 not persist an intended recipient, even when delivery uses email. Phase 0 therefore characterizes

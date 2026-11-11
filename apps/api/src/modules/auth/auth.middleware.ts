@@ -16,10 +16,33 @@ export function createAuthMiddleware(authService: AuthService) {
     return authService.validateSession(token);
   }
 
+  const requireSession = async (
+    req: Request,
+    _res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    const user = await resolveUser(req);
+    if (!user) {
+      next(new AuthenticationError('Authentication required.', 'AUTHENTICATION_REQUIRED'));
+      return;
+    }
+    req.authUser = user;
+    next();
+  };
+
   const requireAuth = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
     const user = await resolveUser(req);
     if (!user) {
       next(new AuthenticationError('Authentication required.', 'AUTHENTICATION_REQUIRED'));
+      return;
+    }
+    if (user.mustChangePassword) {
+      next(
+        new AuthorizationError(
+          'Change the initial administrator password before continuing.',
+          'PASSWORD_CHANGE_REQUIRED',
+        ),
+      );
       return;
     }
     req.authUser = user;
@@ -34,7 +57,7 @@ export function createAuthMiddleware(authService: AuthService) {
     next();
   };
 
-  return { requireAuth, optionalAuth };
+  return { requireAuth, requireSession, optionalAuth };
 }
 
 /** Authorization seam: restricts a route to one or more roles. Must run after requireAuth. */

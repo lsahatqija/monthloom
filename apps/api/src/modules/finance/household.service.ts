@@ -66,10 +66,7 @@ export class HouseholdService {
       if (!newOwnerId) {
         throw new ConflictError('Select a new owner before leaving the household.');
       }
-      if (
-        newOwnerId === userId ||
-        !(await this.households.isMember(householdId, newOwnerId))
-      ) {
+      if (newOwnerId === userId || !(await this.households.isMember(householdId, newOwnerId))) {
         throw new ConflictError('The new owner must be another household member.');
       }
     } else if (newOwnerId) {
@@ -92,4 +89,3 @@ export class HouseholdService {
     }
   }
 }
-

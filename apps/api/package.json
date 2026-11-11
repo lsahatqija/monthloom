@@ -15,6 +15,7 @@
     "db:generate": "tsc -p tsconfig.json && drizzle-kit generate --config drizzle.config.ts",
     "db:migrate": "tsx src/infrastructure/database/migrate.ts",
     "db:seed": "tsx src/infrastructure/database/seed.ts",
+    "admin:provision": "tsx src/infrastructure/database/provision-admin.ts",
     "email:templates:sync": "tsx src/infrastructure/email/sync-resend-templates.ts",
     "clean": "rimraf dist",
     "test": "vitest run --root ../.. --config vitest.config.ts --project=api-*"

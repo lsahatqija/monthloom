@@ -135,10 +135,10 @@ pnpm db:seed
 ```
 
 Change `SESSION_SECRET` in `.env` before starting. Seeding is optional and intended only for local
-development; its credentials are configured in the same file. To create the first administrator in
-any environment, set `ADMIN_BOOTSTRAP_EMAIL` and `ADMIN_BOOTSTRAP_PASSWORD` in that environment's
-local `.env`; the API creates the account at startup only if that email is absent. Remove or rotate
-the bootstrap password after the first successful startup.
+development; its credentials are configured in the same file. Provision the first administrator
+with the one-shot `pnpm admin:provision -- --email admin@example.com` command and provide the
+temporary password on standard input. Provisioning refuses an existing email and requires the
+administrator to replace the temporary password at first login.
 
 Once the containers are healthy, open [http://localhost:3000](http://localhost:3000). The API is
 available at [http://localhost:4000](http://localhost:4000). When the API is running in development

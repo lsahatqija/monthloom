@@ -11,6 +11,10 @@ export interface User {
   desiredColor: DesiredColor;
   locale: Locale;
   role: UserRole;
+  mustChangePassword: boolean;
+  failedLoginAttempts: number;
+  lockedUntil: Date | null;
+  suspendedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,6 +27,7 @@ export interface CreateUserData {
   desiredColor: DesiredColor;
   locale: Locale;
   role?: UserRole;
+  mustChangePassword?: boolean;
 }
 
 export interface UpdateUserData {
@@ -32,4 +37,5 @@ export interface UpdateUserData {
   profileImage?: ProfileImage;
   desiredColor?: DesiredColor;
   locale?: Locale;
+  mustChangePassword?: boolean;
 }

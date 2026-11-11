@@ -15,6 +15,9 @@ fi
 exec 9>"$lock_file"
 flock 9
 
+export APP_VERSION="${IMAGE_TAG:-unknown}"
+export DEPLOYED_AT="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+
 docker compose --env-file "$env_file" -f "$compose_file" config --quiet
 docker compose --env-file "$env_file" -f "$compose_file" pull
 if ! docker compose --env-file "$env_file" -f "$compose_file" up -d --remove-orphans --wait; then
