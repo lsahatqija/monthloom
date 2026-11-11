@@ -61,6 +61,12 @@ export function createAuthRouter(
     requireAuth,
     asyncHandler(authController.logout),
   );
+  router.put(
+    '/initial-password',
+    audit('auth.initial_password_changed', { includeSecurityContext: true }),
+    requireAuth,
+    asyncHandler(authController.changeInitialPassword),
+  );
   router.get('/me', optionalAuth, asyncHandler(authController.me));
 
   return router;

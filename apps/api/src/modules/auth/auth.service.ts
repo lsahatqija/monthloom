@@ -6,6 +6,7 @@ import {
   type PublicUser,
   type RegisterRequest,
   type ResetPasswordRequest,
+  type ChangePasswordRequest,
   type VerifyEmailRequest,
 } from '@monthloom/contracts';
 
@@ -221,6 +222,27 @@ export class AuthService {
     if (session) {
       await this.sessionRepository.revoke(session.id);
     }
+  }
+
+  async changeInitialAdministratorPassword(
+    userId: string,
+    input: ChangePasswordRequest,
+  ): Promise<void> {
+    const user = await this.userRepository.findById(userId);
+    if (!user || user.role !== 'admin' || !user.mustChangePassword) {
+      throw new ValidationError('An initial administrator password change is not required.');
+    }
+    if (!(await verifyPassword(user.passwordHash, input.currentPassword))) {
+      throw new ValidationError(
+        'Current password is incorrect.',
+        { currentPassword: ['Current password is incorrect.'] },
+        'CURRENT_PASSWORD_INCORRECT',
+      );
+    }
+    await this.userRepository.update(user.id, {
+      passwordHash: await hashPassword(input.newPassword),
+      mustChangePassword: false,
+    });
   }
 
   async validateSession(sessionToken: string): Promise<PublicUser | null> {

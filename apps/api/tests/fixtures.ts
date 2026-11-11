@@ -10,6 +10,7 @@ export const user: User = {
   desiredColor: 'indigo',
   locale: 'en',
   role: 'user',
+  mustChangePassword: false,
   failedLoginAttempts: 0,
   lockedUntil: null,
   suspendedAt: null,

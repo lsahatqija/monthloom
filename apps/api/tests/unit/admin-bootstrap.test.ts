@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
-  ensureAdministrator,
+  provisionAdministrator,
   type AdminBootstrapRepository,
 } from '../../src/infrastructure/database/admin-bootstrap.js';
 
@@ -18,7 +18,7 @@ describe('administrator bootstrap', () => {
     const hash = vi.fn().mockResolvedValue('password-hash');
 
     await expect(
-      ensureAdministrator(
+      provisionAdministrator(
         {
           email: ' ADMIN@EXAMPLE.COM ',
           password: 'Bootstrap-password-123!',
@@ -37,31 +37,31 @@ describe('administrator bootstrap', () => {
     });
   });
 
-  it('leaves an existing account unchanged', async () => {
+  it('refuses to promote an existing account', async () => {
     const store = repository(true, true);
     const hash = vi.fn();
 
     await expect(
-      ensureAdministrator(
+      provisionAdministrator(
         { email: 'admin@example.com', password: 'Bootstrap-password-123!', displayName: 'Admin' },
         store,
         hash,
       ),
-    ).resolves.toBe('exists');
+    ).rejects.toThrow('existing users are never promoted');
 
     expect(hash).not.toHaveBeenCalled();
     expect(store.create).not.toHaveBeenCalled();
   });
 
-  it('handles a concurrent creation as an existing administrator', async () => {
+  it('fails a concurrent provisioning conflict', async () => {
     const store = repository(false, false);
 
     await expect(
-      ensureAdministrator(
+      provisionAdministrator(
         { email: 'admin@example.com', password: 'Bootstrap-password-123!', displayName: 'Admin' },
         store,
         vi.fn().mockResolvedValue('password-hash'),
       ),
-    ).resolves.toBe('exists');
+    ).rejects.toThrow('conflicted with another account');
   });
 });

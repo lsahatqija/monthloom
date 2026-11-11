@@ -2,8 +2,8 @@
 
 ## Status and scope
 
-- Status: in progress — Phases 0–3 complete
-- Updated: 2026-11-09
+- Status: complete — Phases 0–7 implemented
+- Updated: 2026-11-11
 - Goal: extend the administrator area with historical product usage, adoption, retention,
   reliability, performance, and security reporting.
 - Constraint: analytics must not expose transaction descriptions, email addresses, IP addresses,
@@ -59,8 +59,8 @@ Definitions must be fixed before implementation so later queries and labels do n
   using a one-day window and only mature cohorts in the denominator.
 
 The daily chart supports DAU, transaction creations, updates, deletions, registrations, and active
-households. Default enabled series are DAU and transaction creations; no more than three series
-may be selected simultaneously.
+households. Default enabled series are DAU and transaction creations; administrators may select
+any number of available series simultaneously.
 
 The transaction-mix panel shows, for the selected period:
 

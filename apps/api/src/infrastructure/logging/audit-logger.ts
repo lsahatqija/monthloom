@@ -11,6 +11,7 @@ export type AuditEventName =
   | 'auth.login'
   | 'auth.logout'
   | 'auth.password_changed'
+  | 'auth.initial_password_changed'
   | 'auth.password_reset_requested'
   | 'auth.password_reset_completed'
   | 'auth.email_verification_requested'

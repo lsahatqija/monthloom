@@ -7,6 +7,7 @@
     "login": "Se connecter",
     "register": "Créer un compte",
     "resetPassword": "Réinitialiser le mot de passe",
+    "changeInitialPassword": "Modifier le mot de passe initial",
     "verifyEmail": "Vérifier l’adresse e-mail",
     "files": "Fichiers",
     "settings": "Paramètres",
@@ -140,7 +141,20 @@
     "readiness": "Disponibilité",
     "backgroundJobs": "Tâches en arrière-plan",
     "backups": "Sauvegardes",
-    "security": "Sécurité", "securitySummary": "Sécurité de l’authentification", "failedLogins": "Connexions échouées", "successfulLogins": "Connexions réussies", "loginFailureRate": "Taux d’échec de connexion", "rateLimitedRequests": "Requêtes limitées", "affectedClients": "Clients concernés", "repeatedClients": "Clients récurrents", "accountState": "État des comptes", "unverifiedAccounts": "Comptes non vérifiés", "lockedAccounts": "Comptes verrouillés", "suspendedAccounts": "Comptes suspendus", "securityTrend": "Tendance de sécurité", "rateLimitRoutes": "Routes limitées"
+    "security": "Sécurité",
+    "securitySummary": "Sécurité de l’authentification",
+    "failedLogins": "Connexions échouées",
+    "successfulLogins": "Connexions réussies",
+    "loginFailureRate": "Taux d’échec de connexion",
+    "rateLimitedRequests": "Requêtes limitées",
+    "affectedClients": "Clients concernés",
+    "repeatedClients": "Clients récurrents",
+    "accountState": "État des comptes",
+    "unverifiedAccounts": "Comptes non vérifiés",
+    "lockedAccounts": "Comptes verrouillés",
+    "suspendedAccounts": "Comptes suspendus",
+    "securityTrend": "Tendance de sécurité",
+    "rateLimitRoutes": "Routes limitées"
   },
   "Common": {
     "loading": "Chargement...",
@@ -181,6 +195,10 @@
     "resetPassword": {
       "title": "Réinitialiser votre mot de passe",
       "description": "Choisissez un nouveau mot de passe pour votre compte."
+    },
+    "changeInitialPassword": {
+      "title": "Sécurisez votre compte administrateur",
+      "description": "Remplacez le mot de passe de provisionnement à usage unique avant d’utiliser l’administration."
     },
     "verifyEmail": {
       "title": "Vérifier votre adresse e-mail"
@@ -354,6 +372,9 @@
     "genericError": "Une erreur est survenue. Veuillez réessayer.",
     "email": "E-mail",
     "password": "Mot de passe",
+    "currentPassword": "Mot de passe actuel",
+    "changeInitialPassword": "Modifier le mot de passe",
+    "changingInitialPassword": "Modification du mot de passe...",
     "login": "Se connecter",
     "loggingIn": "Connexion en cours...",
     "forgotPassword": "Mot de passe oublié ?",

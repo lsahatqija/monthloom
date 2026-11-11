@@ -10,6 +10,7 @@ import {
   registerRequestSchema,
   resetPasswordRequestSchema,
   verifyEmailRequestSchema,
+  changePasswordRequestSchema,
 } from './auth.schemas.js';
 import {
   EMAIL_VERIFICATION_SENT_MESSAGE,
@@ -70,6 +71,13 @@ export class AuthController {
       await this.authService.logout(token);
     }
     clearSessionCookie(res);
+    res.status(204).send();
+  };
+
+  changeInitialPassword = async (req: Request, res: Response): Promise<void> => {
+    const input = changePasswordRequestSchema.parse(req.body);
+    await this.authService.changeInitialAdministratorPassword(req.authUser!.id, input);
+    setAuditFields(res, { actorUserId: req.authUser!.id });
     res.status(204).send();
   };
 

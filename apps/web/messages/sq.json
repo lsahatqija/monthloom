@@ -7,6 +7,7 @@
     "login": "Identifikohu",
     "register": "Regjistrohu",
     "resetPassword": "Rivendos fjalëkalimin",
+    "changeInitialPassword": "Ndrysho fjalëkalimin fillestar",
     "verifyEmail": "Verifiko emailin",
     "files": "Skedarët",
     "settings": "Cilësimet",
@@ -140,7 +141,20 @@
     "readiness": "Gatishmëria",
     "backgroundJobs": "Punë në sfond",
     "backups": "Rezervimet",
-    "security": "Siguria", "securitySummary": "Siguria e autentikimit", "failedLogins": "Hyrje të dështuara", "successfulLogins": "Hyrje të suksesshme", "loginFailureRate": "Norma e dështimit", "rateLimitedRequests": "Kërkesa të kufizuara", "affectedClients": "Klientë të prekur", "repeatedClients": "Klientë të përsëritur", "accountState": "Gjendja e llogarisë", "unverifiedAccounts": "Llogari të paverifikuara", "lockedAccounts": "Llogari të kyçura", "suspendedAccounts": "Llogari të pezulluara", "securityTrend": "Prirja e sigurisë", "rateLimitRoutes": "Rrugë të kufizuara"
+    "security": "Siguria",
+    "securitySummary": "Siguria e autentikimit",
+    "failedLogins": "Hyrje të dështuara",
+    "successfulLogins": "Hyrje të suksesshme",
+    "loginFailureRate": "Norma e dështimit",
+    "rateLimitedRequests": "Kërkesa të kufizuara",
+    "affectedClients": "Klientë të prekur",
+    "repeatedClients": "Klientë të përsëritur",
+    "accountState": "Gjendja e llogarisë",
+    "unverifiedAccounts": "Llogari të paverifikuara",
+    "lockedAccounts": "Llogari të kyçura",
+    "suspendedAccounts": "Llogari të pezulluara",
+    "securityTrend": "Prirja e sigurisë",
+    "rateLimitRoutes": "Rrugë të kufizuara"
   },
   "Common": {
     "loading": "Po ngarkohet...",
@@ -181,6 +195,10 @@
     "resetPassword": {
       "title": "Rivendosni fjalëkalimin tuaj",
       "description": "Zgjidhni një fjalëkalim të ri për llogarinë tuaj."
+    },
+    "changeInitialPassword": {
+      "title": "Siguroni llogarinë e administratorit",
+      "description": "Zëvendësoni fjalëkalimin njëpërdorimësh para përdorimit të administrimit."
     },
     "verifyEmail": {
       "title": "Verifikoni emailin tuaj"
@@ -354,6 +372,9 @@
     "genericError": "Diçka shkoi keq. Ju lutemi provoni përsëri.",
     "email": "Email",
     "password": "Fjalëkalimi",
+    "currentPassword": "Fjalëkalimi aktual",
+    "changeInitialPassword": "Ndrysho fjalëkalimin",
+    "changingInitialPassword": "Duke ndryshuar fjalëkalimin...",
     "login": "Identifikohu",
     "loggingIn": "Po identifikohesh...",
     "forgotPassword": "Keni harruar fjalëkalimin?",

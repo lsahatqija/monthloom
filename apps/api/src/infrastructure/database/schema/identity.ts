@@ -26,6 +26,7 @@ export const users = pgTable(
     desiredColor: desiredColorEnum('desired_color').notNull().default(Defaults.USER_DESIRED_COLOR),
     locale: varchar('locale', { length: 35 }).notNull().default(Defaults.USER_LOCALE),
     role: userRoleEnum('role').notNull().default('user'),
+    mustChangePassword: boolean('must_change_password').notNull().default(false),
     failedLoginAttempts: integer('failed_login_attempts').notNull().default(0),
     lockedUntil: timestamp('locked_until', { withTimezone: true }),
     suspendedAt: timestamp('suspended_at', { withTimezone: true }),

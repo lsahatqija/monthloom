@@ -148,6 +148,21 @@ PostgreSQL, the API, Next.js, and Caddy health checks. On first start, Caddy obt
 certificate and stores it in the `caddy_data` volume. If a service does not become healthy,
 `deploy.sh` prints the Compose status and the last 100 log lines for diagnosis.
 
+Provision the first administrator once after the API is healthy. The password is passed over
+standard input and is not written to `.env.production` or the container environment:
+
+```bash
+read -rsp 'Temporary administrator password: ' admin_password && echo
+printf '%s' "$admin_password" | docker compose --env-file .env.production \
+  -f compose.production.local.yml exec -T api \
+  node dist/infrastructure/database/provision-admin.js \
+  --email admin@example.com --display-name Administrator
+unset admin_password
+```
+
+Use a unique password of 15–64 characters. The command fails if that email already exists and never
+promotes a regular account. Log in immediately and replace the temporary password when prompted.
+
 Verify from another machine:
 
 ```bash

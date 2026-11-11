@@ -19,6 +19,7 @@ function toDomainUser(record: typeof users.$inferSelect): User {
     desiredColor: record.desiredColor,
     locale: localeSchema.parse(record.locale),
     role: record.role,
+    mustChangePassword: record.mustChangePassword,
     failedLoginAttempts: record.failedLoginAttempts,
     lockedUntil: record.lockedUntil,
     suspendedAt: record.suspendedAt,
@@ -51,6 +52,7 @@ export class PostgresUserRepository implements UserRepository {
         desiredColor: input.desiredColor,
         locale: input.locale,
         role: input.role ?? 'user',
+        mustChangePassword: input.mustChangePassword ?? false,
       })
       .returning();
 

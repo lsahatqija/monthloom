@@ -20,6 +20,14 @@ export function createRequestTelemetry(db: Database, logger: Logger) {
       hour.setUTCMinutes(0, 0, 0);
       const requestedVersion = req.get('x-client-version') ?? '';
       const clientVersion = SAFE_VERSION.test(requestedVersion) ? requestedVersion : 'unknown';
+      const buckets = {
+        durationLe10Ms: durationMs <= 10 ? 1 : 0,
+        durationLe50Ms: durationMs <= 50 ? 1 : 0,
+        durationLe100Ms: durationMs <= 100 ? 1 : 0,
+        durationLe250Ms: durationMs <= 250 ? 1 : 0,
+        durationLe500Ms: durationMs <= 500 ? 1 : 0,
+        durationLe1000Ms: durationMs <= 1_000 ? 1 : 0,
+      };
       void db
         .insert(requestHourlyRollups)
         .values({
@@ -33,6 +41,7 @@ export function createRequestTelemetry(db: Database, logger: Logger) {
           durationTotalMs: durationMs,
           durationMaxMs: durationMs,
           databaseTotalMs: 0,
+          ...buckets,
         })
         .onConflictDoUpdate({
           target: [
@@ -47,6 +56,12 @@ export function createRequestTelemetry(db: Database, logger: Logger) {
             requestCount: sql`${requestHourlyRollups.requestCount} + 1`,
             durationTotalMs: sql`${requestHourlyRollups.durationTotalMs} + ${durationMs}`,
             durationMaxMs: sql`greatest(${requestHourlyRollups.durationMaxMs}, ${durationMs})`,
+            durationLe10Ms: sql`${requestHourlyRollups.durationLe10Ms} + ${buckets.durationLe10Ms}`,
+            durationLe50Ms: sql`${requestHourlyRollups.durationLe50Ms} + ${buckets.durationLe50Ms}`,
+            durationLe100Ms: sql`${requestHourlyRollups.durationLe100Ms} + ${buckets.durationLe100Ms}`,
+            durationLe250Ms: sql`${requestHourlyRollups.durationLe250Ms} + ${buckets.durationLe250Ms}`,
+            durationLe500Ms: sql`${requestHourlyRollups.durationLe500Ms} + ${buckets.durationLe500Ms}`,
+            durationLe1000Ms: sql`${requestHourlyRollups.durationLe1000Ms} + ${buckets.durationLe1000Ms}`,
           },
         })
         .catch((error: unknown) =>

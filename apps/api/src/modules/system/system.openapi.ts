@@ -14,7 +14,7 @@ export function registerSystemOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'get',
     path: '/health/ready',
@@ -32,4 +32,3 @@ export function registerSystemOpenApi(registry: OpenAPIRegistry): void {
     },
   });
 }
-

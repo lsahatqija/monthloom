@@ -425,17 +425,24 @@ export class PostgresAdminRepository implements AdminRepository {
     range: AdminResolvedRange,
     comparisonRange: AdminResolvedRange,
   ): Promise<Omit<AdminReliabilityResponse, 'generatedAt' | 'range' | 'comparisonRange'>> {
-    const [current, previous, seriesResult, routesResult, versionsResult, deploymentsResult] =
-      await Promise.all([
-        this.getReliabilityTotals(range),
-        this.getReliabilityTotals(comparisonRange),
-        this.db.execute<ReliabilitySeriesRow>(sql`
+    const [
+      current,
+      previous,
+      seriesResult,
+      routesResult,
+      versionsResult,
+      deploymentsResult,
+      statusResult,
+    ] = await Promise.all([
+      this.getReliabilityTotals(range),
+      this.getReliabilityTotals(comparisonRange),
+      this.db.execute<ReliabilitySeriesRow>(sql`
         SELECT floor((((hour AT TIME ZONE ${range.timezone})::date - ${range.from}::date) / ${range.bucket === 'day' ? 1 : 7}))::int AS bucket_index,
           sum(request_count)::int AS requests, sum(request_count) FILTER (WHERE status_class = 5)::int AS errors,
           coalesce(sum(duration_total_ms)::float8 / nullif(sum(request_count), 0), 0) AS average_latency_ms
         FROM request_hourly_rollups WHERE hour >= ${new Date(range.start)} AND hour < ${new Date(range.endExclusive)} GROUP BY bucket_index ORDER BY bucket_index
       `),
-        this.db.execute<SlowRouteRow>(sql`
+      this.db.execute<SlowRouteRow>(sql`
         SELECT method, route, sum(request_count)::int AS requests,
           coalesce(sum(request_count) FILTER (WHERE status_class = 5)::float8 / nullif(sum(request_count), 0) * 100, 0) AS error_rate,
           coalesce(sum(duration_total_ms)::float8 / nullif(sum(request_count), 0), 0) AS average_latency_ms,
@@ -443,26 +450,41 @@ export class PostgresAdminRepository implements AdminRepository {
         FROM request_hourly_rollups WHERE hour >= ${new Date(range.start)} AND hour < ${new Date(range.endExclusive)}
         GROUP BY method, route ORDER BY average_latency_ms DESC LIMIT 10
       `),
-        this.db.execute<{ version: string; requests: number }>(sql`
+      this.db.execute<{ version: string; requests: number }>(sql`
         SELECT client_version AS version, sum(request_count)::int AS requests FROM request_hourly_rollups
         WHERE hour >= ${new Date(range.start)} AND hour < ${new Date(range.endExclusive)} GROUP BY client_version ORDER BY requests DESC LIMIT 10
       `),
-        this.db.execute<{ version: string; deployed_at: Date }>(sql`
+      this.db.execute<{ version: string; deployed_at: Date }>(sql`
         SELECT version, deployed_at FROM application_deployments
         WHERE deployed_at < ${new Date(range.endExclusive)} ORDER BY deployed_at
       `),
-      ]);
+      this.db.execute<OperationalStatusRow>(sql`
+          SELECT key, status, last_attempt_at, last_success_at, detail
+          FROM operational_status
+          WHERE key IN ('email.delivery', 'readiness.database', 'backup')
+        `),
+    ]);
     const unknown = (detail: string) => ({
       status: 'unknown' as const,
       lastObservedAt: null,
       detail,
     });
+    const operational = (key: string, missing: string) => {
+      const item = statusResult.rows.find((row) => row.key === key);
+      return item
+        ? {
+            status: item.status,
+            lastObservedAt: new Date(item.last_attempt_at).toISOString(),
+            detail: item.detail,
+          }
+        : unknown(missing);
+    };
     return {
       summary: {
         requests: compared(current.requests, previous.requests),
         errorRate: compared(current.errorRate, previous.errorRate),
         averageLatencyMs: compared(current.averageLatencyMs, previous.averageLatencyMs),
-        p95LatencyMs: compared(current.maxLatencyMs, previous.maxLatencyMs),
+        p95LatencyMs: compared(current.p95LatencyMs, previous.p95LatencyMs),
         databaseAverageMs: compared(current.databaseAverageMs, previous.databaseAverageMs),
       },
       series: adminCalendarBuckets(range).map((bucket, index) => ({
@@ -481,10 +503,14 @@ export class PostgresAdminRepository implements AdminRepository {
         averageLatencyMs: Number(row.average_latency_ms),
         maxLatencyMs: Number(row.max_latency_ms),
       })),
-      email: unknown('Email delivery telemetry is not connected.'),
-      readiness: unknown('Dependency probes are not persisted.'),
-      backgroundJobs: unknown('Background-job telemetry is not connected.'),
-      backups: unknown('Backup reporting is not connected.'),
+      email: operational('email.delivery', 'No email delivery has been attempted.'),
+      readiness: operational('readiness.database', 'No readiness probe has been recorded.'),
+      backgroundJobs: {
+        status: 'healthy',
+        lastObservedAt: null,
+        detail: 'No background jobs are configured.',
+      },
+      backups: operational('backup', 'No backup report has been received.'),
       deployment: {
         applicationVersion: config.deployment.version,
         deployedAt: config.deployment.deployedAt,
@@ -516,16 +542,22 @@ export class PostgresAdminRepository implements AdminRepository {
         GROUP BY bucket_index ORDER BY bucket_index
       `),
       this.db.execute<RateLimitRouteRow>(sql`
-        WITH clients AS (
-          SELECT metadata->>'routeGroup' AS route, metadata->>'clientKey' AS client_key, count(*)::int AS requests
+        WITH client_windows AS (
+          SELECT metadata->>'routeGroup' AS route, metadata->>'clientKey' AS client_key,
+            floor(extract(epoch FROM occurred_at) / 900) AS limiter_window,
+            count(*)::int AS requests
           FROM product_events
           WHERE event_name = 'security.rate_limited'
             AND occurred_at >= ${new Date(range.start)} AND occurred_at < ${new Date(range.endExclusive)}
-          GROUP BY route, client_key
+          GROUP BY route, client_key, limiter_window
+        ), clients AS (
+          SELECT route, client_key, sum(requests)::int AS requests,
+            bool_or(requests >= 3) AS repeated
+          FROM client_windows GROUP BY route, client_key
         )
         SELECT coalesce(route, 'unknown') AS route, sum(requests)::int AS requests,
           count(*)::int AS affected_clients,
-          count(*) FILTER (WHERE requests > 1)::int AS repeated_clients
+          count(*) FILTER (WHERE repeated)::int AS repeated_clients
         FROM clients GROUP BY route ORDER BY requests DESC, route
       `),
       this.db.execute<AccountStateRow>(sql`
@@ -617,8 +649,23 @@ export class PostgresAdminRepository implements AdminRepository {
       SELECT coalesce(sum(request_count), 0)::int AS requests,
         coalesce(sum(request_count) FILTER (WHERE status_class = 5)::float8 / nullif(sum(request_count), 0) * 100, 0) AS "errorRate",
         coalesce(sum(duration_total_ms)::float8 / nullif(sum(request_count), 0), 0) AS "averageLatencyMs",
-        coalesce(max(duration_max_ms), 0)::float8 AS "maxLatencyMs",
-        coalesce(sum(database_total_ms)::float8 / nullif(sum(request_count), 0), 0) AS "databaseAverageMs"
+        CASE
+          WHEN coalesce(sum(request_count), 0) = 0 THEN 0
+          WHEN sum(duration_le_10_ms) >= ceil(sum(request_count) * .95) THEN 10
+          WHEN sum(duration_le_50_ms) >= ceil(sum(request_count) * .95) THEN 50
+          WHEN sum(duration_le_100_ms) >= ceil(sum(request_count) * .95) THEN 100
+          WHEN sum(duration_le_250_ms) >= ceil(sum(request_count) * .95) THEN 250
+          WHEN sum(duration_le_500_ms) >= ceil(sum(request_count) * .95) THEN 500
+          WHEN sum(duration_le_1000_ms) >= ceil(sum(request_count) * .95) THEN 1000
+          ELSE coalesce(max(duration_max_ms), 0)
+        END::float8 AS "p95LatencyMs",
+        coalesce((
+          SELECT avg((metadata->>'durationMs')::float8)
+          FROM product_events
+          WHERE event_name = 'readiness.database.checked'
+            AND occurred_at >= ${new Date(range.start)}
+            AND occurred_at < ${new Date(range.endExclusive)}
+        ), 0) AS "databaseAverageMs"
       FROM request_hourly_rollups WHERE hour >= ${new Date(range.start)} AND hour < ${new Date(range.endExclusive)}
     `);
     const row = result.rows[0];
@@ -626,7 +673,7 @@ export class PostgresAdminRepository implements AdminRepository {
       requests: row?.requests ?? 0,
       errorRate: Number(row?.errorRate ?? 0),
       averageLatencyMs: Number(row?.averageLatencyMs ?? 0),
-      maxLatencyMs: Number(row?.maxLatencyMs ?? 0),
+      p95LatencyMs: Number(row?.p95LatencyMs ?? 0),
       databaseAverageMs: Number(row?.databaseAverageMs ?? 0),
     };
   }
@@ -787,7 +834,7 @@ interface ReliabilityTotals extends Record<string, unknown> {
   requests: number;
   errorRate: number;
   averageLatencyMs: number;
-  maxLatencyMs: number;
+  p95LatencyMs: number;
   databaseAverageMs: number;
 }
 interface ReliabilitySeriesRow extends Record<string, unknown> {
@@ -826,6 +873,13 @@ interface AccountStateRow extends Record<string, unknown> {
   unverified: number;
   locked: number;
   suspended: number;
+}
+interface OperationalStatusRow extends Record<string, unknown> {
+  key: string;
+  status: 'healthy' | 'degraded' | 'unavailable';
+  last_attempt_at: Date;
+  last_success_at: Date | null;
+  detail: string;
 }
 
 function emptyOperations(): OperationRow {

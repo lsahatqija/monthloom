@@ -1,4 +1,12 @@
-import { index, integer, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  index,
+  integer,
+  pgTable,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 
 import { users } from './identity.js';
 
@@ -20,4 +28,3 @@ export const files = pgTable(
     ownerIdIdx: index('files_owner_id_idx').on(table.ownerId),
   }),
 );
-

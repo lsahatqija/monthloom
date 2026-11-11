@@ -8,6 +8,7 @@ import type {
   RegisterRequest,
   ResetPasswordRequest,
   VerifyEmailRequest,
+  ChangePasswordRequest,
 } from '@monthloom/contracts';
 
 import { apiClient } from '../../lib/api/client';
@@ -47,6 +48,10 @@ export async function requestPasswordReset(
 
 export async function resetPassword(input: ResetPasswordRequest): Promise<void> {
   await apiClient.post<void>('auth/reset-password', input);
+}
+
+export async function changeInitialPassword(input: ChangePasswordRequest): Promise<void> {
+  await apiClient.put<void>('auth/initial-password', input);
 }
 
 export async function sendEmailVerification(): Promise<EmailVerificationResponse> {

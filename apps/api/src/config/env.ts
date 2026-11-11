@@ -75,12 +75,6 @@ export const config = {
     resendAdminKey: env.RESEND_ADMIN_KEY,
   },
 
-  adminBootstrap: {
-    email: env.ADMIN_BOOTSTRAP_EMAIL,
-    password: env.ADMIN_BOOTSTRAP_PASSWORD,
-    displayName: env.ADMIN_BOOTSTRAP_DISPLAY_NAME,
-  },
-
   logging: {
     level: env.LOG_LEVEL,
     directory: env.LOG_DIRECTORY,

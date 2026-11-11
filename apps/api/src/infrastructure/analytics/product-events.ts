@@ -10,6 +10,9 @@ const eventMetadataSchemas = {
   'user.active': z.object({}).strict(),
   'auth.login.succeeded': z.object({}).strict(),
   'auth.login.failed': z.object({}).strict(),
+  'email.delivery.succeeded': z.object({ template: z.string().max(80) }).strict(),
+  'email.delivery.failed': z.object({ template: z.string().max(80) }).strict(),
+  'readiness.database.checked': z.object({ durationMs: z.number().nonnegative() }).strict(),
   'security.rate_limited': z
     .object({ clientKey: z.string().length(64), routeGroup: z.string().max(80) })
     .strict(),
@@ -21,7 +24,7 @@ export interface ApplicationProductEvent {
   eventName: ApplicationProductEventName;
   occurredAt?: Date;
   actorUserId?: string;
-  metadata?: Record<string, string>;
+  metadata?: Record<string, string | number | boolean>;
 }
 
 export class ProductEventRecorder {

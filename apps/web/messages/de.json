@@ -7,6 +7,7 @@
     "login": "Anmelden",
     "register": "Registrieren",
     "resetPassword": "Passwort zurücksetzen",
+    "changeInitialPassword": "Initiales Passwort ändern",
     "verifyEmail": "E-Mail-Adresse bestätigen",
     "files": "Dateien",
     "settings": "Einstellungen",
@@ -140,7 +141,20 @@
     "readiness": "Bereitschaft",
     "backgroundJobs": "Hintergrundaufgaben",
     "backups": "Sicherungen",
-    "security": "Sicherheit", "securitySummary": "Anmeldesicherheit", "failedLogins": "Fehlgeschlagene Anmeldungen", "successfulLogins": "Erfolgreiche Anmeldungen", "loginFailureRate": "Anmeldefehlerrate", "rateLimitedRequests": "Begrenzte Anfragen", "affectedClients": "Betroffene Clients", "repeatedClients": "Wiederholte Clients", "accountState": "Kontostatus", "unverifiedAccounts": "Unbestätigte Konten", "lockedAccounts": "Gesperrte Konten", "suspendedAccounts": "Suspendierte Konten", "securityTrend": "Sicherheitstrend", "rateLimitRoutes": "Begrenzte Routen"
+    "security": "Sicherheit",
+    "securitySummary": "Anmeldesicherheit",
+    "failedLogins": "Fehlgeschlagene Anmeldungen",
+    "successfulLogins": "Erfolgreiche Anmeldungen",
+    "loginFailureRate": "Anmeldefehlerrate",
+    "rateLimitedRequests": "Begrenzte Anfragen",
+    "affectedClients": "Betroffene Clients",
+    "repeatedClients": "Wiederholte Clients",
+    "accountState": "Kontostatus",
+    "unverifiedAccounts": "Unbestätigte Konten",
+    "lockedAccounts": "Gesperrte Konten",
+    "suspendedAccounts": "Suspendierte Konten",
+    "securityTrend": "Sicherheitstrend",
+    "rateLimitRoutes": "Begrenzte Routen"
   },
   "Common": {
     "loading": "Wird geladen...",
@@ -181,6 +195,10 @@
     "resetPassword": {
       "title": "Passwort zurücksetzen",
       "description": "Legen Sie ein neues Passwort für Ihr Konto fest."
+    },
+    "changeInitialPassword": {
+      "title": "Administratorkonto absichern",
+      "description": "Ersetzen Sie das einmalige Bereitstellungspasswort, bevor Sie die Administration verwenden."
     },
     "verifyEmail": {
       "title": "E-Mail-Adresse bestätigen"
@@ -350,6 +368,9 @@
     "genericError": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
     "email": "E-Mail",
     "password": "Passwort",
+    "currentPassword": "Aktuelles Passwort",
+    "changeInitialPassword": "Passwort ändern",
+    "changingInitialPassword": "Passwort wird geändert...",
     "login": "Anmelden",
     "loggingIn": "Anmeldung läuft...",
     "forgotPassword": "Passwort vergessen",

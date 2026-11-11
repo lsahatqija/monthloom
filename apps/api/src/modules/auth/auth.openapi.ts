@@ -7,7 +7,9 @@ export function registerAuthOpenApi(registry: OpenAPIRegistry): void {
     path: '/api/v1/auth/register',
     summary: 'Register a new account',
     tags: ['Auth'],
-    request: { body: { content: { 'application/json': { schema: contracts.registerRequestSchema } } } },
+    request: {
+      body: { content: { 'application/json': { schema: contracts.registerRequestSchema } } },
+    },
     responses: {
       201: {
         description: 'Account created.',
@@ -19,13 +21,15 @@ export function registerAuthOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'post',
     path: '/api/v1/auth/login',
     summary: 'Log in',
     tags: ['Auth'],
-    request: { body: { content: { 'application/json': { schema: contracts.loginRequestSchema } } } },
+    request: {
+      body: { content: { 'application/json': { schema: contracts.loginRequestSchema } } },
+    },
     responses: {
       200: {
         description: 'Authenticated.',
@@ -37,12 +41,13 @@ export function registerAuthOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'post',
     path: '/api/v1/auth/forgot-password',
     summary: 'Request a password reset email',
-    description: 'Always returns the same response so registered email addresses are not disclosed.',
+    description:
+      'Always returns the same response so registered email addresses are not disclosed.',
     tags: ['Auth'],
     request: {
       body: { content: { 'application/json': { schema: contracts.forgotPasswordRequestSchema } } },
@@ -54,7 +59,7 @@ export function registerAuthOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'post',
     path: '/api/v1/auth/reset-password',
@@ -71,7 +76,7 @@ export function registerAuthOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'post',
     path: '/api/v1/auth/verify-email',
@@ -91,7 +96,7 @@ export function registerAuthOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'post',
     path: '/api/v1/auth/send-email-verification',
@@ -109,7 +114,7 @@ export function registerAuthOpenApi(registry: OpenAPIRegistry): void {
       },
     },
   });
-  
+
   registry.registerPath({
     method: 'post',
     path: '/api/v1/auth/logout',
@@ -118,7 +123,25 @@ export function registerAuthOpenApi(registry: OpenAPIRegistry): void {
     security: [{ ['sessionCookie']: [] }],
     responses: { 204: { description: 'Logged out.' } },
   });
-  
+
+  registry.registerPath({
+    method: 'put',
+    path: '/api/v1/auth/initial-password',
+    summary: 'Replace a provisioned administrator password',
+    tags: ['Auth'],
+    security: [{ ['sessionCookie']: [] }],
+    request: {
+      body: { content: { 'application/json': { schema: contracts.changePasswordRequestSchema } } },
+    },
+    responses: {
+      204: { description: 'Initial administrator password replaced.' },
+      400: {
+        description: 'The current password or request is invalid.',
+        content: { 'application/json': { schema: contracts.apiErrorResponseSchema } },
+      },
+    },
+  });
+
   registry.registerPath({
     method: 'get',
     path: '/api/v1/auth/me',
@@ -133,4 +156,3 @@ export function registerAuthOpenApi(registry: OpenAPIRegistry): void {
     },
   });
 }
-

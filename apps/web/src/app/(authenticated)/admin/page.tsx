@@ -32,13 +32,7 @@ import { ReliabilityTables } from './reliability-tables';
 import { UsageChart } from './usage-chart';
 
 type AdminView =
-  | 'overview'
-  | 'health'
-  | 'usage'
-  | 'adoption'
-  | 'retention'
-  | 'reliability'
-  | 'security';
+  'overview' | 'health' | 'usage' | 'adoption' | 'retention' | 'reliability' | 'security';
 
 type AdminSearchParams = {
   view?: string;
@@ -52,9 +46,14 @@ export default async function AdminPage({ searchParams }: { searchParams: AdminS
   const user = await getServerUser();
   if (!user || user.role !== 'admin') redirect('/');
 
-  const view: AdminView = ['health', 'usage', 'adoption', 'retention', 'reliability', 'security'].includes(
-    searchParams.view ?? '',
-  )
+  const view: AdminView = [
+    'health',
+    'usage',
+    'adoption',
+    'retention',
+    'reliability',
+    'security',
+  ].includes(searchParams.view ?? '')
     ? (searchParams.view as AdminView)
     : 'overview';
   const cookieHeader = cookies().toString();
@@ -198,26 +197,90 @@ async function Security({
     <div className="adminView">
       <AnalyticsRange view="security" range={data.range} />
       <section className="adminPanel" aria-labelledby="security-summary">
-        <div className="adminPanelHeader"><h2 id="security-summary">{t('securitySummary')}</h2></div>
+        <div className="adminPanelHeader">
+          <h2 id="security-summary">{t('securitySummary')}</h2>
+        </div>
         <div className="adminMetricGrid">
-          {metrics.map(([label, value]) => <article className="adminMetric" key={label}><span>{label}</span><strong>{typeof value === 'number' ? numbers.format(value) : value}</strong></article>)}
+          {metrics.map(([label, value]) => (
+            <article className="adminMetric" key={label}>
+              <span>{label}</span>
+              <strong>{typeof value === 'number' ? numbers.format(value) : value}</strong>
+            </article>
+          ))}
         </div>
       </section>
       <section className="adminPanel" aria-labelledby="account-state">
-        <div className="adminPanelHeader"><h2 id="account-state">{t('accountState')}</h2></div>
+        <div className="adminPanelHeader">
+          <h2 id="account-state">{t('accountState')}</h2>
+        </div>
         <div className="adminMetricGrid">
-          <article className="adminMetric"><span>{t('unverifiedAccounts')}</span><strong>{numbers.format(data.accountState.unverified)}</strong></article>
-          <article className="adminMetric"><span>{t('lockedAccounts')}</span><strong>{numbers.format(data.accountState.locked)}</strong></article>
-          <article className="adminMetric"><span>{t('suspendedAccounts')}</span><strong>{numbers.format(data.accountState.suspended)}</strong></article>
+          <article className="adminMetric">
+            <span>{t('unverifiedAccounts')}</span>
+            <strong>{numbers.format(data.accountState.unverified)}</strong>
+          </article>
+          <article className="adminMetric">
+            <span>{t('lockedAccounts')}</span>
+            <strong>{numbers.format(data.accountState.locked)}</strong>
+          </article>
+          <article className="adminMetric">
+            <span>{t('suspendedAccounts')}</span>
+            <strong>{numbers.format(data.accountState.suspended)}</strong>
+          </article>
         </div>
       </section>
       <section className="adminPanel" aria-labelledby="security-trend">
-        <div className="adminPanelHeader"><h2 id="security-trend">{t('securityTrend')}</h2></div>
-        <div className="adminTableScroll"><table><thead><tr><th>{t('date')}</th><th>{t('successfulLogins')}</th><th>{t('failedLogins')}</th><th>{t('rateLimitedRequests')}</th></tr></thead><tbody>{data.series.map((row) => <tr key={row.from}><td>{row.from}</td><td>{numbers.format(row.successfulLogins)}</td><td>{numbers.format(row.failedLogins)}</td><td>{numbers.format(row.rateLimitedRequests)}</td></tr>)}</tbody></table></div>
+        <div className="adminPanelHeader">
+          <h2 id="security-trend">{t('securityTrend')}</h2>
+        </div>
+        <div className="adminTableScroll">
+          <table>
+            <thead>
+              <tr>
+                <th>{t('date')}</th>
+                <th>{t('successfulLogins')}</th>
+                <th>{t('failedLogins')}</th>
+                <th>{t('rateLimitedRequests')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.series.map((row) => (
+                <tr key={row.from}>
+                  <td>{row.from}</td>
+                  <td>{numbers.format(row.successfulLogins)}</td>
+                  <td>{numbers.format(row.failedLogins)}</td>
+                  <td>{numbers.format(row.rateLimitedRequests)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
       <section className="adminPanel" aria-labelledby="rate-limit-routes">
-        <div className="adminPanelHeader"><h2 id="rate-limit-routes">{t('rateLimitRoutes')}</h2></div>
-        <div className="adminTableScroll"><table><thead><tr><th>{t('route')}</th><th>{t('requests')}</th><th>{t('affectedClients')}</th><th>{t('repeatedClients')}</th></tr></thead><tbody>{data.rateLimitRoutes.map((row) => <tr key={row.route}><td>{row.route}</td><td>{numbers.format(row.requests)}</td><td>{numbers.format(row.affectedClients)}</td><td>{numbers.format(row.repeatedClients)}</td></tr>)}</tbody></table></div>
+        <div className="adminPanelHeader">
+          <h2 id="rate-limit-routes">{t('rateLimitRoutes')}</h2>
+        </div>
+        <div className="adminTableScroll">
+          <table>
+            <thead>
+              <tr>
+                <th>{t('route')}</th>
+                <th>{t('requests')}</th>
+                <th>{t('affectedClients')}</th>
+                <th>{t('repeatedClients')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.rateLimitRoutes.map((row) => (
+                <tr key={row.route}>
+                  <td>{row.route}</td>
+                  <td>{numbers.format(row.requests)}</td>
+                  <td>{numbers.format(row.affectedClients)}</td>
+                  <td>{numbers.format(row.repeatedClients)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   );

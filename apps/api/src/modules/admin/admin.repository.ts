@@ -41,5 +41,9 @@ export interface AdminRepository {
     range: AdminResolvedRange,
     comparisonRange: AdminResolvedRange,
   ): Promise<Omit<AdminSecurityResponse, 'generatedAt' | 'range' | 'comparisonRange'>>;
-  suspendAccount?(userId: string, administratorId: string, now: Date): Promise<AdminSuspendAccountResponse | null>;
+  suspendAccount?(
+    userId: string,
+    administratorId: string,
+    now: Date,
+  ): Promise<AdminSuspendAccountResponse | null>;
 }

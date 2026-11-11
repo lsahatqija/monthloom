@@ -60,6 +60,12 @@ export const requestHourlyRollups = pgTable(
     durationTotalMs: bigint('duration_total_ms', { mode: 'number' }).notNull().default(0),
     durationMaxMs: integer('duration_max_ms').notNull().default(0),
     databaseTotalMs: bigint('database_total_ms', { mode: 'number' }).notNull().default(0),
+    durationLe10Ms: integer('duration_le_10_ms').notNull().default(0),
+    durationLe50Ms: integer('duration_le_50_ms').notNull().default(0),
+    durationLe100Ms: integer('duration_le_100_ms').notNull().default(0),
+    durationLe250Ms: integer('duration_le_250_ms').notNull().default(0),
+    durationLe500Ms: integer('duration_le_500_ms').notNull().default(0),
+    durationLe1000Ms: integer('duration_le_1000_ms').notNull().default(0),
   },
   (table) => ({
     identity: uniqueIndex('request_hourly_rollups_identity_idx').on(
@@ -73,6 +79,15 @@ export const requestHourlyRollups = pgTable(
     range: index('request_hourly_rollups_range_idx').on(table.hour),
   }),
 );
+
+export const operationalStatus = pgTable('operational_status', {
+  key: varchar('key', { length: 80 }).primaryKey(),
+  status: varchar('status', { length: 20 }).notNull(),
+  lastAttemptAt: timestamp('last_attempt_at', { withTimezone: true }).notNull(),
+  lastSuccessAt: timestamp('last_success_at', { withTimezone: true }),
+  durationMs: integer('duration_ms'),
+  detail: varchar('detail', { length: 160 }).notNull(),
+});
 
 export const applicationDeployments = pgTable(
   'application_deployments',

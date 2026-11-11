@@ -26,7 +26,11 @@ export function registerRoutes(app: Express, deps: AppDependencies): void {
 
   app.use(
     `${API_BASE_PATH}/auth`,
-    createAuthRouter(controllers.authController, middleware.requireAuth, middleware.optionalAuth),
+    createAuthRouter(
+      controllers.authController,
+      middleware.requireSession,
+      middleware.optionalAuth,
+    ),
   );
   app.use(
     `${API_BASE_PATH}/users`,

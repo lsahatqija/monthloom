@@ -33,9 +33,6 @@ export const apiEnvShape = {
   FEEDBACK_EMAIL_ADDRESS: z.string().email().default('feedback@monthloom.local'),
   RESEND_API_KEY: emptyStringAsUndefined(z.string().startsWith('re_')),
   RESEND_ADMIN_KEY: emptyStringAsUndefined(z.string().startsWith('re_')),
-  ADMIN_BOOTSTRAP_EMAIL: emptyStringAsUndefined(z.string().email()),
-  ADMIN_BOOTSTRAP_PASSWORD: emptyStringAsUndefined(z.string().min(8)),
-  ADMIN_BOOTSTRAP_DISPLAY_NAME: z.string().min(1).default('Administrator'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   LOG_DIRECTORY: z.string().min(1).default('logs'),
   APP_VERSION: z.string().min(1).max(40).default('development'),
@@ -57,13 +54,6 @@ export const apiEnvSchema = z.object(apiEnvShape).superRefine((env, context) => 
       code: z.ZodIssueCode.custom,
       path: ['RESEND_API_KEY'],
       message: 'RESEND_API_KEY is required when EMAIL_TRANSPORT=resend',
-    });
-  }
-  if (Boolean(env.ADMIN_BOOTSTRAP_EMAIL) !== Boolean(env.ADMIN_BOOTSTRAP_PASSWORD)) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['ADMIN_BOOTSTRAP_PASSWORD'],
-      message: 'ADMIN_BOOTSTRAP_EMAIL and ADMIN_BOOTSTRAP_PASSWORD must be set together',
     });
   }
 });

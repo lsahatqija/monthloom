@@ -70,13 +70,14 @@ All five templates are retained and synchronized by `pnpm email:templates:sync`:
 The synchronization-only `RESEND_ADMIN_KEY` is an operational option, not an application runtime
 secret. Keep it out of `.env.production`; production delivery only receives `RESEND_API_KEY`.
 
-## Administrator bootstrap
+## Administrator provisioning
 
-Set `ADMIN_BOOTSTRAP_EMAIL` and `ADMIN_BOOTSTRAP_PASSWORD` together in the deployment-local `.env`
-to create the first administrator when the API starts. The bootstrap is safe to rerun: it only
-creates a missing email and never changes an existing account. Remove the password after successful
-provisioning; use the normal password-reset flow or database-backed operational recovery for later
-credential rotation.
+Administrator credentials are never runtime configuration. Create the first administrator with the
+one-shot provisioning command documented in the deployment runbook. The initial password is read
+from standard input, is never stored in `.env.production`, and must contain 15–64 characters.
+Provisioning fails if the email already belongs to any account; an existing user is never promoted.
+The administrator must replace the initial password before any protected API or administration
+feature is available.
 
 ## Production durability
 

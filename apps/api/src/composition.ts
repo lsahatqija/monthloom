@@ -7,7 +7,11 @@ import {
 } from './infrastructure/analytics/product-events.js';
 import { createRequestTelemetry } from './infrastructure/analytics/request-telemetry.js';
 import { db } from './infrastructure/database/client.js';
-import { LogEmailSender, ResendEmailSender } from './infrastructure/email/index.js';
+import {
+  InstrumentedEmailSender,
+  LogEmailSender,
+  ResendEmailSender,
+} from './infrastructure/email/index.js';
 import { logger } from './infrastructure/logging/logger.js';
 import { LocalFileStorage } from './infrastructure/storage/index.js';
 import { PostgresAdminRepository } from './modules/admin/adapters/postgres-admin.repository.js';
@@ -62,7 +66,9 @@ export function buildAppDependencies() {
     config.email.transport === 'resend'
       ? new ResendEmailSender(config.email)
       : new LogEmailSender(logger);
-  const emailService = new AutomatedEmailService(emailSender);
+  const emailService = new AutomatedEmailService(
+    new InstrumentedEmailSender(emailSender, productEvents),
+  );
   const adminService = new AdminService(
     new PostgresAdminRepository(db),
     new FileAdminLogReader(path.resolve(config.logging.directory)),
@@ -103,9 +109,9 @@ export function buildAppDependencies() {
     productEvents,
   );
   const fileService = new FileService(fileRepository, fileStorage);
-  const systemService = new SystemService();
+  const systemService = new SystemService(productEvents);
 
-  const { requireAuth, optionalAuth } = createAuthMiddleware(authService);
+  const { requireAuth, requireSession, optionalAuth } = createAuthMiddleware(authService);
 
   const userController = new UserController(userService);
   const authController = new AuthController(authService);
@@ -127,6 +133,7 @@ export function buildAppDependencies() {
     },
     middleware: {
       requireAuth,
+      requireSession,
       optionalAuth,
       requireRole,
       requestTelemetry: createRequestTelemetry(db, logger),
