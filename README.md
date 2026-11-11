@@ -22,6 +22,9 @@ right person, source, and category.
 - Maintain household-specific sources and copy selected sources between households.
 - Upload, download, and manage personal image files.
 - Personalize profiles and choose from ten themes in light or dark mode.
+- Use the installable PWA in five languages, with a small offline fallback.
+- Operate the service through a role-gated administration console covering adoption, usage,
+  retention, reliability, security, deployments, and account suspension.
 
 ## How Monthloom is used
 
@@ -63,14 +66,27 @@ Monthloom is a pnpm workspace with two independently deployable applications and
 contract package.
 
 ```mermaid
-flowchart LR
-    Browser[Browser] -->|Next.js pages and client requests| Web[Next.js web app]
-    Browser -->|JSON, multipart, session cookie| API[Express API]
-    Web -->|server-side auth requests| API
-    API -->|Drizzle ORM| DB[(PostgreSQL)]
-    API -->|FileStorage adapter| Files[(Upload storage)]
-    Contracts[Shared Zod contracts] -.-> Web
-    Contracts -.-> API
+flowchart TB
+    User[Browser / installed PWA]
+    subgraph Runtime[Monthloom runtime]
+        Web[Next.js 14 web application]
+        API[Express 5 modular-monolith API]
+        DB[(PostgreSQL 16)]
+        Files[(Upload volume)]
+        Logs[(Rotating JSONL logs)]
+    end
+    Email[Resend email API]
+    Contracts[Shared Zod contracts]
+
+    User -->|HTML, RSC, static assets| Web
+    User -->|JSON, multipart, HttpOnly session cookie| API
+    Web -->|server-side session checks| API
+    API -->|Drizzle SQL| DB
+    API -->|FileStorage adapter| Files
+    API -->|operational, HTTP and audit events| Logs
+    API -->|transactional email| Email
+    Contracts -.->|compile-time and runtime validation| Web
+    Contracts -.->|compile-time and runtime validation| API
 ```
 
 - **Web application:** Next.js App Router with server-rendered authentication gates and
@@ -84,22 +100,26 @@ flowchart LR
   and API.
 - **Files:** metadata and ownership live in PostgreSQL; binary content is accessed through a
   replaceable storage interface backed by the local filesystem in this repository.
+- **Operations:** structured logs, privacy-safe product events, hourly request rollups, deployment
+  history, and health probes feed the administrator console without adding a separate analytics
+  service.
 
 For request flows, the data model, module boundaries, and architectural decisions, see
 [`docs/architecture.md`](docs/architecture.md) and [`docs/adr`](docs/adr/).
 
 ## Tech stack
 
-| Area                 | Technology                                                      |
-| -------------------- | --------------------------------------------------------------- |
-| Language             | TypeScript                                                      |
-| Frontend             | Next.js 14, React 18, TanStack Query, React Hook Form           |
-| Backend              | Node.js, Express 5, Zod                                         |
-| Database             | PostgreSQL 16, Drizzle ORM                                      |
-| Authentication       | Server-side sessions, HttpOnly cookies, Argon2 password hashing |
-| API documentation    | OpenAPI 3, Swagger UI                                           |
-| Infrastructure       | Docker Compose, pnpm workspaces                                 |
-| Logging and security | Pino, Helmet, CORS and request rate limiting                    |
+| Area                 | Technology                                                       |
+| -------------------- | ---------------------------------------------------------------- |
+| Language             | TypeScript                                                       |
+| Frontend             | Next.js 14, React 18, TanStack Query, React Hook Form, Recharts  |
+| Backend              | Node.js, Express 5, Zod                                          |
+| Database             | PostgreSQL 16, Drizzle ORM                                       |
+| Authentication       | Server-side sessions, HttpOnly cookies, Argon2 password hashing  |
+| API documentation    | OpenAPI 3, Swagger UI                                            |
+| Infrastructure       | Docker Compose, pnpm workspaces                                  |
+| Email and i18n       | Resend, next-intl; English, German, French, Albanian and Turkish |
+| Logging and security | Pino, Helmet, CORS, origin checks, audit logs and rate limiting  |
 
 ## Repository layout
 
@@ -113,7 +133,11 @@ packages/
 docs/
   adr/                 Architecture decision records
   architecture.md      Detailed technical architecture
-infrastructure/docker/ Container-specific documentation
+  runtime-configuration.md  Environment and Compose ownership
+infrastructure/
+  docker/              Container defaults
+  production/          Caddy, backup, deployment and auto-update tooling
+wiki/                   Curated GitHub wiki entry pages
 ```
 
 ## Run locally

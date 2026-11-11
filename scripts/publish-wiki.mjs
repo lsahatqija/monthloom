@@ -150,6 +150,7 @@ const documentation = new Map([
   ['github-wiki.md', 'Wiki-Maintenance.md'],
   ['production-concerns.md', 'Production-Concerns.md'],
   ['runtime-configuration.md', 'Runtime-Configuration.md'],
+  ['server-logging.md', 'Server-Logging.md'],
   ['testing.md', 'Testing.md'],
 ]);
 

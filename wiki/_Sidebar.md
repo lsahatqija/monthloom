@@ -5,6 +5,7 @@
 - [Architecture](Architecture)
 - [Architecture decisions](Architecture-Decisions)
 - [Runtime configuration](Runtime-Configuration)
+- [Server logging](Server-Logging)
 - [Testing](Testing)
 - [Production concerns](Production-Concerns)
 - [Deployment](Deployment)

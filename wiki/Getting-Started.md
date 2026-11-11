@@ -19,6 +19,8 @@ pnpm db:seed
 Change `SESSION_SECRET` in `.env` before starting. Seeding is optional and intended only for local
 development. Open the application at <http://localhost:3000>; the API is available at
 <http://localhost:4000> and development Swagger UI at <http://localhost:4000/api/docs>.
+The API also applies pending migrations during startup; the explicit migration command makes setup
+failures visible before the complete stack is started. Never seed production.
 
 Stop the stack with:
 

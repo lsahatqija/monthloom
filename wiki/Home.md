@@ -6,6 +6,17 @@ Monthloom is a collaborative household finance application for tracking income a
 one place. This wiki contains the guides for running, developing, testing, securing, and deploying
 the project.
 
+```mermaid
+flowchart LR
+    Browser[Browser / PWA] --> Web[Next.js web]
+    Browser --> API[Express API]
+    Web --> API
+    API --> DB[(PostgreSQL)]
+    API --> Files[(Uploads)]
+    API --> Email[Resend]
+    API --> Ops[Logs and analytics]
+```
+
 ## Start here
 
 - [Getting started](Getting-Started) — run Monthloom locally with Docker Compose.
@@ -17,4 +28,6 @@ the project.
 
 The [repository README](https://github.com/{{REPOSITORY}}#readme) provides the product overview and
 the source tree remains the canonical location for documentation changes. This wiki is published
-from that source automatically.
+from that source automatically. The Architecture guide contains detailed system-context, workspace,
+backend composition, request-flow, frontend, data-model, recurrence, deployment, and release
+diagrams.

@@ -8,6 +8,32 @@ Next.js. PostgreSQL, the API, and Next.js have no published host ports.
 This is a sound small-production topology, but the server remains a single point of failure.
 Database and upload backups must be copied to separate, encrypted storage.
 
+```mermaid
+flowchart TB
+    Internet[Internet] -->|80/443| Caddy[Caddy: TLS and routing]
+    subgraph Ubuntu[Single Hetzner Ubuntu host]
+        Caddy -->|pages and assets| Web[Next.js web]
+        Caddy -->|/api and /health| API[Express API]
+        Web -->|internal API URL| API
+        API -->|backend network| DB[(PostgreSQL)]
+        API --> Uploads[(uploads_data)]
+        API --> Logs[(api_logs)]
+        Caddy --> TLS[(caddy_data/config)]
+        DB --> Data[(postgres_data)]
+        Updater[systemd update timer] --> API
+        Updater --> Web
+        Backup[backup.sh] --> DB
+        Backup --> Uploads
+    end
+    API --> Resend[Resend]
+    Registry[Docker Hub paired API/web images] --> Updater
+    Backup --> Offsite[(Encrypted off-host backup)]
+```
+
+The `frontend` Docker network contains Caddy, web, and API. The internal `backend` network contains
+only API and PostgreSQL. Named volumes hold every durable on-host concern; the image registry and
+Git checkout are delivery mechanisms, not backups.
+
 ## 1. Decide the production values
 
 Before changing DNS, choose:

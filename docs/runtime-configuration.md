@@ -39,6 +39,56 @@ always required. Production Compose explicitly enables secure session cookies. S
 provider secret. Compose uses required interpolation for production infrastructure credentials,
 the public domain, image tag, and sender address, so omissions fail during Compose evaluation.
 
+## Variable inventory
+
+Values below are application defaults; Compose deliberately overrides URLs, storage paths,
+cookies, proxy trust, version, and deployment time for its network and environment. A comma in an
+allowlist separates values. Empty optional email values are treated as unset.
+
+| API variable                | Default / requirement      | Purpose                                                            |
+| --------------------------- | -------------------------- | ------------------------------------------------------------------ |
+| `NODE_ENV`                  | `development`              | Selects development, test, or production behavior.                 |
+| `API_PORT`                  | `4000`                     | HTTP listener port.                                                |
+| `WEB_PUBLIC_URL`            | `http://localhost:3000`    | Public web origin used in generated links.                         |
+| `CORS_ALLOWED_ORIGINS`      | `http://localhost:3000`    | Credentialed browser origins; production uses the HTTPS domain.    |
+| `DATABASE_URL`              | required                   | PostgreSQL connection URL.                                         |
+| `SESSION_SECRET`            | required, 16+ characters   | Secret material for session-token protection.                      |
+| `SESSION_DURATION_HOURS`    | `168`                      | Database session and cookie lifetime.                              |
+| `SESSION_COOKIE_NAME`       | `monthloom_session`        | HttpOnly cookie name.                                              |
+| `SESSION_COOKIE_SECURE`     | `false`                    | Requires HTTPS cookies when `true`; production sets it.            |
+| `JSON_BODY_LIMIT`           | `1mb`                      | Express JSON request-body ceiling.                                 |
+| `UPLOAD_DIR`                | `uploads`                  | Binary file root; production mounts `/app/uploads`.                |
+| `UPLOAD_MAX_SIZE_BYTES`     | `5242880`                  | Per-file byte limit.                                               |
+| `UPLOAD_ALLOWED_MIME_TYPES` | JPEG, PNG, WebP            | Comma-separated byte-verified MIME allowlist.                      |
+| `EMAIL_TRANSPORT`           | `log`                      | `log` metadata locally or `resend` delivery.                       |
+| `EMAIL_FROM_NAME`           | `Monthloom`                | Transactional sender display name.                                 |
+| `EMAIL_FROM_ADDRESS`        | `no-reply@monthloom.local` | Transactional sender address.                                      |
+| `EMAIL_REPLY_TO`            | unset                      | Optional reply destination.                                        |
+| `FEEDBACK_EMAIL_ADDRESS`    | `feedback@monthloom.local` | Private feedback recipient.                                        |
+| `RESEND_API_KEY`            | required for `resend`      | Runtime sending credential.                                        |
+| `RESEND_ADMIN_KEY`          | unset                      | Template-sync-only credential; exclude from the runtime container. |
+| `LOG_LEVEL`                 | `info`                     | Minimum Pino severity.                                             |
+| `LOG_DIRECTORY`             | `logs`                     | Rotating JSONL destination; production mounts `/app/logs`.         |
+| `APP_VERSION`               | `development`              | Image/release identity stored in logs and analytics.               |
+| `DEPLOYED_AT`               | development timestamp      | ISO deployment time recorded at startup.                           |
+| `TRUSTED_PROXY_HOPS`        | `0`                        | Trusted reverse-proxy count; production uses one Caddy hop.        |
+
+Four limiter pairs configure window minutes and maximum requests: `RATE_LIMIT_*` (15/300),
+`AUTH_RATE_LIMIT_*` (15/10), `PASSWORD_RESET_RATE_LIMIT_*` (30/5), and
+`EMAIL_VERIFICATION_RATE_LIMIT_*` (60/10).
+
+| Web / Compose variable                              | Visibility                 | Purpose                                                      |
+| --------------------------------------------------- | -------------------------- | ------------------------------------------------------------ |
+| `API_INTERNAL_URL`                                  | Next.js server only        | API URL on the server/container network.                     |
+| `NEXT_PUBLIC_API_URL`                               | Browser bundle             | Browser-reachable API base; omit for same-origin production. |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Compose/database           | PostgreSQL bootstrap identity; only the password is secret.  |
+| `DOMAIN`, `ACME_EMAIL`                              | Production Compose/Caddy   | Public hostname and certificate contact.                     |
+| `IMAGE_TAG`                                         | Production/publish Compose | Paired API/web SHA or `latest` release channel.              |
+
+`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_USER_EMAIL`, and `SEED_USER_PASSWORD` are consumed
+only by the development seed command. They are not API runtime configuration and must not be
+present or used in production.
+
 `LOG_LEVEL` selects the minimum Pino severity and `LOG_DIRECTORY` selects the application log
 directory, defaulting to `logs` relative to the API working directory. Production sets it to
 `/app/logs` in the dedicated `api_logs` volume. Logs rotate at midnight UTC and retain 90 complete

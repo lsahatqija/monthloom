@@ -4,8 +4,9 @@
 
 Monthloom is a collaborative household finance application. Authenticated users organize income
 and expenses by household, month, member, and source; invite other users into a household; and
-manage recurring transactions. The repository also contains profile, appearance, and owned-file
-management features.
+manage recurring transactions. The same system also provides identity lifecycle, profiles,
+owned-file management, feedback delivery, localization, PWA support, operational telemetry, and a
+role-gated administration console.
 
 This document describes the implemented system: its runtime architecture, application modules,
 data model, important request flows, security controls, and operational characteristics. The
@@ -42,17 +43,34 @@ accepted design decisions behind it are recorded separately in [`docs/adr`](./ad
 - Upload, list, download, and delete user-owned JPEG, PNG, and WebP files.
 - Select one of ten visual themes and light or dark mode. Appearance is stored locally per browser
   rather than in the user profile.
+- Render English, German, French, Albanian, and Turkish UI from repository-owned message catalogs.
+- Install the web application as a PWA and show a static fallback while offline.
+- Send feedback and account/household lifecycle email through an instrumented email adapter.
+- Give administrators adoption, usage, retention, reliability, security, deployment, and
+  account-suspension views without exposing raw personal finance data.
 - Expose liveness/readiness probes, an OpenAPI document, and development-only Swagger UI.
 
 ## 3. System context
 
 ```mermaid
-flowchart LR
-    Browser[Browser] -->|HTML / React Server Components| Web[Next.js web app]
-    Browser -->|JSON, multipart, credentials| API[Express API]
-    Web -->|server-side fetch + forwarded cookie| API
-    API -->|Drizzle SQL| DB[(PostgreSQL)]
-    API -->|FileStorage interface| Files[(Local upload volume)]
+flowchart TB
+    Person[Household member or administrator]
+    subgraph Boundary[Monthloom system boundary]
+        Web[Next.js web application]
+        API[Express modular-monolith API]
+        DB[(PostgreSQL)]
+        Files[(Uploaded image storage)]
+        Logs[(Structured JSONL logs)]
+    end
+    Email[Resend email service]
+
+    Person -->|Browser or installed PWA| Web
+    Person -->|JSON, multipart, session cookie| API
+    Web -->|server-render auth and data requests| API
+    API -->|Drizzle SQL| DB
+    API -->|FileStorage interface| Files
+    API -->|Pino HTTP, operational and audit records| Logs
+    API -->|Transactional messages| Email
 ```
 
 There are two independently deployable application processes:
@@ -65,6 +83,23 @@ PostgreSQL is the system of record. Uploaded binary content is stored separately
 filesystem while metadata and ownership remain in PostgreSQL. `packages/contracts` is compiled
 and consumed by both applications.
 
+### Workspace dependency map
+
+```mermaid
+flowchart LR
+    Web[apps/web] --> Contracts[packages/contracts]
+    API[apps/api] --> Contracts
+    Web --> ESLint[packages/eslint-config]
+    API --> ESLint
+    Contracts --> ESLint
+    Root[Root scripts and Vitest projects] --> Web
+    Root --> API
+    Root --> Contracts
+    Compose[Compose and production tooling] --> Web
+    Compose --> API
+    Compose --> Postgres[(PostgreSQL)]
+```
+
 ## 4. Repository organization
 
 | Path                          | Responsibility                                                            |
@@ -73,12 +108,14 @@ and consumed by both applications.
 | `apps/web/src/features`       | Feature-specific UI and browser API functions                             |
 | `apps/web/src/components`     | Shared UI, layout, profile, and theme components                          |
 | `apps/web/src/lib`            | API client, configuration, authentication helpers, and error types        |
-| `apps/api/src/modules`        | Backend feature modules: auth, users, finance, files, and system          |
-| `apps/api/src/infrastructure` | PostgreSQL, storage, security, logging, and OpenAPI adapters              |
+| `apps/api/src/modules`        | Auth, users, finance, files, feedback, admin, email, and system modules   |
+| `apps/api/src/infrastructure` | PostgreSQL, storage, email, analytics, security, logging, and OpenAPI     |
 | `apps/api/src/middleware`     | Cross-cutting HTTP security, rate limits, errors, and 404 handling        |
 | `packages/contracts`          | Zod transport schemas, public DTO types, identifiers, and constants       |
+| `apps/web/messages`           | Versioned translation catalogs for all supported locales                  |
 | `docs/adr`                    | Architectural decision records                                            |
-| `infrastructure/docker`       | Container-specific documentation                                          |
+| `infrastructure`              | Container defaults and production deploy/backup/update automation         |
+| `wiki`                        | Curated entry pages published with maintained technical guides            |
 
 The workspace uses pnpm. The root scripts orchestrate builds, development servers, linting,
 typechecking, formatting, database migration, and seeding across packages.
@@ -91,8 +128,12 @@ Each API feature follows the same dependency flow:
 
 ```mermaid
 flowchart LR
-    Route --> Controller --> Service --> Repository[Repository interface]
+    Request[HTTP request] --> Global[Global middleware]
+    Global --> Route[Feature router]
+    Route --> Authz[Session and role middleware]
+    Authz --> Controller --> Service --> Repository[Repository interface]
     Repository --> Adapter[PostgreSQL adapter]
+    Service --> Infra[Email, storage, logs and event ports]
     Controller --> Contracts[Shared Zod contracts]
     Service --> Contracts
 ```
@@ -105,8 +146,30 @@ flowchart LR
 - **PostgreSQL adapters** implement those interfaces with Drizzle ORM and transactions.
 
 `apps/api/src/composition.ts` is the explicit composition root. It creates repositories and the
-local file-storage adapter, injects them into services, constructs controllers, and supplies auth
-middleware. There is no dependency-injection framework or global service locator.
+local file-storage, email, analytics, and admin-log adapters; injects them into services;
+constructs controllers; and supplies session, role, and telemetry middleware. There is no
+dependency-injection framework or global service locator.
+
+### Composition map
+
+```mermaid
+flowchart TB
+    Composition[composition.ts]
+    Composition --> Repositories[PostgreSQL repositories]
+    Composition --> Storage[LocalFileStorage]
+    Composition --> Sender[Log or Resend EmailSender]
+    Composition --> Analytics[ProductEventRecorder and request telemetry]
+    Composition --> LogReader[FileAdminLogReader]
+    Repositories --> Services[Feature services]
+    Storage --> Services
+    Sender --> Instrumented[InstrumentedEmailSender]
+    Instrumented --> Services
+    Analytics --> Services
+    LogReader --> Admin[AdminService]
+    Services --> Controllers[Controllers]
+    Admin --> Controllers
+    Controllers --> Routers[Express routers]
+```
 
 ### HTTP pipeline
 
@@ -117,8 +180,9 @@ middleware. There is no dependency-injection framework or global service locator
 3. Response compression and structured Pino HTTP logging.
 4. Size-limited JSON parsing and cookie parsing.
 5. General request rate limiting.
-6. Health and versioned application routes.
-7. Not-found handling and centralized error translation.
+6. Request telemetry and health/versioned application routes.
+7. Feature-specific authentication and role checks.
+8. Not-found handling and centralized error translation.
 
 All versioned endpoints use `/api/v1`. State-changing versioned requests are checked by
 `verifyRequestOrigin` against configured allowed origins. Authentication-specific endpoints also
@@ -145,6 +209,11 @@ Argon2 password hash, and revokes all existing sessions. The browser also clears
 
 The users module exposes the current public profile and profile updates. Internal user records,
 including `passwordHash`, are never exported through the shared contract package.
+
+Account state includes verification, forced-password-change, suspension, and role fields. A
+suspended account cannot continue using existing sessions. Administrator provisioning creates a
+new admin account with a forced first-login password change and deliberately cannot promote an
+existing user.
 
 #### Finance
 
@@ -180,10 +249,62 @@ The current `LocalFileStorage` adapter is suitable for development and a persist
 volume. An object-storage implementation can replace it at the composition root without changing
 the file service.
 
+#### Feedback and email
+
+Authenticated users can submit feedback without learning the destination mailbox. The feedback
+service delegates delivery to the automated-email boundary used by registration, verification,
+password reset, and household invitations. `InstrumentedEmailSender` records delivery outcomes as
+privacy-safe product events around either the local log adapter or the Resend adapter.
+
+#### Admin and analytics
+
+Every `/api/v1/admin` route requires both a valid session and the `admin` role. The admin service
+combines aggregate PostgreSQL queries with a bounded reader for retained warning/error/fatal log
+files. It exposes overview, health, usage, adoption, retention, reliability, and security views,
+plus guarded account suspension. Administrators cannot suspend their own accounts.
+
+Analytics deliberately stay inside the modular monolith:
+
+- domain services emit allowlisted product events for registration, activity, invitations,
+  transaction mutations, and email outcomes;
+- request middleware asynchronously upserts route-template/status/version latency buckets into
+  hourly rollups after a response finishes;
+- startup records the deployed application version and timestamp;
+- maintenance status records whether pruning and other operational work succeeded; and
+- admin queries aggregate analytics and core business tables for selected and comparison ranges.
+
+Event metadata is constrained to approved scalar fields. Raw transaction descriptions, email
+addresses, tokens, passwords, uploaded content, and full URLs are not analytics dimensions.
+
 #### System
 
 - `GET /health/live` confirms that the process is running.
 - `GET /health/ready` checks dependencies, including database readiness.
+
+At startup the API applies pending migrations before listening, records the deployment, performs
+analytics maintenance, and installs graceful shutdown handlers. Readiness is the load-balancer
+signal; liveness does not turn a temporary database outage into a restart loop.
+
+### Request, audit, and telemetry flow
+
+```mermaid
+sequenceDiagram
+    participant C as Browser or Next.js
+    participant M as Express middleware
+    participant S as Feature service
+    participant P as PostgreSQL
+    participant L as JSONL logs
+    C->>M: Request + optional session cookie
+    M->>M: Request ID, CORS/origin, limits, session/role
+    M->>S: Validated command or query
+    S->>P: Authorized transaction
+    S-->>L: Approved audit event
+    S-->>P: Privacy-safe product event
+    S-->>M: Contract-shaped result
+    M-->>C: Response + request ID
+    M-->>L: Structured HTTP result
+    M-->>P: Hourly route/status/latency rollup
+```
 
 ### Error model
 
@@ -223,12 +344,29 @@ Principal routes are:
 | `/invite/[token]`      | Invitation inspection and acceptance flow                                           |
 | `/files`               | Owned-file upload and management                                                    |
 | `/graph`               | URL-addressable balance, category, and overview charts for household month ranges   |
+| `/admin`               | Role-gated operational, product, reliability, and security analytics                |
 | `/settings/profile`    | Public profile appearance fields                                                    |
 | `/settings/households` | Household creation, membership, ownership, invitations, and deletion                |
 | `/settings/sources`    | Source editing, deletion, and cross-household copy                                  |
 | `/settings/appearance` | Local theme and color-mode selection                                                |
 
 `/dashboard`, `/profile`, and `/settings` are compatibility/convenience redirects.
+
+```mermaid
+flowchart TB
+    Root[Root layout: locale, theme, providers, PWA registration]
+    Root --> Public[Public route group]
+    Root --> Gate[Authenticated layout]
+    Public --> Landing[Landing and about]
+    Public --> Identity[Login, registration, reset, verification, invitation]
+    Gate --> Session[Server-side getServerUser]
+    Session --> Product[Dashboard, graph, files, profile, settings]
+    Session --> Admin[Admin page]
+    Product --> Query[TanStack Query + typed API client]
+    Admin --> ServerFetch[Server-side admin API fetches]
+    Query --> API[Express API]
+    ServerFetch --> API
+```
 
 ### Server and client state
 
@@ -278,6 +416,18 @@ Theme ID, light/dark mode, and the optional dark header for light mode are store
 React hydration to limit a flash of the default theme. The preference is device/browser-local and
 is not synchronized through the API.
 
+### Localization, PWA, and accessibility
+
+`next-intl` loads one of five checked message catalogs using a locale cookie, with English as the
+fallback. API error codes are translated at the web boundary; the server remains locale-neutral.
+The generated manifest, icons, service-worker registration, and static `offline.html` provide the
+installable/offline shell. The service worker does not cache authenticated API data as an offline
+source of truth.
+
+Charts include exact-value tables and keyboard-accessible tooltips. Forms expose labels and field
+errors, motion utilities respect reduced-motion preferences, and server authentication prevents a
+flash of protected content.
+
 ## 7. Shared contracts and validation
 
 `@monthloom/contracts` is the transport boundary between frontend and backend. It contains Zod
@@ -303,6 +453,7 @@ the server authoritative for untrusted input.
 erDiagram
     USERS ||--o{ SESSIONS : owns
     USERS ||--o{ PASSWORD_RESET_TOKENS : requests
+    USERS ||--o{ EMAIL_VERIFICATION_TOKENS : requests
     USERS ||--o{ FILES : owns
     USERS ||--o{ HOUSEHOLD_MEMBERS : joins
     USERS ||--o{ HOUSEHOLDS : owns
@@ -315,20 +466,29 @@ erDiagram
     SOURCES ||--o{ EXPENSES : classifies
     USERS ||--o{ INCOMES : attributed_to
     USERS ||--o{ EXPENSES : attributed_to
+    USERS ||--o{ PRODUCT_EVENTS : acts_in
+    HOUSEHOLDS ||--o{ PRODUCT_EVENTS : scopes
+    APPLICATION_DEPLOYMENTS }o--|| REQUEST_HOURLY_ROLLUPS : versions
 ```
 
-| Table                   | Key data and constraints                                                 |
-| ----------------------- | ------------------------------------------------------------------------ |
-| `users`                 | Normalized unique email, Argon2 hash, display/profile fields, role       |
-| `sessions`              | Unique token hash, expiry, revocation timestamp, cascading user FK       |
-| `password_reset_tokens` | Unique token hash, expiry, single-use timestamp, cascading user FK       |
-| `files`                 | Owner, generated unique storage key, original name, MIME type, byte size |
-| `households`            | Currency, visual identity, owner; owner deletion is restricted           |
-| `household_members`     | Composite household/user key, join time, per-user primary flag           |
-| `household_invitations` | Unique token hash, creator, expiry, acceptance audit fields              |
-| `sources`               | Household-scoped unique normalized key and aliases                       |
-| `incomes`               | Positive numeric amount, member, source, date, recurrence metadata       |
-| `expenses`              | Income fields plus a required expense category                           |
+| Table                       | Key data and constraints                                                 |
+| --------------------------- | ------------------------------------------------------------------------ |
+| `users`                     | Normalized unique email, Argon2 hash, display/profile fields, role       |
+| `sessions`                  | Unique token hash, expiry, revocation timestamp, cascading user FK       |
+| `password_reset_tokens`     | Unique token hash, expiry, single-use timestamp, cascading user FK       |
+| `email_verification_tokens` | Hashed, expiring, single-use verification credentials                    |
+| `files`                     | Owner, generated unique storage key, original name, MIME type, byte size |
+| `households`                | Currency, visual identity, owner; owner deletion is restricted           |
+| `household_members`         | Composite household/user key, join time, per-user primary flag           |
+| `household_invitations`     | Unique token hash, creator, expiry, acceptance audit fields              |
+| `sources`                   | Household-scoped unique normalized key and aliases                       |
+| `incomes`                   | Positive numeric amount, member, source, date, recurrence metadata       |
+| `expenses`                  | Income fields plus a required expense category                           |
+| `recurrence_exclusions`     | Suppressed projected dates for edited/deleted recurring occurrences      |
+| `product_events`            | Privacy-safe lifecycle events and constrained aggregate dimensions       |
+| `request_hourly_rollups`    | Route-template/status/version latency and request-count buckets          |
+| `operational_status`        | Last attempt/success state for background maintenance                    |
+| `application_deployments`   | Immutable application version and deployment-time observations           |
 
 Database checks reinforce currency/color formats, positive amounts, and source alias rules. A
 partial unique index on `household_members.user_id` where `is_primary` is true enforces the single
@@ -336,8 +496,10 @@ primary-household invariant. Composite source foreign keys prevent transactions 
 a source in another household.
 
 Schema migrations are generated and tracked under
-`apps/api/src/infrastructure/database/migrations`. The API does not run migrations implicitly at
-startup; deployment or local setup must invoke the migration script explicitly.
+`apps/api/src/infrastructure/database/migrations`. The API startup lifecycle applies them before
+opening the listener; explicit `pnpm db:migrate` remains useful for local setup and operational
+verification. Production migrations must stay backward-compatible because application-image
+rollback cannot reverse database changes.
 
 ## 9. Recurring transaction model
 
@@ -356,6 +518,21 @@ Past and current months never contain synthetic rows. Update operations accept e
 for past, current, and future occurrences, allowing non-contiguous selection. Delete operations
 use the simpler scopes `current`, `current_and_future`, or `past_current_and_future`. Repository
 transactions keep cross-table kind changes and multi-occurrence edits atomic.
+
+```mermaid
+flowchart LR
+    Read[Read month or range] --> Actual[Load persisted income and expenses]
+    Actual --> Future{Future period?}
+    Future -- No --> Return[Return actual rows only]
+    Future -- Yes --> Series[Group prior rows by recurrence ID]
+    Series --> Rules[Apply frequency, expiry and exclusion dates]
+    Rules --> Exists{Actual occurrence exists?}
+    Exists -- Yes --> Skip[Do not project duplicate]
+    Exists -- No --> Estimate[Estimate from recent occurrences]
+    Estimate --> Project[Return projected DTO]
+    Skip --> Return
+    Project --> Return
+```
 
 ## 10. Primary request flows
 
@@ -376,6 +553,29 @@ sequenceDiagram
     B->>A: Feature request with credentials
     A->>D: Authorized domain operation
     A-->>B: Contract-shaped JSON or error envelope
+```
+
+### Authentication and account-state flow
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant A as Auth API
+    participant D as PostgreSQL
+    participant E as Email adapter
+    B->>A: Register with validated profile and password
+    A->>D: Store Argon2 hash, session hash, verification-token hash
+    A-->>E: Send raw one-time verification link
+    A-->>B: HttpOnly session cookie
+    B->>A: Open verification link
+    A->>D: Atomically consume token and verify account
+    B->>A: Authenticated request
+    A->>D: Hash cookie token and load active session/account
+    alt active and allowed
+        A-->>B: Continue
+    else expired, revoked, suspended, or password change required
+        A-->>B: Reject or limit to account recovery
+    end
 ```
 
 ### Invitation flow
@@ -432,6 +632,8 @@ The major route groups are:
 | `/api/v1/users`      | Read and update the current profile                                                          |
 | `/api/v1/households` | Household CRUD, primary selection, members, invitations, monthly/range transactions, sources |
 | `/api/v1/files`      | Upload, list, metadata, content, delete                                                      |
+| `/api/v1/feedback`   | Deliver authenticated product feedback                                                       |
+| `/api/v1/admin`      | Admin-only overview, analytics, reliability, security, and account suspension                |
 | `/health`            | Liveness and readiness                                                                       |
 
 The generated OpenAPI 3.0 document is served at `/api/v1/openapi.json`. In development, Swagger
@@ -446,6 +648,7 @@ frontends, but is not currently a third-party compatibility promise.
 - Passwords are hashed with Argon2.
 - Session tokens are cryptographically random, opaque, hashed at rest, expiring, and revocable.
 - Password-reset tokens are random, hashed at rest, expire after one hour, and are consumed once.
+- Email-verification and invitation tokens use the same hash-at-rest, expiry, and single-use model.
 - Session cookies are `HttpOnly`, `SameSite=Lax`, path-scoped to `/`, and `Secure` when configured.
 - Authenticated CORS uses explicit origins and credentials; write requests additionally verify
   `Origin` as CSRF defense in depth.
@@ -457,10 +660,13 @@ frontends, but is not currently a third-party compatibility promise.
 - Upload validation checks actual content type and isolates storage names from user filenames.
 - Error responses omit stack traces and carry correlation IDs for server-side investigation.
 - Environment variables are parsed with Zod and invalid configuration fails startup.
+- Administrator APIs require both authentication and an explicit database-backed role; suspended
+  accounts and forced-password-change accounts are rejected at the session boundary.
+- Audit and analytics records use allowlisted fields and avoid secrets and raw finance content.
 
-Admin/user roles exist in the identity model and reusable role middleware is composed, but the
-current user-facing route set is governed primarily by ownership and household membership rather
-than admin-only endpoints.
+Household membership and ownership remain the authorization boundaries for finance data. The
+administrator role gives access to aggregate operational views and account suspension, not an
+implicit bypass into a household's transaction details or uploaded files.
 
 ## 13. Configuration and operation
 
@@ -482,35 +688,93 @@ pnpm build
 ```
 
 Docker Compose starts PostgreSQL, the API on port 4000, and the web app on port 3000. It uses named
-volumes for database and upload persistence and waits for service health before starting
+volumes for database, upload, and API-log persistence and waits for service health before starting
 dependents. `API_INTERNAL_URL` lets the Next.js server address the API by its container hostname,
 while `NEXT_PUBLIC_API_URL` must be reachable by the visitor's browser.
+
+```mermaid
+flowchart LR
+    Developer -->|localhost:3000| Web[web container]
+    Developer -->|localhost:4000| API[api container]
+    Developer -->|localhost:5432| DB[(postgres container)]
+    Web -->|http://api:4000| API
+    API --> DB
+    API --> Uploads[(uploads_data)]
+    API --> Logs[(api_logs)]
+    DB --> Data[(postgres_data)]
+```
 
 Structured operational, HTTP, and approved audit records go through Pino into daily UTC JSONL
 files. Request IDs connect HTTP responses with operational and audit records. Production keeps logs
 in a dedicated named volume with 90-day retention; see
 [`server-logging.md`](./server-logging.md). Metrics, distributed traces, hosted error reporting, and
-alerting are not currently included.
+alerting are not currently included. The complete variable inventory, ownership rules, defaults,
+and workflow-to-Compose mapping live in [`runtime-configuration.md`](./runtime-configuration.md).
+
+### Production deployment topology
+
+```mermaid
+flowchart TB
+    Internet[Browser / internet monitor] -->|80, 443, HTTP/3| Caddy[Caddy TLS reverse proxy]
+    subgraph Host[Single Ubuntu / Hetzner host]
+        Caddy -->|all other paths| Web[Next.js :3000]
+        Caddy -->|/api/* and /health/*| API[Express :4000]
+        Web -->|internal server fetch| API
+        API --> DB[(PostgreSQL :5432)]
+        API --> Uploads[(uploads_data)]
+        API --> Logs[(api_logs)]
+        Caddy --> Certs[(caddy_data/config)]
+        DB --> PgData[(postgres_data)]
+    end
+    API --> Resend[Resend]
+    Backup[backup.sh] --> DB
+    Backup --> Uploads
+    Backup --> Offsite[(Operator-provided off-host storage)]
+```
+
+Only Caddy publishes host ports. The frontend network joins Caddy, web, and API; an internal
+backend network joins API and PostgreSQL. Database, API, and web ports remain private. This is a
+durable single-node layout, not a highly available one.
+
+### Build, release, update, and rollback flow
+
+```mermaid
+flowchart LR
+    Push[Push or pull request] --> Tests[Lint, config/type checks, unit/integration tests, coverage]
+    Tests -->|successful main push| Build[Build API and web images]
+    Build --> Registry[Docker Hub SHA and latest tags]
+    Tests --> Wiki[Publish wiki and patch notes]
+    Registry --> Timer[systemd update timer]
+    Timer --> Verify[Verify paired image revision]
+    Verify --> Backup[Back up database and uploads]
+    Backup --> Recreate[Recreate changed app services]
+    Recreate --> Health{All health checks pass?}
+    Health -- Yes --> Running[Keep new release]
+    Health -- No --> Rollback[Restore previous app images]
+```
+
+The updater can roll application images back, but it cannot reverse migrations. Deployment-file
+changes are intentionally manual: operators pull the repository and reconcile the private
+production Compose file separately from automatic image updates.
 
 ## 14. Testing and production boundaries
 
-No automated unit, integration, or end-to-end test suite is currently present in the repository.
-The available verification gates are TypeScript typechecking, ESLint, Prettier checks, builds,
-database constraints, runtime Zod parsing, and manual/API testing. Finance recurrence behavior,
-authorization boundaries, invitation races, and file storage compensation are the highest-value
-areas for future automated coverage.
+Vitest projects cover shared contracts, API and web units, and API/web integration behavior.
+API integration tests use an isolated PostgreSQL database and run real migrations. CI installs
+locked dependencies, lints, checks environment-schema drift, type-checks production and test code,
+runs tests with coverage thresholds, and retains JUnit/coverage artifacts. OpenAPI tests compare
+registered Express method/path pairs with the generated document.
 
-Before production deployment, the implementation still requires environment-specific work:
+The repository does not currently include browser-driven end-to-end tests, load tests, or a
+multi-host disaster-recovery test. Production remains bounded by:
 
-- terminate HTTPS and enable secure session cookies;
-- use managed PostgreSQL with backup and recovery procedures;
-- replace local file storage with durable object storage for horizontal API scaling;
-- provide production secret management;
-- authenticate the sending domain (SPF, DKIM, and DMARC), configure Resend delivery, and monitor
-  bounces/complaints;
-- establish database migration and rollback procedures;
-- add observability, retention, and alerting; and
-- define malware scanning/content policy for uploads where required.
+- a single host for Caddy, applications, PostgreSQL, uploads, and local logs;
+- operator-managed off-host backup copying, retention, alerting, and restore drills;
+- local filesystem uploads, which prevent horizontal API scaling without a storage-adapter change;
+- application-image rollback that cannot undo a destructive database migration;
+- no centralized log shipping, distributed tracing, hosted error reporting, or external alerting;
+- sender-domain, bounce, and complaint operations delegated to the Resend account; and
+- no malware scanning pipeline for uploaded images.
 
 See [`production-concerns.md`](./production-concerns.md) for the maintained deployment checklist.
 
