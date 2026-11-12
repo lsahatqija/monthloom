@@ -61,12 +61,13 @@ services:
           'CMD',
           'node',
           '-e',
-          "fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+          "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
         ]
-      interval: 15s
+      interval: 1m
+      start_interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 3
+      start_period: 1m
 
   api:
     image: lsahatqija/monthloom:api-${IMAGE_TAG:?Set IMAGE_TAG in .env.production}
@@ -114,10 +115,11 @@ services:
           '-e',
           "fetch('http://localhost:4000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
         ]
-      interval: 15s
+      interval: 1m
+      start_interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 3
+      start_period: 1m
 
   postgres:
     image: postgres:16-alpine
