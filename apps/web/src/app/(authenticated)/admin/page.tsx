@@ -443,7 +443,10 @@ async function Reliability({
         data={data}
         locale={numbers.resolvedOptions().locale}
         labels={{
-          routes: t('slowRoutes'),
+          routes: t('trafficByRoute'),
+          share: t('trafficShare'),
+          clientVersions: t('clientVersions'),
+          clientVersion: t('clientVersion'),
           requests: t('requests'),
           errorRate: t('errorRate'),
           averageLatency: t('averageLatency'),

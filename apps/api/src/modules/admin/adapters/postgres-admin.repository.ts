@@ -448,7 +448,7 @@ export class PostgresAdminRepository implements AdminRepository {
           coalesce(sum(duration_total_ms)::float8 / nullif(sum(request_count), 0), 0) AS average_latency_ms,
           max(duration_max_ms)::float8 AS max_latency_ms
         FROM request_hourly_rollups WHERE hour >= ${new Date(range.start)} AND hour < ${new Date(range.endExclusive)}
-        GROUP BY method, route ORDER BY average_latency_ms DESC LIMIT 10
+        GROUP BY method, route ORDER BY requests DESC, route LIMIT 50
       `),
       this.db.execute<{ version: string; requests: number }>(sql`
         SELECT client_version AS version, sum(request_count)::int AS requests FROM request_hourly_rollups

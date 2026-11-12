@@ -43,6 +43,9 @@ export function ReliabilityTables({
   locale: string;
   labels: {
     routes: string;
+    share: string;
+    clientVersions: string;
+    clientVersion: string;
     requests: string;
     errorRate: string;
     averageLatency: string;
@@ -55,7 +58,7 @@ export function ReliabilityTables({
   type Route = AdminReliabilityResponse['slowRoutes'][number];
   type Point = AdminReliabilityResponse['series'][number];
   const [routeSort, setRouteSort] = useState<SortState<Route>>({
-    key: 'averageLatencyMs',
+    key: 'requests',
     direction: 'descending',
   });
   const [requestSort, setRequestSort] = useState<SortState<Point>>({
@@ -64,6 +67,7 @@ export function ReliabilityTables({
   });
   const [hoveredRequest, setHoveredRequest] = useState<number>();
   const decimal = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
+  const integer = new Intl.NumberFormat(locale);
   const routes = useMemo(() => sorted(data.slowRoutes, routeSort), [data.slowRoutes, routeSort]);
   const requests = useMemo(() => sorted(data.series, requestSort), [data.series, requestSort]);
   const chart = { width: 760, height: 220, left: 42, right: 18, top: 18, bottom: 32 };
@@ -230,6 +234,7 @@ export function ReliabilityTables({
                       {labels.requests}
                     </SortButton>
                   </th>
+                  <th>{labels.share}</th>
                   <th>
                     <SortButton
                       column="errorRate"
@@ -266,9 +271,53 @@ export function ReliabilityTables({
                       {route.method} {route.route}
                     </td>
                     <td>{route.requests}</td>
+                    <td>
+                      {decimal.format(
+                        data.summary.requests.current
+                          ? (route.requests / data.summary.requests.current) * 100
+                          : 0,
+                      )}
+                      %
+                    </td>
                     <td>{decimal.format(route.errorRate)}%</td>
                     <td>{decimal.format(route.averageLatencyMs)} ms</td>
                     <td>{decimal.format(route.maxLatencyMs)} ms</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="adminEmpty">{labels.empty}</p>
+        )}
+      </section>
+      <section className="adminPanel" aria-labelledby="client-versions">
+        <div className="adminSectionHeading">
+          <h2 id="client-versions">{labels.clientVersions}</h2>
+        </div>
+        {data.deployment.clientVersions.length ? (
+          <div className="adminTableWrap adminScrollBox">
+            <table className="adminDataTable">
+              <thead>
+                <tr>
+                  <th>{labels.clientVersion}</th>
+                  <th>{labels.requests}</th>
+                  <th>{labels.share}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.deployment.clientVersions.map((client) => (
+                  <tr key={client.version}>
+                    <td>{client.version}</td>
+                    <td>{integer.format(client.requests)}</td>
+                    <td>
+                      {decimal.format(
+                        data.summary.requests.current
+                          ? (client.requests / data.summary.requests.current) * 100
+                          : 0,
+                      )}
+                      %
+                    </td>
                   </tr>
                 ))}
               </tbody>

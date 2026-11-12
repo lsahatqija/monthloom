@@ -75,7 +75,10 @@ describe('admin analytics tables', () => {
       <ReliabilityTables
         locale="en"
         labels={{
-          routes: 'Slow routes',
+          routes: 'Traffic by route',
+          share: 'Traffic share',
+          clientVersions: 'Traffic by client version',
+          clientVersion: 'Client version',
           requests: 'Requests',
           errorRate: 'Error rate',
           averageLatency: 'Average latency',
@@ -91,7 +94,9 @@ describe('admin analytics tables', () => {
               applicationVersion: 'v2',
               deployedAt: '2026-11-02T00:00:00.000Z',
               history: [{ version: 'v2', deployedAt: '2026-11-02T00:00:00.000Z' }],
+              clientVersions: [{ version: 'web-v2', requests: 8 }],
             },
+            summary: { requests: { current: 9 } },
             slowRoutes: [
               {
                 method: 'GET',
@@ -133,9 +138,11 @@ describe('admin analytics tables', () => {
     fireEvent.mouseEnter(container.querySelector('svg rect')!);
     expect(screen.getByText('Requests: 0')).toBeVisible();
     const routeTable = screen.getAllByRole('table')[0]!;
-    await user.click(within(routeTable).getByRole('button', { name: 'Requests' }));
+    await user.click(within(routeTable).getByRole('button', { name: /Requests/ }));
     expect(within(routeTable).getAllByRole('row')[1]).toHaveTextContent('/slow');
     await user.click(within(routeTable).getByRole('button', { name: /Requests/ }));
     expect(within(routeTable).getAllByRole('row')[1]).toHaveTextContent('/fast');
+    expect(screen.getByRole('heading', { name: 'Traffic by client version' })).toBeVisible();
+    expect(screen.getByText('web-v2')).toBeVisible();
   });
 });
